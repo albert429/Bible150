@@ -1,6 +1,6 @@
-/** Public CDN origin only: never put storage credentials in a VITE_ variable. */
+/** Public CDN origin, or "/" for a same-origin media route. Never credentials. */
 export function audioUrl(path: string, base = "") {
-  if (!base) return path;
+  if (!base || base === "/") return path;
   const url = new URL(base);
   if (
     url.protocol !== "https:" ||

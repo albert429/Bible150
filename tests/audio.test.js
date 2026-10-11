@@ -101,12 +101,15 @@ test("Cue lookup respects silence, exact starts, repeated verses and boundaries"
 test("Static hosting and an HTTPS CDN use the same immutable asset path", () => {
   const path = "/audio/days/001-abc.m4a";
   assert.equal(audioUrl(path), path);
+  assert.equal(audioUrl(path, "/"), path);
   assert.equal(
     audioUrl(path, "https://audio.example.org"),
     "https://audio.example.org" + path,
   );
   for (const base of [
     "http://audio.example.org",
+    "//audio.example.org",
+    "/audio",
     "https://user:secret@audio.example.org",
     "https://audio.example.org/private",
     "https://audio.example.org?key=secret",
