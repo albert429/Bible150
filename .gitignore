@@ -20,3 +20,4 @@ public/readings/
 public/study/
 public/audio/
 dist-ai/
+.claude/worktrees/

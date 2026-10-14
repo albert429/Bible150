@@ -12,6 +12,7 @@ export default tseslint.config(
       "public/study",
       "public/audio",
       "artifacts",
+      ".claude/worktrees",
       "node_modules",
       "test-results",
       "playwright-report",
