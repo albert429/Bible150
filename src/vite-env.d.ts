@@ -1,4 +1,6 @@
 /// <reference types="vite/client" />
+// Inlined by vite.config.ts from VITE_AUDIO_BASE_URL (see src/audio/url.ts).
+declare const __AUDIO_BASE_URL__: string;
 declare const __AUDIO_DAYS__: number[];
 
 // Inlined by vite.config.ts from the VITE_AI_* variables (see src/ai/config.ts).

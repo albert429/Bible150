@@ -69,6 +69,13 @@ element handles buffering and HTTP range requests; audio is never fetched into a
 JavaScript Blob or processed with Web Audio. Scripture is not rerendered on each
 audio event; only the active verse marker and small player update.
 
+The delivery rules live in `src/audio/contract.ts`: the media path pattern
+`/audio/days/NNN-<hash>.m4a`, the 8 MiB size cap, the content type, the cache
+value and the Pages origin. The app validates every manifest `src` against that
+pattern, and the Pages bundle script imports it. `vercel.json` and the Cloudflare
+worker (deployed verbatim, so it cannot import) repeat the values; tests keep
+them equal to the contract.
+
 Each media filename contains a content fingerprint. Serve media with:
 
 ```http
@@ -86,7 +93,8 @@ The 150 recordings live in the `bible-reading-audio` Pages project. Vercel proxi
 only `/audio/days/:file` to that host; timing manifests remain in the app build.
 Set `VITE_AUDIO_BASE_URL=/` to enable the same-origin media route in a Git-only
 build. The `dev` preview is configured this way. Production/main must be configured
-separately when promoting the audio release.
+separately when promoting the audio release. `vite.config.ts` validates the value
+and inlines it as `__AUDIO_BASE_URL__`, so the app never reads `import.meta.env`.
 
 This route avoids a connection timeout observed with the local DNS answers for
 the Pages domain. Downloads through it count toward Vercel's transfer allowance.
@@ -106,10 +114,12 @@ handler memory use (current files are under 5 MB).
 To prepare and deploy updated media from the local recordings:
 
 ```sh
-node scripts/prepare-audio-host.mjs
-npx wrangler@4 pages deploy artifacts/pages-audio \
-  --project-name bible-reading-audio --branch main --commit-dirty=true
+npm run audio:host:prepare   # builds artifacts/pages-audio
+npm run audio:host:deploy    # prepares, then runs wrangler pages deploy
 ```
+
+`audio:host:deploy` runs `npx wrangler@4 pages deploy artifacts/pages-audio
+--project-name bible-reading-audio --branch main --commit-dirty=true`.
 
 Here `--branch main` selects the **audio host's** production deployment; it does
 not push or modify the application's Git branch. The bundle includes the range

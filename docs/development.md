@@ -42,6 +42,8 @@
 | `npm run typecheck`                                | Type-check the app, configs, browser specs and scripts                     |
 | `npm run snapshot -- save <dir>`                   | Record hashes of generated data and sizes of `dist/assets/`                |
 | `npm run snapshot -- compare <dir>`                | Fail on any data change or initial JS/CSS growth over 0.5KB                |
+| `npm run audio:host:prepare`                       | Build the Cloudflare Pages audio bundle in `artifacts/pages-audio`         |
+| `npm run audio:host:deploy`                        | Prepare, then deploy that bundle with wrangler                             |
 | `npm run validate`                                 | Formatting, lint, type-check, unit/data checks, and build                  |
 | `python3 -I -m unittest discover -s scripts/tests` | Python audio hash tests (standard library only; CI also runs `py_compile`) |
 | `npm run test:visual`                              | Save preview screenshots under `artifacts/`                                |

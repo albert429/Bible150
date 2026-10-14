@@ -1,4 +1,5 @@
 import type { Day } from "../plan/readings";
+import { AUDIO_MEDIA_PATTERN } from "./contract.ts";
 
 export type Cue = {
   passage: number;
@@ -49,7 +50,7 @@ export function validManifest(
     m.day !== Number(day) ||
     !/^[a-f0-9]{64}$/.test(m.readingHash) ||
     typeof m.src !== "string" ||
-    !/^\/audio\/days\/[a-f0-9-]+\.(mp3|m4a)$/.test(m.src) ||
+    !AUDIO_MEDIA_PATTERN.test(m.src) ||
     !Number.isFinite(m.duration) ||
     m.duration <= 0 ||
     !Array.isArray(m.cues) ||

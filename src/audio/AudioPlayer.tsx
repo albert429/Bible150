@@ -230,9 +230,7 @@ export default function AudioPlayer({
         <audio
           ref={audio}
           src={
-            manifest
-              ? audioUrl(manifest.src, import.meta.env.VITE_AUDIO_BASE_URL)
-              : undefined
+            manifest ? audioUrl(manifest.src, __AUDIO_BASE_URL__) : undefined
           }
           preload="none"
           onPlaying={() => {

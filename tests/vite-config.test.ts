@@ -75,3 +75,17 @@ test("AI constants are off unless a provider is configured", async () => {
   assert.equal(resolved.define?.__AI_ENABLED__, "false");
   assert.equal(resolved.define?.__AI_CONFIG__, "null");
 });
+
+test("The audio host is inlined as __AUDIO_BASE_URL__", async () => {
+  async function baseUrl(base?: string) {
+    if (base === undefined) delete process.env.VITE_AUDIO_BASE_URL;
+    else process.env.VITE_AUDIO_BASE_URL = base;
+    return (await makeConfig(env)).define?.__AUDIO_BASE_URL__;
+  }
+  assert.equal(await baseUrl(), '""');
+  assert.equal(await baseUrl("/"), '"/"');
+  assert.equal(
+    await baseUrl("https://audio.example.test"),
+    '"https://audio.example.test"',
+  );
+});
