@@ -4,11 +4,11 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import type { Day } from "../../readings";
-import type { View } from "../Navigation";
-import { dateLabel } from "../../format";
-import { Loading, LoadError } from "../Feedback";
-import PassageReference from "../PassageReference";
+import type { Day } from "../plan/readings";
+import type { View } from "./Navigation";
+import { dateLabel } from "../lib/format";
+import { Loading, LoadError } from "../components/Feedback";
+import PassageReference from "../components/PassageReference";
 
 type Props = {
   selected: number;

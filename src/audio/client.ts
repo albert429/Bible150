@@ -1,4 +1,4 @@
-import { createJsonClient } from "../jsonClient.ts";
+import { createJsonClient } from "../lib/jsonClient.ts";
 import { validManifest } from "./manifest.ts";
 
 const createClient = () =>

@@ -1,4 +1,4 @@
-import { createJsonClient } from "../jsonClient.ts";
+import { createJsonClient } from "../lib/jsonClient.ts";
 import type { LexDay, StudyDay, TrDay } from "./types.ts";
 
 const message = () => "تعذر تحميل دراسة الآية. تحقق من الاتصال وحاول مرة أخرى.";

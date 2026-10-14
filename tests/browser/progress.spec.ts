@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { PROGRESS_KEY } from "../../src/progress.ts";
+import { PROGRESS_KEY } from "../../src/plan/progress.ts";
 import { chooseFromMenu, profile, ready, seed } from "./helpers";
 
 test.describe("progress and backup", () => {

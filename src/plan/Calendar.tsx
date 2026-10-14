@@ -1,9 +1,9 @@
 import { Check, ChevronLeft, ChevronRight } from "lucide-react";
-import { ar, dateFor, dateLabel } from "../format";
-import type { Reader } from "../progress";
-import type { Day } from "../readings";
+import { ar, dateFor, dateLabel } from "../lib/format";
+import type { Reader } from "./progress";
+import type { Day } from "./readings";
 import { useReading } from "../useReading";
-import { Loading, LoadError } from "./Feedback";
+import { Loading, LoadError } from "../components/Feedback";
 
 export default function Calendar({
   member,

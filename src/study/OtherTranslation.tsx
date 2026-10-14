@@ -2,7 +2,7 @@ import { BookOpen } from "lucide-react";
 import { Loading, LoadError } from "../components/Feedback";
 import { studyTr } from "./client";
 import type { VerseText } from "./types";
-import { useResource } from "./useResource";
+import { useResource } from "../lib/useResource";
 import Section from "./Section";
 
 const textOf = (value: VerseText) =>

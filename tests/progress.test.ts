@@ -10,7 +10,7 @@ import {
   loadProgress,
   validDate,
   PROGRESS_KEY,
-} from "../src/progress.ts";
+} from "../src/plan/progress.ts";
 function storage() {
   const values = new Map<string, string>();
   return {

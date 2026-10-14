@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { readings, type Day } from "./readings";
+import { readings, type Day } from "./plan/readings";
 
 export function useReading<T extends Day | Day[]>(key: string) {
   const [attempt, setAttempt] = useState(0);

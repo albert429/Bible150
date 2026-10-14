@@ -1,10 +1,10 @@
 import { lazy, Suspense } from "react";
-import { ar } from "../format";
-import type { Day } from "../readings";
-import { ChunkBoundary, Loading } from "./Feedback";
-import Sheet from "./Sheet";
+import { ar } from "../lib/format";
+import type { Day } from "../plan/readings";
+import { ChunkBoundary, Loading } from "../components/Feedback";
+import Sheet from "../components/Sheet";
 
-const StudyPanel = lazy(() => import("../study/StudyPanel"));
+const StudyPanel = lazy(() => import("./StudyPanel"));
 
 export type StudyTarget = { passage: number; verse: number; el: HTMLElement };
 

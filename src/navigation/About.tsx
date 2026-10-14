@@ -1,5 +1,5 @@
 import { APP_INFO } from "../appInfo";
-import ReactIcon from "./ReactIcon";
+import ReactIcon from "../components/ReactIcon";
 import churchLogo from "../assets/church-logo-192.png";
 
 export default function About() {

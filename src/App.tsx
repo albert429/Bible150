@@ -9,19 +9,19 @@ import {
   importBackup,
   PROGRESS_KEY,
   type Reader as Profile,
-} from "./progress";
-import { today, dayIndex, dateFor, scheduledDay } from "./format";
-import Reader from "./components/Reader";
-import Navigation, { type View } from "./components/Navigation";
+} from "./plan/progress";
+import { today, dayIndex, dateFor, scheduledDay } from "./lib/format";
+import Reader from "./reader/Reader";
+import Navigation, { type View } from "./navigation/Navigation";
 import { ChunkBoundary, Loading } from "./components/Feedback";
-import type { Modal } from "./components/Dialogs";
+import type { Modal } from "./plan/Dialogs";
 import { useReading } from "./useReading";
-import { useAdjacentPrefetch } from "./useAdjacentPrefetch";
-import type { Day } from "./readings";
-import { useAppearance } from "./useAppearance";
-import { appShareData } from "./share";
-const Calendar = lazy(() => import("./components/Calendar"));
-const Dialogs = lazy(() => import("./components/Dialogs"));
+import { useAdjacentPrefetch } from "./reader/useAdjacentPrefetch";
+import type { Day } from "./plan/readings";
+import { useAppearance } from "./navigation/useAppearance";
+import { appShareData } from "./navigation/share";
+const Calendar = lazy(() => import("./plan/Calendar"));
+const Dialogs = lazy(() => import("./plan/Dialogs"));
 
 function initialReader() {
   try {

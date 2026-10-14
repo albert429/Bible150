@@ -10,7 +10,7 @@ import {
   SYSTEM_PROMPT,
   type Material,
 } from "../src/ai/prompt.ts";
-import type { Passage, Verse } from "../src/readings.ts";
+import type { Passage, Verse } from "../src/plan/readings.ts";
 import type { GreekToken } from "../src/study/types.ts";
 
 const verses: Verse[] = [

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { allowsReadingPrefetch } from "../src/useAdjacentPrefetch.ts";
+import { allowsReadingPrefetch } from "../src/reader/useAdjacentPrefetch.ts";
 
 test("Neighbouring readings are prefetched unless the connection is slow or saving data", () => {
   assert.equal(allowsReadingPrefetch(undefined), true);

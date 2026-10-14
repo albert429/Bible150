@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { gzipSync } from "node:zlib";
 import { BUDGETS } from "../scripts/build-study.js";
-import type { Day } from "../src/readings.ts";
+import type { Day } from "../src/plan/readings.ts";
 
 const read = (path: string) =>
   JSON.parse(readFileSync(new URL("../" + path, import.meta.url), "utf8"));

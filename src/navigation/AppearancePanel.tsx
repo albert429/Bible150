@@ -1,6 +1,6 @@
 import { Minus, Plus, Sun, Moon } from "lucide-react";
-import { ar } from "../../format";
-import { FONT_MIN, FONT_MAX } from "../../useAppearance";
+import { ar } from "../lib/format";
+import { FONT_MIN, FONT_MAX } from "./useAppearance";
 
 type Props = {
   font: number;

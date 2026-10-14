@@ -10,7 +10,7 @@ import {
   type Cue,
 } from "../src/audio/manifest.ts";
 import { audioUrl } from "../src/audio/url.ts";
-import type { Day } from "../src/readings.ts";
+import type { Day } from "../src/plan/readings.ts";
 
 const reading: Day = {
   day: 1,
