@@ -1,9 +1,12 @@
 import { test, expect, type Page } from "@playwright/test";
-import AxeBuilder from "@axe-core/playwright";
 import { readFileSync } from "node:fs";
-import { ready, closeSheet, noOverflow } from "./helpers";
-
-test.use({ reducedMotion: "reduce" });
+import {
+  closeSheet,
+  createGate,
+  expectAccessible,
+  noOverflow,
+  ready,
+} from "./helpers";
 
 // CI verifies the same native media behavior without redistributing recordings
 // or reaching an external host. Local runs use the actual prepared narration.
@@ -184,7 +187,7 @@ test("direct speed, close, study pause and highlights remain accessible on phone
       .click();
     await page.getByRole("button", { name: theme, exact: true }).click();
     await closeSheet(page);
-    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+    await expectAccessible(page);
     const highlight = await page
       .locator("[data-listening]")
       .evaluate((el) => getComputedStyle(el).backgroundColor);
@@ -268,18 +271,15 @@ test("text tracking stays on after manual scrolling and late data cannot restart
     )
     .toBe(true);
   await page.reload();
-  let release!: () => void;
-  const gate = new Promise<void>((resolve) => {
-    release = resolve;
-  });
+  const gate = createGate();
   await page.route("**/audio/1.json", async (route) => {
-    await gate;
+    await gate.opened;
     await route.fallback();
   });
   await ready(page);
   await page.getByRole("button", { name: "استمع إلى قراءة اليوم" }).click();
   await page.getByRole("button", { name: "اليوم التالي", exact: true }).click();
-  release();
+  gate.open();
   await ready(page);
   await expect(page.locator("audio")).toHaveCount(0);
 });
@@ -334,12 +334,9 @@ test("media failures retry, final verse stops, and leaving reading releases audi
 test("slow or failed player code gives visible feedback and navigation recovers", async ({
   page,
 }) => {
-  let release!: () => void;
-  const gate = new Promise<void>((resolve) => {
-    release = resolve;
-  });
+  const gate = createGate();
   await page.route("**/assets/AudioPlayer-*.js", async (route) => {
-    await gate;
+    await gate.opened;
     await route.fulfill({ status: 503, body: "unavailable" });
   });
   await page.goto("/");
@@ -348,7 +345,7 @@ test("slow or failed player code gives visible feedback and navigation recovers"
   const status = page.getByRole("status");
   await expect(status).toContainText("جارٍ فتح المشغل");
   await expect(status).toBeInViewport();
-  release();
+  gate.open();
   await expect(page.getByRole("alert")).toBeInViewport();
   await expect(page.getByRole("alert")).toContainText("تعذر فتح هذا الجزء");
   await page.getByRole("button", { name: "اليوم التالي", exact: true }).click();

@@ -6,12 +6,11 @@ import {
   type APIRequestContext,
   type Page,
 } from "@playwright/test";
-import AxeBuilder from "@axe-core/playwright";
 import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import {
   closeSheet,
-  key as progressKey,
+  expectAccessible,
   noOverflow,
   ready,
   section,
@@ -19,9 +18,8 @@ import {
   study,
   tap,
 } from "./helpers";
+import { PROGRESS_KEY } from "../../src/progress.ts";
 import { AI_KEY, AI_URL, STUB_URL } from "./ai-stub";
-
-test.use({ reducedMotion: "reduce" });
 
 const GEMMA = "google/gemma-4-31b-it:free";
 const CARD = "اسأل الذكاء الاصطناعي";
@@ -163,7 +161,7 @@ test("the AI card is last, asks for consent and sends nothing until a chip is ta
     "1",
   );
   await expect(remaining(page)).toContainText("١٠ من ١٠");
-  await page.waitForTimeout(300);
+  await page.waitForLoadState("networkidle");
   expect(chunks.every((c) => c.startsWith("AiPanel-"))).toBe(true);
   expect(await sent(request)).toEqual([]);
 
@@ -541,6 +539,7 @@ test("keep-alives extend the wait for the first words up to 60 seconds", async (
   // Without keep-alives the first-token timeout is 25 s.
   for (let i = 0; i < 5; i++) {
     await page.clock.runFor(10000);
+    // A quiet period: give a (wrongly) timed-out stream real time to surface.
     await page.waitForTimeout(200);
     await expect(answerArea(page)).toHaveAttribute("aria-busy", "true");
   }
@@ -656,7 +655,7 @@ test("turning the feature off clears its data and asks for consent again", async
   expect(await stored(page, CACHE)).not.toBeNull();
   const progress = await page.evaluate(
     (k) => localStorage.getItem(k),
-    progressKey,
+    PROGRESS_KEY,
   );
 
   await study(page)
@@ -669,9 +668,9 @@ test("turning the feature off clears its data and asks for consent again", async
   expect(await stored(page, CACHE)).toBeNull();
   expect(await stored(page, CONSENT)).toBeNull();
   expect(await stored(page, USAGE)).toMatchObject({ n: 1, a: 1 });
-  expect(await page.evaluate((k) => localStorage.getItem(k), progressKey)).toBe(
-    progress,
-  );
+  expect(
+    await page.evaluate((k) => localStorage.getItem(k), PROGRESS_KEY),
+  ).toBe(progress);
   await page.reload();
   await ready(page);
   await openCard(page);
@@ -690,11 +689,7 @@ test("every AI state is accessible in both themes and fits 320px at 38px text", 
   await page.setViewportSize({ width: 320, height: 700 });
   const check = async () => {
     await noOverflow(page);
-    const result = await new AxeBuilder({ page })
-      .include("dialog[open]")
-      .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
-      .analyze();
-    expect(result.violations).toEqual([]);
+    await expectAccessible(page, { include: "dialog[open]", wcag: true });
   };
   for (const dark of [false, true]) {
     await page.goto("/");
@@ -887,7 +882,7 @@ test("About the app discloses the AI service", async ({ page }) => {
   await expect(about).toContainText("شرح الآيات بالذكاء الاصطناعي اختياري");
   await expect(about).toContainText("لا يُرسَل اسمك أو تقدّمك");
   await noOverflow(page);
-  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await expectAccessible(page);
 });
 
 test("only the AI build carries the key, and only in its lazy request chunk", () => {

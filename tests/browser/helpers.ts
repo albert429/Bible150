@@ -1,12 +1,23 @@
+import { readFileSync } from "node:fs";
+import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page } from "@playwright/test";
+import { PROGRESS_KEY } from "../../src/progress.ts";
 
-export const key = "nt-reading-progress-v1";
 export const profile = {
   id: "reader-one",
   name: "ميخائيل",
   startDate: "2026-09-22",
   completed: [2, 4],
 };
+
+type PlanDay = {
+  day: number;
+  verseCount: number;
+  passages: { book: string }[];
+};
+const plan: PlanDay[] = JSON.parse(readFileSync("data/plan.json", "utf8"));
+/** Facts about a plan day, so tests don't hard-code them. */
+export const planDay = (day: number) => plan[day - 1];
 
 export async function seed(
   page: Page,
@@ -26,7 +37,7 @@ export async function seed(
           }),
         );
     },
-    { key, profile, selected },
+    { key: PROGRESS_KEY, profile, selected },
   );
 }
 export async function ready(page: Page) {
@@ -48,6 +59,91 @@ export async function noOverflow(page: Page) {
   ).toBe(true);
 }
 
+/** Axe finds nothing; `wcag` limits the rules to WCAG 2.1 A and AA. */
+export async function expectAccessible(
+  page: Page,
+  options: { include?: string; wcag?: boolean } = {},
+) {
+  let axe = new AxeBuilder({ page });
+  if (options.include) axe = axe.include(options.include);
+  if (options.wcag) axe = axe.withTags(["wcag2a", "wcag2aa", "wcag21aa"]);
+  expect((await axe.analyze()).violations).toEqual([]);
+}
+
+export const menuButton = (page: Page) =>
+  page.getByRole("button", { name: "فتح القائمة", exact: true });
+export const menuDialog = (page: Page) =>
+  page.getByRole("dialog", { name: "القائمة", exact: true });
+/** Open the menu and choose one of its entries. */
+export async function chooseFromMenu(page: Page, target: string) {
+  await menuButton(page).click();
+  await menuDialog(page)
+    .getByRole("button", { name: target, exact: true })
+    .click();
+}
+export async function openAppearance(page: Page) {
+  await page
+    .getByRole("button", { name: "إعدادات القراءة", exact: true })
+    .click();
+  return page.getByRole("dialog", { name: "إعدادات القراءة", exact: true });
+}
+export async function openDayDetails(page: Page) {
+  await page.getByRole("button", { name: /^تفاصيل اليوم / }).click();
+  return page.getByRole("dialog", { name: /^قراءة اليوم / });
+}
+export const nextDay = (page: Page) =>
+  page.getByRole("button", { name: "اليوم التالي", exact: true });
+export const previousDay = (page: Page) =>
+  page.getByRole("button", { name: "اليوم السابق", exact: true });
+
+/** The pathnames of the requests the page makes from now on, optionally filtered. */
+export function recordRequests(
+  page: Page,
+  matches: (pathname: string) => boolean = () => true,
+) {
+  const paths: string[] = [];
+  page.on("request", (request) => {
+    const { pathname } = new URL(request.url());
+    if (matches(pathname)) paths.push(pathname);
+  });
+  return paths;
+}
+export const readingRequests = (page: Page) =>
+  recordRequests(page, (pathname) => pathname.includes("/readings/"));
+
+/** A promise that stays pending until `open()` is called. */
+export function createGate() {
+  let open!: () => void;
+  const opened = new Promise<void>((resolve) => {
+    open = resolve;
+  });
+  return { opened, open };
+}
+/** Hold every font request until the returned gate opens. */
+export async function blockFonts(page: Page) {
+  const gate = createGate();
+  await page.route("**/*.woff2", async (route) => {
+    await gate.opened;
+    await route.continue();
+  });
+  return gate;
+}
+
+/** Make the page report this `navigator.connection`. */
+export async function stubConnection(
+  page: Page,
+  connection: { saveData?: boolean; effectiveType?: string },
+) {
+  await page.addInitScript(
+    (connection) =>
+      Object.defineProperty(navigator, "connection", {
+        configurable: true,
+        value: connection,
+      }),
+    connection,
+  );
+}
+
 export const verse = (page: Page, index: number) =>
   page.locator(".verse").nth(index);
 /** A point on the verse's own text: the centre of its widest line box. */
@@ -63,6 +159,19 @@ export async function textPoint(page: Page, index: number) {
 export async function tap(page: Page, index: number) {
   const { x, y } = await textPoint(page, index);
   await page.mouse.click(x, y);
+}
+/** Hold the pointer on a point until the page's own clock says the press is no tap. */
+export async function longPress(
+  page: Page,
+  { x, y }: { x: number; y: number },
+) {
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  const start = await page.evaluate(() => performance.now());
+  await expect
+    .poll(() => page.evaluate((start) => performance.now() - start, start))
+    .toBeGreaterThan(500);
+  await page.mouse.up();
 }
 export const study = (page: Page) => page.getByRole("dialog");
 /** A section's heading button; its name is the title and, if any, the count. */
