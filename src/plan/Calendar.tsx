@@ -1,8 +1,8 @@
 import { Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { ar, dateFor, dateLabel } from "../lib/format";
 import type { Reader } from "./progress";
-import type { Day } from "./readings";
-import { useReading } from "../useReading";
+import { planIndex } from "./readings";
+import { useResource } from "../lib/useResource";
 import { Loading, LoadError } from "../components/Feedback";
 
 export default function Calendar({
@@ -20,7 +20,7 @@ export default function Calendar({
   setPage: (page: number) => void;
   go: (day: number) => void;
 }) {
-  const { data: plan, error, retry } = useReading<Day[]>("plan");
+  const { data: plan, error, retry } = useResource(planIndex, "plan");
   const count = member?.completed.length || 0;
   return (
     <section className="calendar-panel" aria-label="أيام خطة القراءة">

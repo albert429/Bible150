@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { readings, type Day } from "../plan/readings.ts";
+import { days, type Day } from "../plan/readings.ts";
 
 type Connection = { saveData?: boolean; effectiveType?: string };
 
@@ -39,8 +39,8 @@ export function useAdjacentPrefetch(
         if (cancelled) return;
         timer = setTimeout(() => {
           if (cancelled || !connectionAllowsPrefetch()) return;
-          void readings.prefetchDay(selected - 1);
-          void readings.prefetchDay(selected + 1);
+          void days.prefetchDay(selected - 1);
+          void days.prefetchDay(selected + 1);
         }, 500);
       },
       () => {},

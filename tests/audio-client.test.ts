@@ -39,7 +39,7 @@ test("A manifest for another day, or with an unsafe source or bad cues, is rejec
     ["5", { ...manifest, cues: [] }],
     ["5", { ...manifest, cues: [{ ...manifest.cues[0], end: 99 }] }],
   ] as const) {
-    client.resetAudioManifestCache();
+    client.audioManifests.invalidate(day);
     body = broken;
     await assert.rejects(
       client.audioManifests.load(day),
@@ -50,13 +50,14 @@ test("A manifest for another day, or with an unsafe source or bad cues, is rejec
   }
 });
 
-test("Resetting the cache makes the next load fetch again", async () => {
-  client.resetAudioManifestCache();
+test("Invalidating a day makes the next load fetch it again and leaves other days cached", async () => {
   body = manifest;
   requests.length = 0;
   await client.audioManifests.load("5");
-  client.resetAudioManifestCache();
+  client.audioManifests.invalidate("5");
   assert.equal(client.audioManifests.peek("5"), undefined);
   await client.audioManifests.load("5");
   assert.deepEqual(requests, ["/audio/5.json", "/audio/5.json"]);
+  client.audioManifests.invalidate("6");
+  assert.deepEqual(client.audioManifests.peek("5"), manifest);
 });

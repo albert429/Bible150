@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { Pause, Play, SkipBack, SkipForward } from "lucide-react";
 import type { Day } from "../plan/readings";
 import { ar } from "../lib/format";
-import { audioManifests, resetAudioManifestCache } from "./client";
-import { cueAt, matchesReading, type AudioManifest } from "./manifest";
+import { cueAt } from "./manifest";
+import { useAudioManifest } from "./useAudioManifest";
 import "./audio.css";
 import { audioUrl } from "./url";
 import appIcon from "../assets/favicon.svg";
@@ -18,9 +18,9 @@ export default function AudioPlayer({
   const audio = useRef<HTMLAudioElement>(null);
   const highlighted = useRef<HTMLElement | null>(null);
   const operation = useRef(0);
-  const [manifest, setManifest] = useState<AudioManifest>();
-  const [attempt, setAttempt] = useState(0);
-  const [error, setError] = useState("");
+  const { manifest, error: loadError, retry } = useAudioManifest(reading);
+  const [playError, setError] = useState("");
+  const error = playError || loadError;
   const [playing, setPlaying] = useState(false);
   const [waiting, setWaiting] = useState(false);
   const [ended, setEnded] = useState(false);
@@ -69,28 +69,6 @@ export default function AudioPlayer({
     setTime(target.start);
     setEnded(false);
   }
-
-  useEffect(() => {
-    let active = true;
-    setError("");
-    audioManifests
-      .load(String(reading.day))
-      .then(async (data) => {
-        if (!(await matchesReading(data, reading))) {
-          resetAudioManifestCache();
-          throw new Error(
-            "يحتاج التسجيل إلى تحديث ليتطابق مع قراءة هذا اليوم.",
-          );
-        }
-        if (active) setManifest(data);
-      })
-      .catch((err: Error) => {
-        if (active) setError(err.message);
-      });
-    return () => {
-      active = false;
-    };
-  }, [reading, attempt]);
 
   useEffect(() => {
     if (manifest) void play();
@@ -321,7 +299,7 @@ export default function AudioPlayer({
                   if (manifest) void play();
                   else {
                     setError("");
-                    setAttempt((n) => n + 1);
+                    retry();
                   }
                 }}
               >

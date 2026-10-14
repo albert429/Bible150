@@ -15,9 +15,9 @@ import Reader from "./reader/Reader";
 import Navigation, { type View } from "./navigation/Navigation";
 import { ChunkBoundary, Loading } from "./components/Feedback";
 import type { Modal } from "./plan/Dialogs";
-import { useReading } from "./useReading";
+import { useResource } from "./lib/useResource";
 import { useAdjacentPrefetch } from "./reader/useAdjacentPrefetch";
-import type { Day } from "./plan/readings";
+import { days } from "./plan/readings";
 import { useAppearance } from "./navigation/useAppearance";
 import { appShareData } from "./navigation/share";
 const Calendar = lazy(() => import("./plan/Calendar"));
@@ -64,7 +64,7 @@ export default function App() {
   const start = member?.startDate || currentDate;
   const current = dayIndex(start, currentDate);
   const done = member?.completed.includes(selected) || false;
-  const reading = useReading<Day>(String(selected));
+  const reading = useResource(days, String(selected));
   useAdjacentPrefetch(selected, reading.data, reading.error, view === "read");
 
   function applyReader(reader: Profile | null) {
