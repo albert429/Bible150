@@ -1,20 +1,6 @@
 import { useEffect } from "react";
+import { connectionAllowsPrefetch } from "../lib/network.ts";
 import { days, type Day } from "../plan/readings.ts";
-
-type Connection = { saveData?: boolean; effectiveType?: string };
-
-export function allowsReadingPrefetch(connection?: Connection) {
-  return (
-    !connection?.saveData &&
-    !["slow-2g", "2g", "3g"].includes(connection?.effectiveType || "")
-  );
-}
-
-function connectionAllowsPrefetch() {
-  return allowsReadingPrefetch(
-    (navigator as Navigator & { connection?: Connection }).connection,
-  );
-}
 
 export function useAdjacentPrefetch(
   selected: number,

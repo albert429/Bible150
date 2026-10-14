@@ -10,7 +10,6 @@ import type { Modal } from "./plan/dialogs";
 import { useResource } from "./lib/useResource";
 import { useToday } from "./lib/useToday";
 import { useNotice } from "./lib/useNotice";
-import { useAdjacentPrefetch } from "./reader/useAdjacentPrefetch";
 import { days } from "./plan/readings";
 const Dialogs = lazy(() => import("./plan/dialogs"));
 
@@ -33,7 +32,6 @@ export default function App() {
   const current = dayIndex(start, currentDate);
   const done = member?.completed.includes(selected) || false;
   const reading = useResource(days, String(selected));
-  useAdjacentPrefetch(selected, reading.data, reading.error, view === "read");
 
   if (seenSwitches !== progress.switches) {
     const day = member ? scheduledDay(member.startDate) : 1;

@@ -13,6 +13,7 @@ import { PLAN_DAYS } from "../plan/schedule";
 import { dayLabel, readingLabel } from "../plan/labels";
 import { ChunkBoundary, Loading } from "../components/Feedback";
 import Sheet from "../components/Sheet";
+import { passageElement } from "../reader/scriptureDom";
 import MenuPanel from "./MenuPanel";
 import DayPanel from "./DayPanel";
 import AppearancePanel from "./AppearancePanel";
@@ -72,7 +73,7 @@ export default function Navigation({
   }
   function jump(index: number) {
     close(() => {
-      const target = document.getElementById(`passage-${index}`);
+      const target = passageElement(index);
       target?.focus({ preventScroll: true });
       target?.scrollIntoView({ block: "start", behavior: "instant" });
     });
