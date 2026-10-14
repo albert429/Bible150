@@ -39,9 +39,10 @@ try {
         });
         const metrics = await page.evaluate(() => ({
           overflow: document.documentElement.scrollWidth > innerWidth + 1,
-          resources: performance
-            .getEntriesByType("resource")
-            .map((r) => ({ url: r.name, bytes: r.encodedBodySize })),
+          resources: performance.getEntriesByType("resource").map((r) => ({
+            url: r.name,
+            bytes: /** @type {PerformanceResourceTiming} */ (r).encodedBodySize,
+          })),
         }));
         report.push({ label, width, theme, requests, ...metrics });
         if (label === "after" && width === 390) {

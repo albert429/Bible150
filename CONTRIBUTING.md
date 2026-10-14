@@ -2,6 +2,8 @@
 
 Use Node.js 22 and install the locked dependencies with `npm ci`. Run `npm run dev` to work locally. No secrets or backend services are needed.
 
+`npm install` enables the Git hooks in `.githooks/`: `pre-commit` runs Prettier, ESLint and the type-check, and `pre-push` runs the unit tests. `npm run validate` runs the same checks as CI (formatting, `lint`, `typecheck`, unit tests and build).
+
 Before opening a pull request:
 
 ```sh

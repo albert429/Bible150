@@ -18,7 +18,13 @@ const configured = (env) =>
   !!(env.VITE_AI_PROVIDERS?.trim() || env.VITE_OPENROUTER_MODELS?.trim());
 const [mode, env] =
   modes
-    .map((m) => [m, loadEnv(m, process.cwd(), "VITE_")])
+    .map(
+      (m) =>
+        /** @type {[string, Record<string, string>]} */ ([
+          m,
+          loadEnv(m, process.cwd(), "VITE_"),
+        ]),
+    )
     .find(([, e]) => configured(e)) ?? [];
 // Validated as the build does; this script never needs (or sends) the key.
 const models = env

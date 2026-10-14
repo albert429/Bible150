@@ -1,0 +1,14 @@
+#!/bin/sh
+# Prettier and ESLint on staged files, then a full type-check.
+cd "$(git rev-parse --show-toplevel)" || exit 1
+
+staged=$(git diff --cached --name-only --diff-filter=ACMR)
+if [ -n "$staged" ]; then
+  printf '%s\n' "$staged" | tr '\n' '\0' | xargs -0 npx --no-install prettier --check --ignore-unknown || exit 1
+  lintable=$(printf '%s\n' "$staged" | grep -E '\.(js|mjs|cjs|jsx|ts|tsx)$')
+  if [ -n "$lintable" ]; then
+    printf '%s\n' "$lintable" | tr '\n' '\0' | xargs -0 npx --no-install eslint --no-warn-ignored || exit 1
+  fi
+fi
+
+npm run -s typecheck
