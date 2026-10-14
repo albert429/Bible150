@@ -7,9 +7,8 @@ import {
   Settings,
   Share2,
 } from "lucide-react";
-import type { Reader } from "../plan/progress";
 import type { Day } from "../plan/readings";
-import { appShareData } from "./share";
+import { shareApp } from "./share";
 import { PLAN_DAYS } from "../plan/schedule";
 import { dayLabel, readingLabel } from "../plan/labels";
 import { ChunkBoundary, Loading } from "../components/Feedback";
@@ -25,17 +24,9 @@ type Panel = "menu" | "day" | "appearance" | "about";
 type Props = {
   view: View;
   navigate: (view: View) => void;
-  member: Reader | null;
   settings: () => void;
-  shareFallback: () => void;
-  dark: boolean;
-  setDark: (dark: boolean) => void;
-  font: number;
-  setFont: (font: number) => void;
+  invite: (text: string) => void;
   selected: number;
-  current: number;
-  date: string;
-  done: boolean;
   reading?: Day;
   readingError?: string;
   retryReading: () => void;
@@ -44,17 +35,9 @@ type Props = {
 export default function Navigation({
   view,
   navigate,
-  member,
   settings,
-  shareFallback,
-  dark,
-  setDark,
-  font,
-  setFont,
+  invite,
   selected,
-  current,
-  date,
-  done,
   reading,
   readingError,
   retryReading,
@@ -78,18 +61,14 @@ export default function Navigation({
   }
   async function share() {
     if (sharing) return;
-    if (navigator.share) {
-      setSharing(true);
-      try {
-        await navigator.share(appShareData());
-        return;
-      } catch (error) {
-        if (error instanceof Error && error.name === "AbortError") return;
-      } finally {
-        setSharing(false);
-      }
+    setSharing(true);
+    let fallback;
+    try {
+      fallback = await shareApp();
+    } finally {
+      setSharing(false);
     }
-    close(shareFallback);
+    if (fallback) close(() => invite(fallback));
   }
   function jump(index: number) {
     close(() => {
@@ -196,7 +175,6 @@ export default function Navigation({
           <MenuPanel
             view={view}
             navigate={navigate}
-            member={member}
             settings={settings}
             close={close}
             about={() => {
@@ -209,9 +187,6 @@ export default function Navigation({
         ) : panel === "day" ? (
           <DayPanel
             selected={selected}
-            current={current}
-            date={date}
-            done={done}
             reading={reading}
             readingError={readingError}
             retryReading={retryReading}
@@ -221,12 +196,7 @@ export default function Navigation({
             jump={jump}
           />
         ) : panel === "appearance" ? (
-          <AppearancePanel
-            font={font}
-            setFont={setFont}
-            dark={dark}
-            setDark={setDark}
-          />
+          <AppearancePanel />
         ) : (
           <ChunkBoundary>
             <Suspense fallback={<Loading label="جارٍ فتح معلومات التطبيق…" />}>

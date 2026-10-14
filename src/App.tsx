@@ -1,25 +1,22 @@
-import React, { Suspense, lazy, useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { Check, X } from "lucide-react";
 import { useProgress } from "./plan/useProgress";
-import { downloadBackup, readBackupFile } from "./plan/backup";
-import { dayIndex, dateFor, pageFor, scheduledDay } from "./plan/schedule";
+import { dayIndex, pageFor, scheduledDay } from "./plan/schedule";
 import Reader from "./reader/Reader";
 import Navigation, { type View } from "./navigation/Navigation";
 import PlanView from "./plan/PlanView";
 import { ChunkBoundary, Loading } from "./components/Feedback";
-import type { Modal } from "./plan/Dialogs";
+import type { Modal } from "./plan/dialogs";
 import { useResource } from "./lib/useResource";
 import { useToday } from "./lib/useToday";
 import { useNotice } from "./lib/useNotice";
 import { useAdjacentPrefetch } from "./reader/useAdjacentPrefetch";
 import { days } from "./plan/readings";
-import { useAppearance } from "./navigation/useAppearance";
-import { appShareData } from "./navigation/share";
-const Dialogs = lazy(() => import("./plan/Dialogs"));
+const Dialogs = lazy(() => import("./plan/dialogs"));
 
 export default function App() {
   const progress = useProgress();
-  const { profiles, member, error } = progress;
+  const { member, error } = progress;
   const [selected, setSelected] = useState(() =>
     member ? scheduledDay(member.startDate) : 1,
   );
@@ -27,11 +24,8 @@ export default function App() {
   const [seenSwitches, setSeenSwitches] = useState(progress.switches);
   const [view, setView] = useState<View>("read");
   const [modal, setModal] = useState<Modal | null>(null);
-  const { font, setFont, dark, setDark } = useAppearance();
   const [notice, setNotice] = useNotice();
   const currentDate = useToday();
-  const [linkText, setLinkText] = useState("");
-  const importInput = useRef<HTMLInputElement>(null);
   const dialog = useRef<HTMLDialogElement>(null);
   const dialogTrigger = useRef<HTMLElement | null>(null);
   const main = useRef<HTMLElement>(null);
@@ -66,33 +60,13 @@ export default function App() {
   }
   function chooseReader(id: string | null) {
     if (!progress.select(id)) return;
-    if (id === null) setModal("join");
+    if (id === null) setModal({ kind: "join" });
     else closeModal();
     setView("read");
   }
-  function backup() {
-    if (!member) return;
-    downloadBackup(member);
-    setNotice("تم تجهيز النسخة الاحتياطية للتنزيل.");
-  }
-  async function restore(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    try {
-      if (progress.restore(await readBackupFile(file))) {
-        closeModal();
-        navigate("read");
-        setNotice("تمت الاستعادة كقارئ منفصل. لم تُحذف أي قراءة سابقة.");
-      }
-    } catch (err) {
-      progress.fail(err);
-    } finally {
-      event.target.value = "";
-    }
-  }
   function complete() {
     if (!member) {
-      openModal("join");
+      openModal({ kind: "join" });
       return;
     }
     if (progress.complete(member.id, selected, !done))
@@ -101,33 +75,6 @@ export default function App() {
           ? "تم التراجع عن إتمام القراءة"
           : "تم حفظ قراءتك. خطوة جديدة في الرحلة!",
       );
-  }
-  function join(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const data = new FormData(event.currentTarget);
-    if (
-      progress.create(
-        String(data.get("name") || ""),
-        String(data.get("start") || ""),
-      )
-    ) {
-      closeModal();
-      navigate("read");
-      setNotice("أهلًا بك! بدأت رحلتك، وحُفظت على هذا الجهاز.");
-    }
-  }
-  function showLink() {
-    const data = appShareData();
-    setLinkText(`${data.text}\n${data.url}`);
-    openModal("invite");
-  }
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(linkText);
-      setNotice("تم النسخ");
-    } catch {
-      setNotice("يمكنك تحديد النص ونسخه من الحقل.");
-    }
   }
   useEffect(() => {
     if (modal) {
@@ -145,17 +92,9 @@ export default function App() {
       <Navigation
         view={view}
         navigate={navigate}
-        member={member}
-        settings={() => openModal(member ? "settings" : "join")}
-        shareFallback={showLink}
-        dark={dark}
-        setDark={setDark}
-        font={font}
-        setFont={setFont}
+        settings={() => openModal({ kind: member ? "settings" : "join" })}
+        invite={(text) => openModal({ kind: "invite", text })}
         selected={selected}
-        current={current}
-        date={dateFor(start, selected)}
-        done={done}
         reading={reading.data}
         readingError={reading.error}
         retryReading={reading.retry}
@@ -187,7 +126,6 @@ export default function App() {
             error={reading.error}
             retry={reading.retry}
             done={done}
-            font={font}
             complete={complete}
           />
         ) : (
@@ -199,18 +137,10 @@ export default function App() {
             page={page}
             setPage={setPage}
             go={go}
-            join={() => openModal("join")}
+            join={() => openModal({ kind: "join" })}
           />
         )}
       </main>
-      <input
-        ref={importInput}
-        type="file"
-        accept=".json,application/json"
-        hidden
-        onChange={restore}
-        aria-label="ملف النسخة الاحتياطية"
-      />
       <dialog
         className="app-dialog"
         aria-label="إدارة الرحلة"
@@ -229,21 +159,14 @@ export default function App() {
             <X size={22} />
           </button>
           {modal && (
-            <ChunkBoundary key={modal}>
+            <ChunkBoundary key={modal.kind}>
               <Suspense fallback={<Loading label="جارٍ فتح النافذة…" />}>
                 <Dialogs
                   modal={modal}
-                  member={member}
-                  profiles={profiles}
-                  currentDate={currentDate}
-                  start={start}
-                  error={error}
-                  linkText={linkText}
-                  join={join}
+                  close={closeModal}
+                  navigate={navigate}
+                  setNotice={setNotice}
                   chooseReader={chooseReader}
-                  backup={backup}
-                  restore={() => importInput.current?.click()}
-                  copy={copy}
                 />
               </Suspense>
             </ChunkBoundary>

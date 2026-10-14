@@ -7,7 +7,15 @@ import {
 import type { Day } from "../plan/readings";
 import type { View } from "./Navigation";
 import { dateLabel } from "../lib/format";
-import { PLAN_DAYS, clampDay, dayStatus } from "../plan/schedule";
+import {
+  PLAN_DAYS,
+  clampDay,
+  dateFor,
+  dayIndex,
+  dayStatus,
+} from "../plan/schedule";
+import { useProgress } from "../plan/useProgress";
+import { useToday } from "../lib/useToday";
 import { Loading, LoadError } from "../components/Feedback";
 import PassageReference from "../components/PassageReference";
 
@@ -20,9 +28,6 @@ const STATUS_LABELS = {
 
 type Props = {
   selected: number;
-  current: number;
-  date: string;
-  done: boolean;
   reading?: Day;
   readingError?: string;
   retryReading: () => void;
@@ -33,9 +38,6 @@ type Props = {
 };
 export default function DayPanel({
   selected,
-  current,
-  date,
-  done,
   reading,
   readingError,
   retryReading,
@@ -44,12 +46,16 @@ export default function DayPanel({
   close,
   jump,
 }: Props) {
-  const currentDay = clampDay(current);
+  const { member } = useProgress();
+  const today = useToday();
+  const start = member?.startDate || today;
+  const done = member?.completed.includes(selected) || false;
+  const currentDay = clampDay(dayIndex(start, today));
   const status = dayStatus(selected, currentDay, done);
   return (
     <>
       <div className="day-sheet-meta">
-        <p>{dateLabel(date)}</p>
+        <p>{dateLabel(dateFor(start, selected))}</p>
         <span className={`tag ${done ? "complete" : ""}`}>
           {STATUS_LABELS[status]}
         </span>

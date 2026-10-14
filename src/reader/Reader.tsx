@@ -4,7 +4,6 @@ import {
   useEffect,
   useRef,
   useState,
-  type CSSProperties,
   type MouseEvent,
   type PointerEvent,
   type ReactNode,
@@ -75,7 +74,6 @@ type Props = {
   error?: string;
   retry: () => void;
   done: boolean;
-  font: number;
   complete: () => void;
 };
 export default function Reader({
@@ -84,7 +82,6 @@ export default function Reader({
   error,
   retry,
   done,
-  font,
   complete,
 }: Props) {
   const [target, setTarget] = useState<StudyTarget | null>(null);
@@ -154,10 +151,7 @@ export default function Reader({
   }
 
   return (
-    <div
-      className="reading-layout"
-      style={{ "--verse-size": `${font}px` } as CSSProperties}
-    >
+    <div className="reading-layout">
       <article
         className="reader"
         aria-label={readingLabel(selected)}
