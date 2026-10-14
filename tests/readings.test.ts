@@ -5,7 +5,7 @@ import {
   type Day,
   type PlanEntry,
 } from "../src/plan/readings.ts";
-import { scheduledDay, dayIndex } from "../src/lib/format.ts";
+import { scheduledDay, dayIndex } from "../src/plan/schedule.ts";
 
 const day = (n: number): Day => ({
   day: n,

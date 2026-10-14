@@ -1,18 +1,14 @@
-import { ar } from "../lib/format";
+import { chapterRange, rangeAriaLabel } from "../bible/reference";
 import type { Passage } from "../plan/readings";
 
 export default function PassageReference({ passage }: { passage: Passage }) {
-  const range =
-    passage.start === passage.end
-      ? ar(passage.start)
-      : `${ar(passage.start)}–${ar(passage.end)}`;
   return (
     <bdi
       className="passage-reference"
       dir="ltr"
-      aria-label={`الإصحاح ${ar(passage.chapter)}، ${passage.start === passage.end ? "الآية" : "الآيات"} ${range}`}
+      aria-label={rangeAriaLabel(passage.chapter, passage)}
     >
-      {ar(passage.chapter)}: {range}
+      {chapterRange(passage.chapter, passage)}
     </bdi>
   );
 }

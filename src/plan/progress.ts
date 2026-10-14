@@ -1,3 +1,5 @@
+import { PLAN_DAYS, isPlanDay } from "./schedule.ts";
+
 export type Reader = {
   id: string;
   name: string;
@@ -26,8 +28,8 @@ function validateReader(value: unknown): Omit<Reader, "id"> {
     r.name.trim().length > 60 ||
     !validDate(r.startDate) ||
     !Array.isArray(r.completed) ||
-    r.completed.length > 150 ||
-    r.completed.some((n) => !Number.isInteger(n) || n < 1 || n > 150)
+    r.completed.length > PLAN_DAYS ||
+    r.completed.some((n) => !isPlanDay(n))
   )
     throw Error("بيانات القراءة غير صالحة. اختر نسخة احتياطية صحيحة.");
   return {
@@ -111,8 +113,7 @@ export function setCompletion(
   day: number,
   completed: boolean,
 ): Reader {
-  if (!Number.isInteger(day) || day < 1 || day > 150)
-    throw Error("اليوم غير صالح.");
+  if (!isPlanDay(day)) throw Error("اليوم غير صالح.");
   const s = loadProgress(storage);
   const reader = s.profiles.find((p) => p.id === id);
   if (!reader) throw Error("اختر القارئ أولًا.");

@@ -7,8 +7,16 @@ import {
 import type { Day } from "../plan/readings";
 import type { View } from "./Navigation";
 import { dateLabel } from "../lib/format";
+import { PLAN_DAYS, clampDay, dayStatus } from "../plan/schedule";
 import { Loading, LoadError } from "../components/Feedback";
 import PassageReference from "../components/PassageReference";
+
+const STATUS_LABELS = {
+  done: "مكتمل",
+  today: "قراءة اليوم",
+  ahead: "قراءة مسبقة",
+  behind: "للمتابعة",
+};
 
 type Props = {
   selected: number;
@@ -36,19 +44,14 @@ export default function DayPanel({
   close,
   jump,
 }: Props) {
-  const currentDay = Math.max(1, Math.min(150, current));
+  const currentDay = clampDay(current);
+  const status = dayStatus(selected, currentDay, done);
   return (
     <>
       <div className="day-sheet-meta">
         <p>{dateLabel(date)}</p>
         <span className={`tag ${done ? "complete" : ""}`}>
-          {done
-            ? "مكتمل"
-            : selected === currentDay
-              ? "قراءة اليوم"
-              : selected > currentDay
-                ? "قراءة مسبقة"
-                : "للمتابعة"}
+          {STATUS_LABELS[status]}
         </span>
       </div>
       {readingError ? (
@@ -86,7 +89,7 @@ export default function DayPanel({
         </button>
         <button
           className="quiet-button"
-          disabled={selected === 150}
+          disabled={selected === PLAN_DAYS}
           onClick={() => close(() => go(selected + 1))}
         >
           اليوم التالي

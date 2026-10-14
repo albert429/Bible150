@@ -10,7 +10,8 @@ import {
   PROGRESS_KEY,
   type Reader as Profile,
 } from "./plan/progress";
-import { today, dayIndex, dateFor, scheduledDay } from "./lib/format";
+import { today } from "./lib/format";
+import { dayIndex, dateFor, pageFor, scheduledDay } from "./plan/schedule";
 import Reader from "./reader/Reader";
 import Navigation, { type View } from "./navigation/Navigation";
 import { ChunkBoundary, Loading } from "./components/Feedback";
@@ -48,7 +49,7 @@ export default function App() {
   const [profiles, setProfiles] = useState(initial.profiles);
   const [member, setMember] = useState<Profile | null>(initial.member);
   const [selected, setSelected] = useState(initial.selected);
-  const [page, setPage] = useState(Math.floor((initial.selected - 1) / 30));
+  const [page, setPage] = useState(pageFor(initial.selected));
   const [view, setView] = useState<View>("read");
   const [modal, setModal] = useState<Modal | null>(null);
   const { font, setFont, dark, setDark } = useAppearance();
@@ -73,7 +74,7 @@ export default function App() {
     setProfiles(nextProfiles);
     const day = reader ? scheduledDay(reader.startDate) : 1;
     setSelected(day);
-    setPage(Math.floor((day - 1) / 30));
+    setPage(pageFor(day));
   }
   function navigate(next: View) {
     setView(next);
@@ -199,7 +200,7 @@ export default function App() {
         if (next?.id !== member?.id) {
           const day = next ? scheduledDay(next.startDate) : 1;
           setSelected(day);
-          setPage(Math.floor((day - 1) / 30));
+          setPage(pageFor(day));
         }
         setMember(next);
         setProfiles(state.profiles);

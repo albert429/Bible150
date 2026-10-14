@@ -1,4 +1,5 @@
 import { createJsonClient } from "../lib/jsonClient.ts";
+import { PLAN_DAYS, isPlanDay } from "./schedule.ts";
 
 export type Verse = { number: number; text: string; heading?: string };
 export type PassageRef = {
@@ -27,7 +28,9 @@ export function createReadingsClients(
     {
       url: () => "/readings/plan.json",
       validate: (data): data is PlanEntry[] =>
-        Array.isArray(data) && data.length === 150 && data.every(validEntry),
+        Array.isArray(data) &&
+        data.length === PLAN_DAYS &&
+        data.every(validEntry),
       message: () => "تعذر تحميل خطة القراءة. تحقق من الاتصال وحاول مرة أخرى.",
     },
     fetcher,
@@ -47,8 +50,7 @@ export function createReadingsClients(
     ...dayClient,
     // Background failures are intentionally silent; load retains normal retry behavior.
     prefetchDay: (day: number): Promise<void> => {
-      if (!Number.isInteger(day) || day < 1 || day > 150)
-        return Promise.resolve();
+      if (!isPlanDay(day)) return Promise.resolve();
       return dayClient.load(String(day)).then(
         () => {},
         () => {},

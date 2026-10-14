@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { ar } from "../lib/format";
+import { chapterVerse, isolate } from "../bible/reference";
 import type { Day } from "../plan/readings";
 import { ChunkBoundary, Loading } from "../components/Feedback";
 import Sheet from "../components/Sheet";
@@ -28,7 +28,7 @@ export default function VerseStudy({
     <Sheet
       open={open}
       // Isolate chapter:verse so it keeps its order inside the Arabic title.
-      title={`${passage.book} \u2066${ar(passage.chapter)}: ${ar(verse.number)}\u2069`}
+      title={`${passage.book} ${isolate(chapterVerse(passage.chapter, verse.number))}`}
       onClose={onClose}
       onAfterClose={onAfterClose}
       returnFocusTo={target.el.querySelector<HTMLElement>(".verse-number")}
@@ -39,7 +39,7 @@ export default function VerseStudy({
           <StudyPanel
             day={reading.day}
             passageIndex={target.passage}
-            reading={reading}
+            passage={passage}
             verse={verse}
           />
         </Suspense>

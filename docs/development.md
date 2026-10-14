@@ -7,7 +7,8 @@
 | `src/main.tsx`            | React bootstrap and global styles                                                                          |
 | `src/App.tsx`             | Reader state, navigation, progress actions, and application dialogs                                        |
 | `src/lib/`                | Infrastructure: `jsonClient` (cache, deduplication, timeout, validation), `useResource`, `format`          |
-| `src/plan/`               | 150-day plan: `readings`, `progress` (profiles, backups, restore), `Calendar`, `Dialogs`                   |
+| `src/plan/`               | 150-day plan: `readings`, `schedule` (days, pages, status), `labels`, `progress`, `Calendar`, `Dialogs`    |
+| `src/bible/`              | Scripture identity shared with build scripts: `verse` (verse IDs), `reference` (range text, bidi isolates) |
 | `src/reader/`             | `Reader` (continuous Scripture, verse tap, completion) and `useAdjacentPrefetch`                           |
 | `src/navigation/`         | Toolbar, menu, day and appearance panels, `About`, `useAppearance`, `share`                                |
 | `src/components/`         | Shared primitives: `Sheet`, `Feedback`, `PassageReference`, `ReactIcon`                                    |
@@ -21,6 +22,7 @@
 | `data/study/`             | Imported study data (CC BY / CC BY-SA; see `data/study/LICENSE.md`)                                        |
 | `scripts/import-study.py` | Builds `data/study/` from downloaded sources, with coverage gates                                          |
 | `scripts/build-data.js`   | Writes `public/readings`, `public/study` and `public/audio/*.json` (the builders take an output directory) |
+| `scripts/lib/books.js`    | Arabic book name to USFM code, read from `data/books.json`                                                 |
 | `scripts/build-study.js`  | Splits study data into `public/study/{day}[.tr\|.lex].json`, with budgets                                  |
 | `scripts/sse-stub.mjs`    | Local stand-in for the AI streaming API, used only by browser tests                                        |
 | `scripts/`                | Static build, imports, asset regeneration, visual and performance checks                                   |

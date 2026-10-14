@@ -1,9 +1,24 @@
 import { Check, ChevronLeft, ChevronRight } from "lucide-react";
-import { ar, dateFor, dateLabel } from "../lib/format";
+import { ar, dateLabel } from "../lib/format";
+import { dayLabel } from "./labels";
+import {
+  PAGE_COUNT,
+  PAGE_SIZE,
+  PLAN_DAYS,
+  dateFor,
+  dayStatus,
+} from "./schedule";
 import type { Reader } from "./progress";
 import { planIndex } from "./readings";
 import { useResource } from "../lib/useResource";
 import { Loading, LoadError } from "../components/Feedback";
+
+const STATUS_LABELS = {
+  done: "مكتمل",
+  today: "اليوم",
+  behind: "للمتابعة",
+  ahead: "قادم",
+};
 
 export default function Calendar({
   member,
@@ -44,9 +59,9 @@ export default function Calendar({
         aria-label="تقدم القراءة"
         aria-valuenow={count}
         aria-valuemin={0}
-        aria-valuemax={150}
+        aria-valuemax={PLAN_DAYS}
       >
-        <i style={{ width: `${(count / 150) * 100}%` }} />
+        <i style={{ width: `${(count / PLAN_DAYS) * 100}%` }} />
       </div>
       <div className="calendar-header">
         <h2>أيام الرحلة</h2>
@@ -60,12 +75,12 @@ export default function Calendar({
             <ChevronRight size={20} />
           </button>
           <span aria-live="polite">
-            {ar(page * 30 + 1)} – {ar((page + 1) * 30)}
+            {ar(page * PAGE_SIZE + 1)} – {ar((page + 1) * PAGE_SIZE)}
           </span>
           <button
             className="icon-button"
             aria-label="الأيام التالية"
-            disabled={page === 4}
+            disabled={page === PAGE_COUNT - 1}
             onClick={() => setPage(page + 1)}
           >
             <ChevronLeft size={20} />
@@ -78,24 +93,20 @@ export default function Calendar({
         <Loading label="جارٍ تحميل خطة القراءة…" />
       ) : (
         <div className="calendar-grid">
-          {plan.slice(page * 30, page * 30 + 30).map((day) => {
+          {plan.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((day) => {
             const complete = member?.completed.includes(day.day);
-            const status = complete
-              ? "مكتمل"
-              : day.day === current
-                ? "اليوم"
-                : day.day < current
-                  ? "للمتابعة"
-                  : "قادم";
+            // Past and today style the card whether or not the day is complete.
+            const position = dayStatus(day.day, current, false);
+            const status = STATUS_LABELS[complete ? "done" : position];
             return (
               <button
                 key={day.day}
                 onClick={() => go(day.day)}
-                aria-current={day.day === current ? "date" : undefined}
-                className={`calendar-day ${complete ? "completed" : ""} ${day.day === current ? "today" : day.day < current ? "missed" : ""}`}
+                aria-current={position === "today" ? "date" : undefined}
+                className={`calendar-day ${complete ? "completed" : ""} ${position === "today" ? "today" : position === "behind" ? "missed" : ""}`}
               >
                 <span className="calendar-day-top">
-                  اليوم {ar(day.day)}
+                  {dayLabel(day.day)}
                   {complete && <Check size={18} />}
                 </span>
                 <strong>

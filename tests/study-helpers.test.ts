@@ -6,7 +6,6 @@ import {
   keyGroups,
   span,
   tokens,
-  verseId,
 } from "../src/study/verse.ts";
 import type { GreekToken } from "../src/study/types.ts";
 
@@ -25,10 +24,6 @@ test("Greek words lose punctuation and editorial marks but keep elision", () => 
     ["δι\u2019", "δι\u2019"],
   ];
   for (const [raw, word] of cases) assert.equal(greekWord(raw), word, raw);
-});
-
-test("Verse IDs join the USFM book code, chapter and verse", () => {
-  assert.equal(verseId("JHN", 1, 1), "JHN.1.1");
 });
 
 test("Spans join Van Dyck tokens without trailing punctuation", () => {

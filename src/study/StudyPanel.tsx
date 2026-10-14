@@ -1,15 +1,14 @@
 import "./study.css";
 import { lazy, Suspense } from "react";
 import { ChunkBoundary, Loading, LoadError } from "../components/Feedback";
-import type { Day, Verse } from "../plan/readings";
-import { usfmFor } from "./books";
+import type { Passage, Verse } from "../plan/readings";
 import { studyCore } from "./client";
 import GreekWords from "./GreekWords";
 import AiSpark from "./AiSpark";
 import OtherTranslation from "./OtherTranslation";
 import Section from "./Section";
 import { useResource } from "../lib/useResource";
-import { verseId } from "./verse";
+import { verseId } from "../bible/verse";
 
 // Optional AI explanations: without the build flag this branch, the lazy
 // import and every AI module are left out of the bundle.
@@ -18,23 +17,19 @@ const AiPanel = __AI_ENABLED__ ? lazy(() => import("./AiPanel")) : null;
 export default function StudyPanel({
   day,
   passageIndex,
-  reading,
+  passage,
   verse,
 }: {
   day: number;
   passageIndex: number;
-  reading: Day;
+  passage: Passage;
   verse: Verse;
 }) {
   // The core file gives each section's contents and counts; sections start
   // collapsed; the translations section loads its own file when first opened.
   const core = useResource(studyCore, String(day));
-  const passage = reading.passages[passageIndex];
-  const id = verseId(
-    usfmFor(passage.book) ?? "",
-    passage.chapter,
-    verse.number,
-  );
+  const usfm = core.data?.p[passageIndex] ?? "";
+  const id = verseId(usfm, passage.chapter, verse.number);
 
   const entry = core.data?.verses[id];
   return (
