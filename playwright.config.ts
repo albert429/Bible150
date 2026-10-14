@@ -1,5 +1,11 @@
 import { defineConfig, devices } from "@playwright/test";
-import { AI_KEY, AI_URL, STUB_URL } from "./tests/browser/ai-stub";
+import {
+  AI_KEY,
+  AI_URL,
+  APP_URL,
+  PW_PORT,
+  STUB_URL,
+} from "./tests/browser/ai-stub";
 
 const chromium = {
   ...devices["Pixel 5"],
@@ -19,7 +25,7 @@ export default defineConfig({
   timeout: 30000,
   reporter: "list",
   use: {
-    baseURL: "http://127.0.0.1:4173",
+    baseURL: APP_URL,
     reducedMotion: "reduce",
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
@@ -43,20 +49,20 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command: "npm start -- --host 127.0.0.1",
-      url: "http://127.0.0.1:4173",
+      command: `npm start -- --host 127.0.0.1 --port ${PW_PORT} --strictPort`,
+      url: APP_URL,
       reuseExistingServer: !process.env.CI,
     },
     {
       command: "node scripts/sse-stub.mjs",
+      env: { SSE_STUB_PORT: String(PW_PORT + 2) },
       url: `${STUB_URL}/__stub/health`,
       reuseExistingServer: !process.env.CI,
     },
     {
       // `vite build` alone: public/readings and public/study come from the
       // regular build (npm run build), which runs first in CI.
-      command:
-        "npx vite build --outDir dist-ai --emptyOutDir --logLevel warn && npx vite preview --outDir dist-ai --host 127.0.0.1 --port 4174 --strictPort",
+      command: `npx vite build --outDir dist-ai --emptyOutDir --logLevel warn && npx vite preview --outDir dist-ai --host 127.0.0.1 --port ${PW_PORT + 1} --strictPort`,
       url: AI_URL,
       timeout: 180000,
       reuseExistingServer: !process.env.CI,
