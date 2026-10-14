@@ -1,0 +1,109 @@
+{
+  "version": 1,
+  "algorithm": "mms-fa-v2",
+  "book": "1CO",
+  "chapter": 2,
+  "file": "B07___02_1CorinthiansARZVDVN1DA.mp3",
+  "audioHash": "76aa72875f5b15c877dfe1c5371a163720990ba3cdd031a60bca1520619055c6",
+  "textHash": "8e948bc49c86ec8752bde174cea3221a6d16f4ec9a42d9fd7116a425695612f6",
+  "duration": 160.47025,
+  "method": "MMS_FA/uroman, machine aligned; review before publication",
+  "verses": [
+    {
+      "verse": 1,
+      "start": 3.34,
+      "end": 12.3,
+      "score": 0.6042
+    },
+    {
+      "verse": 2,
+      "start": 13.38,
+      "end": 20.32,
+      "score": 0.6391
+    },
+    {
+      "verse": 3,
+      "start": 21.5,
+      "end": 25.82,
+      "score": 0.657
+    },
+    {
+      "verse": 4,
+      "start": 26.7,
+      "end": 34.82,
+      "score": 0.5889
+    },
+    {
+      "verse": 5,
+      "start": 35.64,
+      "end": 40.62,
+      "score": 0.6089
+    },
+    {
+      "verse": 6,
+      "start": 41.56,
+      "end": 52.74,
+      "score": 0.6295
+    },
+    {
+      "verse": 7,
+      "start": 53.64,
+      "end": 63.66,
+      "score": 0.6179
+    },
+    {
+      "verse": 8,
+      "start": 64.78,
+      "end": 72.32,
+      "score": 0.6053
+    },
+    {
+      "verse": 9,
+      "start": 73.04,
+      "end": 85.86,
+      "score": 0.6245
+    },
+    {
+      "verse": 10,
+      "start": 86.58,
+      "end": 94.98,
+      "score": 0.6084
+    },
+    {
+      "verse": 11,
+      "start": 94.98,
+      "end": 108.32,
+      "score": 0.652
+    },
+    {
+      "verse": 12,
+      "start": 108.32,
+      "end": 117.22,
+      "score": 0.6688
+    },
+    {
+      "verse": 13,
+      "start": 117.22,
+      "end": 129.62,
+      "score": 0.6043
+    },
+    {
+      "verse": 14,
+      "start": 129.64,
+      "end": 142.88,
+      "score": 0.5926
+    },
+    {
+      "verse": 15,
+      "start": 143.88,
+      "end": 150.6,
+      "score": 0.6102
+    },
+    {
+      "verse": 16,
+      "start": 151.54,
+      "end": 160.42,
+      "score": 0.5653
+    }
+  ]
+}

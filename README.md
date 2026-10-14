@@ -6,7 +6,7 @@ A calm Arabic New Testament reader built for the youth of the **Brethren Church 
 
 [Open the app](https://sfk-bible-reading.vercel.app/) · [Development guide](docs/development.md) · [Data sources](data/SOURCES.md)
 
-[![Checks](https://github.com/albert429/Bible-NTin150Days/actions/workflows/checks.yml/badge.svg)](https://github.com/albert429/Bible-NTin150Days/actions/workflows/checks.yml)
+[![Checks](https://github.com/albert429/Bible150/actions/workflows/checks.yml/badge.svg)](https://github.com/albert429/Bible150/actions/workflows/checks.yml)
 
 ## Reading comes first
 
@@ -16,7 +16,7 @@ A calm Arabic New Testament reader built for the youth of the **Brethren Church 
 - A personal start date, a 150-day calendar, completion with undo, and multiple readers on one device.
 - Local progress, JSON backup/restore, and optional sharing initiated by the reader.
 - Static frontend hosting, daily reading caches, nearby readings prepared in the background, and secondary screens loaded on demand.
-- Optional recorded reading with verse highlighting, follow mode, and a small audio player; recordings load only when requested.
+- Optional recorded reading with verse highlighting, and a small audio player; recordings load only when requested.
 
 <p align="center">
   <img src="docs/assets/mobile-reader.png" width="300" alt="Actual mobile app: a slim Arabic day toolbar followed immediately by Scripture" />

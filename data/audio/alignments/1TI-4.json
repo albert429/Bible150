@@ -1,0 +1,109 @@
+{
+  "version": 1,
+  "algorithm": "mms-fa-v2",
+  "book": "1TI",
+  "chapter": 4,
+  "file": "B15___04_1Timothy____ARZVDVN1DA.mp3",
+  "audioHash": "58712dc881e428050b9536a1a246d3fb8229a9c51ffae80ae22c38205fee048b",
+  "textHash": "35693bb3b9b760e17699314a191be56afdd4023e800f9b77d90b4e662571992e",
+  "duration": 159.8171875,
+  "method": "MMS_FA/uroman, machine aligned; review before publication",
+  "verses": [
+    {
+      "verse": 1,
+      "start": 1.28,
+      "end": 18.32,
+      "score": 0.6019
+    },
+    {
+      "verse": 2,
+      "start": 18.32,
+      "end": 22.94,
+      "score": 0.6059
+    },
+    {
+      "verse": 3,
+      "start": 23.72,
+      "end": 36.4,
+      "score": 0.5998
+    },
+    {
+      "verse": 4,
+      "start": 36.4,
+      "end": 44.68,
+      "score": 0.6282
+    },
+    {
+      "verse": 5,
+      "start": 44.68,
+      "end": 47.98,
+      "score": 0.5501
+    },
+    {
+      "verse": 6,
+      "start": 49.02,
+      "end": 62.72,
+      "score": 0.6264
+    },
+    {
+      "verse": 7,
+      "start": 62.8,
+      "end": 69.94,
+      "score": 0.618
+    },
+    {
+      "verse": 8,
+      "start": 70.94,
+      "end": 85.1,
+      "score": 0.6164
+    },
+    {
+      "verse": 9,
+      "start": 85.1,
+      "end": 90.12,
+      "score": 0.59
+    },
+    {
+      "verse": 10,
+      "start": 91.18,
+      "end": 104.18,
+      "score": 0.5937
+    },
+    {
+      "verse": 11,
+      "start": 105.08,
+      "end": 107.36,
+      "score": 0.6037
+    },
+    {
+      "verse": 12,
+      "start": 108.92,
+      "end": 121.74,
+      "score": 0.6462
+    },
+    {
+      "verse": 13,
+      "start": 121.88,
+      "end": 126.8,
+      "score": 0.5921
+    },
+    {
+      "verse": 14,
+      "start": 127.86,
+      "end": 136.0,
+      "score": 0.5777
+    },
+    {
+      "verse": 15,
+      "start": 137.16,
+      "end": 144.48,
+      "score": 0.6286
+    },
+    {
+      "verse": 16,
+      "start": 145.48,
+      "end": 157.48,
+      "score": 0.6164
+    }
+  ]
+}

@@ -90,7 +90,7 @@ def assemble(day, books, chapter_hashes, source, aligned, output):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("source", type=Path)
-    parser.add_argument("--aligned", type=Path, default=ROOT / "artifacts/audio-work/aligned")
+    parser.add_argument("--aligned", type=Path, default=ROOT / "data/audio/alignments")
     parser.add_argument("--output", type=Path, default=ROOT / "public/audio")
     parser.add_argument("--days", help="Comma-separated days for a pilot; default all 150")
     args = parser.parse_args()

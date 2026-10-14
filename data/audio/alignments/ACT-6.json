@@ -1,0 +1,103 @@
+{
+  "version": 1,
+  "algorithm": "mms-fa-v2",
+  "book": "ACT",
+  "chapter": 6,
+  "file": "B05___06_Acts________ARZVDVN1DA.mp3",
+  "audioHash": "c08a29c9e9d48596a3891882db20621f8df717c2bb3404965a1fcfcd81039e9f",
+  "textHash": "4f5b6d9bbdd9df7f26afca13b3bd4fed8880ce6e6dfea055f3e25850713e47ea",
+  "duration": 148.1926875,
+  "method": "MMS_FA/uroman, machine aligned; review before publication",
+  "verses": [
+    {
+      "verse": 1,
+      "start": 3.52,
+      "end": 15.22,
+      "score": 0.598
+    },
+    {
+      "verse": 2,
+      "start": 15.78,
+      "end": 22.96,
+      "score": 0.6059
+    },
+    {
+      "verse": 3,
+      "start": 23.66,
+      "end": 33.16,
+      "score": 0.6006
+    },
+    {
+      "verse": 4,
+      "start": 33.82,
+      "end": 37.82,
+      "score": 0.6061
+    },
+    {
+      "verse": 5,
+      "start": 38.6,
+      "end": 56.26,
+      "score": 0.6039
+    },
+    {
+      "verse": 6,
+      "start": 57.2,
+      "end": 62.52,
+      "score": 0.5768
+    },
+    {
+      "verse": 7,
+      "start": 63.42,
+      "end": 72.78,
+      "score": 0.6091
+    },
+    {
+      "verse": 8,
+      "start": 75.0,
+      "end": 84.14,
+      "score": 0.607
+    },
+    {
+      "verse": 9,
+      "start": 84.14,
+      "end": 95.86,
+      "score": 0.5797
+    },
+    {
+      "verse": 10,
+      "start": 96.72,
+      "end": 102.08,
+      "score": 0.5948
+    },
+    {
+      "verse": 11,
+      "start": 102.08,
+      "end": 111.46,
+      "score": 0.5937
+    },
+    {
+      "verse": 12,
+      "start": 111.48,
+      "end": 118.12,
+      "score": 0.6099
+    },
+    {
+      "verse": 13,
+      "start": 118.12,
+      "end": 128.64,
+      "score": 0.6131
+    },
+    {
+      "verse": 14,
+      "start": 128.64,
+      "end": 138.02,
+      "score": 0.5932
+    },
+    {
+      "verse": 15,
+      "start": 138.68,
+      "end": 145.96,
+      "score": 0.589
+    }
+  ]
+}

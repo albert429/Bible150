@@ -7,11 +7,11 @@
   "license": "UNLICENSED",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/albert429/Bible-NTin150Days.git"
+    "url": "git+https://github.com/albert429/Bible150.git"
   },
   "homepage": "https://sfk-bible-reading.vercel.app/",
   "bugs": {
-    "url": "https://github.com/albert429/Bible-NTin150Days/issues"
+    "url": "https://github.com/albert429/Bible150/issues"
   },
   "type": "module",
   "scripts": {

@@ -1,0 +1,97 @@
+{
+  "version": 1,
+  "algorithm": "mms-fa-v2",
+  "book": "ROM",
+  "chapter": 13,
+  "file": "B06___13_Romans______ARZVDVN1DA.mp3",
+  "audioHash": "e563fb07e16b30c5a3fc84292bae253fbecb74ad9557eab68c6033f342314076",
+  "textHash": "0ed9d76fec6271d6a919d7ffe09400ca8101fb415412f6882642c2a31a5e2750",
+  "duration": 173.5314375,
+  "method": "MMS_FA/uroman, machine aligned; review before publication",
+  "verses": [
+    {
+      "verse": 1,
+      "start": 4.38,
+      "end": 16.0,
+      "score": 0.6226
+    },
+    {
+      "verse": 2,
+      "start": 16.64,
+      "end": 25.5,
+      "score": 0.6155
+    },
+    {
+      "verse": 3,
+      "start": 26.08,
+      "end": 38.68,
+      "score": 0.6105
+    },
+    {
+      "verse": 4,
+      "start": 39.68,
+      "end": 55.6,
+      "score": 0.6297
+    },
+    {
+      "verse": 5,
+      "start": 55.82,
+      "end": 64.16,
+      "score": 0.5856
+    },
+    {
+      "verse": 6,
+      "start": 64.84,
+      "end": 73.82,
+      "score": 0.6188
+    },
+    {
+      "verse": 7,
+      "start": 74.64,
+      "end": 89.5,
+      "score": 0.6145
+    },
+    {
+      "verse": 8,
+      "start": 89.94,
+      "end": 101.28,
+      "score": 0.6144
+    },
+    {
+      "verse": 9,
+      "start": 101.9,
+      "end": 123.24,
+      "score": 0.6006
+    },
+    {
+      "verse": 10,
+      "start": 123.96,
+      "end": 131.96,
+      "score": 0.6145
+    },
+    {
+      "verse": 11,
+      "start": 131.96,
+      "end": 143.1,
+      "score": 0.6073
+    },
+    {
+      "verse": 12,
+      "start": 144.0,
+      "end": 152.0,
+      "score": 0.6244
+    },
+    {
+      "verse": 13,
+      "start": 152.86,
+      "end": 164.38,
+      "score": 0.6173
+    },
+    {
+      "verse": 14,
+      "start": 164.4,
+      "end": 171.64,
+      "score": 0.6012
+    }
+  ]
+}

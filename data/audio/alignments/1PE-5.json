@@ -1,0 +1,97 @@
+{
+  "version": 1,
+  "algorithm": "mms-fa-v2",
+  "book": "1PE",
+  "chapter": 5,
+  "file": "B21___05_1Peter______ARZVDVN1DA.mp3",
+  "audioHash": "cece148e94ca6c4674be25a52d714d823422116860c237776cda4e93ee4a0dcb",
+  "textHash": "bf65f7e3272e9c0db868503fc5bb725ea84f87473fa09cd736a019f319fb1236",
+  "duration": 148.5845,
+  "method": "MMS_FA/uroman, machine aligned; review before publication",
+  "verses": [
+    {
+      "verse": 1,
+      "start": 1.56,
+      "end": 13.78,
+      "score": 0.6519
+    },
+    {
+      "verse": 2,
+      "start": 15.0,
+      "end": 25.9,
+      "score": 0.6512
+    },
+    {
+      "verse": 3,
+      "start": 26.9,
+      "end": 32.54,
+      "score": 0.6095
+    },
+    {
+      "verse": 4,
+      "start": 32.54,
+      "end": 38.08,
+      "score": 0.6241
+    },
+    {
+      "verse": 5,
+      "start": 38.08,
+      "end": 57.16,
+      "score": 0.6149
+    },
+    {
+      "verse": 6,
+      "start": 57.88,
+      "end": 62.22,
+      "score": 0.586
+    },
+    {
+      "verse": 7,
+      "start": 63.3,
+      "end": 67.82,
+      "score": 0.5664
+    },
+    {
+      "verse": 8,
+      "start": 68.98,
+      "end": 77.96,
+      "score": 0.5685
+    },
+    {
+      "verse": 9,
+      "start": 78.72,
+      "end": 88.24,
+      "score": 0.61
+    },
+    {
+      "verse": 10,
+      "start": 89.34,
+      "end": 104.52,
+      "score": 0.5907
+    },
+    {
+      "verse": 11,
+      "start": 105.5,
+      "end": 110.66,
+      "score": 0.5872
+    },
+    {
+      "verse": 12,
+      "start": 111.46,
+      "end": 126.6,
+      "score": 0.6137
+    },
+    {
+      "verse": 13,
+      "start": 126.64,
+      "end": 132.6,
+      "score": 0.5945
+    },
+    {
+      "verse": 14,
+      "start": 133.82,
+      "end": 144.0,
+      "score": 0.6155
+    }
+  ]
+}

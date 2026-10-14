@@ -1,0 +1,109 @@
+{
+  "version": 1,
+  "algorithm": "mms-fa-v2",
+  "book": "1TI",
+  "chapter": 3,
+  "file": "B15___03_1Timothy____ARZVDVN1DA.mp3",
+  "audioHash": "2687611c205fd0ac92727fe1b48510689b2b8e1e039e622e96e0299fccff5f0c",
+  "textHash": "55ec90b5a4bcee2fe024477fe8414569d79a51631b1067606e203dc642244b42",
+  "duration": 171.99025,
+  "method": "MMS_FA/uroman, machine aligned; review before publication",
+  "verses": [
+    {
+      "verse": 1,
+      "start": 1.76,
+      "end": 11.44,
+      "score": 0.6072
+    },
+    {
+      "verse": 2,
+      "start": 12.4,
+      "end": 26.68,
+      "score": 0.6571
+    },
+    {
+      "verse": 3,
+      "start": 26.7,
+      "end": 38.94,
+      "score": 0.6433
+    },
+    {
+      "verse": 4,
+      "start": 39.72,
+      "end": 45.76,
+      "score": 0.6187
+    },
+    {
+      "verse": 5,
+      "start": 46.32,
+      "end": 54.82,
+      "score": 0.5945
+    },
+    {
+      "verse": 6,
+      "start": 54.82,
+      "end": 62.6,
+      "score": 0.5896
+    },
+    {
+      "verse": 7,
+      "start": 62.6,
+      "end": 75.14,
+      "score": 0.6145
+    },
+    {
+      "verse": 8,
+      "start": 75.14,
+      "end": 87.48,
+      "score": 0.6249
+    },
+    {
+      "verse": 9,
+      "start": 88.04,
+      "end": 91.34,
+      "score": 0.6458
+    },
+    {
+      "verse": 10,
+      "start": 92.24,
+      "end": 100.56,
+      "score": 0.6154
+    },
+    {
+      "verse": 11,
+      "start": 101.52,
+      "end": 111.12,
+      "score": 0.623
+    },
+    {
+      "verse": 12,
+      "start": 112.1,
+      "end": 120.68,
+      "score": 0.5799
+    },
+    {
+      "verse": 13,
+      "start": 121.54,
+      "end": 132.4,
+      "score": 0.6147
+    },
+    {
+      "verse": 14,
+      "start": 133.34,
+      "end": 138.02,
+      "score": 0.618
+    },
+    {
+      "verse": 15,
+      "start": 139.0,
+      "end": 151.84,
+      "score": 0.5694
+    },
+    {
+      "verse": 16,
+      "start": 152.7,
+      "end": 170.4,
+      "score": 0.6008
+    }
+  ]
+}

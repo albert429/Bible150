@@ -10,6 +10,9 @@ Verse cues were generated offline with TorchAudio 2.8 MMS_FA and uroman 1.3.1.
 They are machine alignments, not manually verified timings. Chapter audio hashes
 and transcript hashes are checked during assembly. Daily manifests preserve
 the plan's passage order and carry a fingerprint of the displayed text.
+The committed timings are in `data/audio/alignments/`: one JSON file per chapter
+(260), holding machine-made cue times, the source MP3 filename, and its hashes. They
+contain no audio.
 See [preparation and hosting](../../docs/audio.md).
 
 ## Timing review queue
