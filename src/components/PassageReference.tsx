@@ -1,5 +1,5 @@
-import { ar } from "../format";
-import type { Passage } from "../readings";
+import { ar } from "../lib/format";
+import type { Passage } from "../plan/readings";
 
 export default function PassageReference({ passage }: { passage: Passage }) {
   const range =

@@ -1,4 +1,4 @@
-import { createJsonClient } from "./jsonClient.ts";
+import { createJsonClient } from "../lib/jsonClient.ts";
 
 export type Verse = { number: number; text: string; heading?: string };
 export type Passage = {

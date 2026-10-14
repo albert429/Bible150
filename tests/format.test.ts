@@ -7,7 +7,7 @@ import {
   dayIndex,
   scheduledDay,
   today,
-} from "../src/format.ts";
+} from "../src/lib/format.ts";
 
 test("Numbers use Eastern Arabic digits without grouping", () => {
   assert.equal(ar(0), "٠");

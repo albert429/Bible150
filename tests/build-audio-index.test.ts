@@ -15,7 +15,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { readingHash } from "../src/audio/manifest.ts";
-import type { Day } from "../src/readings.ts";
+import type { Day } from "../src/plan/readings.ts";
 
 const script = new URL("../scripts/build-audio-index.js", import.meta.url);
 const reading: Day = {

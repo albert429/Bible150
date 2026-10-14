@@ -1,4 +1,4 @@
-import type { Day } from "../readings";
+import type { Day } from "../plan/readings";
 
 export type Cue = {
   passage: number;

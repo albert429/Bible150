@@ -5,11 +5,11 @@ import {
   Settings,
   Info,
 } from "lucide-react";
-import type { Reader } from "../../progress";
-import type { View } from "../Navigation";
-import { ar } from "../../format";
-import { APP_INFO } from "../../appInfo";
-import logo from "../../assets/favicon.svg";
+import type { Reader } from "../plan/progress";
+import type { View } from "./Navigation";
+import { ar } from "../lib/format";
+import { APP_INFO } from "../appInfo";
+import logo from "../assets/favicon.svg";
 
 const links = [
   { view: "read" as const, label: "القراءة اليومية", icon: BookOpen },

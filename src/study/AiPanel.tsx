@@ -43,8 +43,8 @@ import {
   type ChipId,
 } from "../ai/types.ts";
 import { APP_INFO } from "../appInfo";
-import { ar, today } from "../format";
-import type { Passage, Verse } from "../readings";
+import { ar, today } from "../lib/format";
+import type { Passage, Verse } from "../plan/readings";
 import AiAnswer from "./AiAnswer";
 import AiSpark from "./AiSpark";
 import { reveal } from "./Section";

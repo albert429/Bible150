@@ -1,14 +1,14 @@
 import "./study.css";
 import { lazy, Suspense } from "react";
 import { ChunkBoundary, Loading, LoadError } from "../components/Feedback";
-import type { Day, Verse } from "../readings";
+import type { Day, Verse } from "../plan/readings";
 import { usfmFor } from "./books";
 import { studyCore } from "./client";
 import GreekWords from "./GreekWords";
 import AiSpark from "./AiSpark";
 import OtherTranslation from "./OtherTranslation";
 import Section from "./Section";
-import { useResource } from "./useResource";
+import { useResource } from "../lib/useResource";
 import { verseId } from "./verse";
 
 // Optional AI explanations: without the build flag this branch, the lazy

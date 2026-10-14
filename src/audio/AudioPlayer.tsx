@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Pause, Play, SkipBack, SkipForward } from "lucide-react";
-import type { Day } from "../readings";
-import { ar } from "../format";
+import type { Day } from "../plan/readings";
+import { ar } from "../lib/format";
 import { audioManifests, resetAudioManifestCache } from "./client";
 import { cueAt, matchesReading, type AudioManifest } from "./manifest";
 import "./audio.css";

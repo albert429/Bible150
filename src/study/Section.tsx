@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { ChevronDown } from "lucide-react";
-import { ar } from "../format";
+import { ar } from "../lib/format";
 
 /** Scroll the sheet just enough to show an opened section, keeping its heading visible. */
 export function reveal(section: HTMLElement) {

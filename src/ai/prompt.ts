@@ -1,4 +1,4 @@
-import type { Passage, Verse } from "../readings.ts";
+import type { Passage, Verse } from "../plan/readings.ts";
 import type { GreekToken, LexDay, VerseText } from "../study/types.ts";
 import { gloss, greekWord, keyGroups, span } from "../study/verse.ts";
 import type { AiRequest, ChipId } from "./types.ts";

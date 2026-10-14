@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import "../scripts/build-readings.js";
-import type { Day } from "../src/readings.ts";
+import type { Day } from "../src/plan/readings.ts";
 test("All static readings exactly preserve the validated source, independent of the API", () => {
   const source: Day[] = JSON.parse(
     readFileSync(new URL("../data/plan.json", import.meta.url), "utf8"),

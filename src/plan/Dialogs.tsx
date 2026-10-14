@@ -8,8 +8,8 @@ import {
   Users,
 } from "lucide-react";
 import type { FormEvent } from "react";
-import { ar, dateLabel } from "../format";
-import type { Reader } from "../progress";
+import { ar, dateLabel } from "../lib/format";
+import type { Reader } from "./progress";
 
 export type Modal = "join" | "settings" | "invite";
 type Props = {

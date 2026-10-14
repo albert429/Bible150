@@ -7,15 +7,15 @@ import {
   Settings,
   Share2,
 } from "lucide-react";
-import type { Reader } from "../progress";
-import type { Day } from "../readings";
-import { appShareData } from "../share";
-import { ar } from "../format";
-import { ChunkBoundary, Loading } from "./Feedback";
-import Sheet from "./Sheet";
-import MenuPanel from "./navigation/MenuPanel";
-import DayPanel from "./navigation/DayPanel";
-import AppearancePanel from "./navigation/AppearancePanel";
+import type { Reader } from "../plan/progress";
+import type { Day } from "../plan/readings";
+import { appShareData } from "./share";
+import { ar } from "../lib/format";
+import { ChunkBoundary, Loading } from "../components/Feedback";
+import Sheet from "../components/Sheet";
+import MenuPanel from "./MenuPanel";
+import DayPanel from "./DayPanel";
+import AppearancePanel from "./AppearancePanel";
 import logo from "../assets/favicon.svg";
 const About = lazy(() => import("./About"));
 

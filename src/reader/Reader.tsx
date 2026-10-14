@@ -12,12 +12,12 @@ import {
   Suspense,
 } from "react";
 import { Check, RotateCcw, Headphones } from "lucide-react";
-import { ar } from "../format";
-import type { Day } from "../readings";
-import { Loading, LoadError, ChunkBoundary } from "./Feedback";
-import PassageReference from "./PassageReference";
-import VerseStudy, { type StudyTarget } from "./VerseStudy";
-import { allowsReadingPrefetch } from "../useAdjacentPrefetch";
+import { ar } from "../lib/format";
+import type { Day } from "../plan/readings";
+import { Loading, LoadError, ChunkBoundary } from "../components/Feedback";
+import PassageReference from "../components/PassageReference";
+import VerseStudy, { type StudyTarget } from "../study/VerseStudy";
+import { allowsReadingPrefetch } from "./useAdjacentPrefetch";
 const AudioPlayer = lazy(() => import("../audio/AudioPlayer"));
 
 const Scripture = memo(function Scripture({
