@@ -1,4 +1,5 @@
 import {
+  useEffectEvent,
   useLayoutEffect,
   useId,
   useRef,
@@ -6,6 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import { X } from "lucide-react";
+import { useModalDialog } from "./useModalDialog";
 
 type Props = {
   open: boolean;
@@ -27,75 +29,39 @@ export default function Sheet({
   children,
   headerActions,
 }: Props) {
-  const dialog = useRef<HTMLDialogElement>(null);
   const surface = useRef<HTMLDivElement>(null);
-  const closeRequested = useRef(false);
-  const trigger = useRef<HTMLElement | null>(null);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const active = useRef(false);
-  const expectedCloseEvents = useRef(0);
-  const latest = useRef({ open, onClose, onAfterClose });
-  latest.current = { open, onClose, onAfterClose };
   const titleId = useId();
   const [closing, setClosing] = useState(false);
   const [retained, setRetained] = useState(false);
-
-  function cancelTimer() {
-    if (timer.current !== null) {
-      clearTimeout(timer.current);
-      timer.current = null;
-    }
-  }
-
-  function finishClose() {
-    cancelTimer();
-    if (!active.current) return;
-    active.current = false;
-    setClosing(false);
-    setRetained(false);
-    if (dialog.current?.open) {
-      // Native close events are asynchronous; consume ours even if reopened.
-      expectedCloseEvents.current += 1;
-      dialog.current.close();
-    }
-    if (trigger.current?.isConnected) {
-      trigger.current.focus({ preventScroll: true });
-    }
-    trigger.current = null;
-    latest.current.onAfterClose?.();
-  }
+  const { dialog, requestClose, finishClose, dialogProps } = useModalDialog({
+    open,
+    onClose,
+    onAfterClose: () => {
+      setClosing(false);
+      setRetained(false);
+      onAfterClose?.();
+    },
+    returnFocusTo,
+    cancel: "defer",
+    syncNativeClose: true,
+    exit: (finish) => {
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches)
+        finish();
+      else setClosing(true);
+    },
+  });
+  const finishExit = useEffectEvent(() => {
+    if (!open) finishClose();
+  });
 
   useLayoutEffect(() => {
-    cancelTimer();
-    const element = dialog.current;
-    if (!element) return;
-
     if (open) {
-      closeRequested.current = false;
       setRetained(true);
       setClosing(false);
-      if (!active.current) {
-        trigger.current =
-          returnFocusTo ||
-          (document.activeElement instanceof HTMLElement
-            ? document.activeElement
-            : null);
-        active.current = true;
-      }
-      if (!element.open) element.showModal();
-    } else if (active.current) {
-      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-        finishClose();
-      } else {
-        setClosing(true);
-      }
     }
-
-    return cancelTimer;
   }, [open]);
 
   useLayoutEffect(() => {
-    cancelTimer();
     if (!closing || open || !surface.current) return;
 
     // Read the committed exit animation, so the fallback follows the CSS.
@@ -111,31 +77,21 @@ export default function Sheet({
         ? 0
         : milliseconds(durations[index % durations.length]) +
           milliseconds(delays[index % delays.length]);
-    const finishExit = () => {
-      if (!latest.current.open) finishClose();
-    };
     if (duration <= 0) {
       finishExit();
       return;
     }
-    timer.current = setTimeout(finishExit, duration);
+    const timer = setTimeout(finishExit, duration);
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     const handleMotionChange = () => {
       if (reducedMotion.matches) finishExit();
     };
     reducedMotion.addEventListener("change", handleMotionChange);
     return () => {
-      cancelTimer();
+      clearTimeout(timer);
       reducedMotion.removeEventListener("change", handleMotionChange);
     };
   }, [closing, open]);
-
-  function requestClose() {
-    if (latest.current.open && !closeRequested.current) {
-      closeRequested.current = true;
-      latest.current.onClose();
-    }
-  }
 
   return (
     <dialog
@@ -143,24 +99,7 @@ export default function Sheet({
       className="reader-sheet"
       aria-labelledby={titleId}
       data-closing={closing ? "true" : undefined}
-      onCancel={(event) => {
-        event.preventDefault();
-        requestClose();
-      }}
-      onClose={() => {
-        if (expectedCloseEvents.current > 0) {
-          expectedCloseEvents.current -= 1;
-          return;
-        }
-        // A native close (for example, a dialog-method form) must also update
-        // the controlling state, without handling a stale event after reopen.
-        if (dialog.current?.open || !active.current) return;
-        requestClose();
-        finishClose();
-      }}
-      onClick={(event) => {
-        if (event.target === event.currentTarget) requestClose();
-      }}
+      {...dialogProps}
     >
       <div
         ref={surface}
@@ -170,7 +109,7 @@ export default function Sheet({
             event.target === event.currentTarget &&
             event.animationName === "sheet-exit" &&
             closing &&
-            !latest.current.open
+            !open
           ) {
             finishClose();
           }

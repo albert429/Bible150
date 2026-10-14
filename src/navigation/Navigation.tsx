@@ -1,4 +1,4 @@
-import { lazy, Suspense, useRef, useState } from "react";
+import { lazy, Suspense, useRef, useState, type RefObject } from "react";
 import {
   Menu,
   ChevronLeft,
@@ -24,6 +24,7 @@ type Panel = "menu" | "day" | "appearance" | "about";
 type Props = {
   view: View;
   navigate: (view: View) => void;
+  menuToggle: RefObject<HTMLButtonElement | null>;
   settings: () => void;
   invite: (text: string) => void;
   selected: number;
@@ -35,6 +36,7 @@ type Props = {
 export default function Navigation({
   view,
   navigate,
+  menuToggle,
   settings,
   invite,
   selected,
@@ -47,10 +49,10 @@ export default function Navigation({
   const [open, setOpen] = useState(false);
   const [sharing, setSharing] = useState(false);
   const afterClose = useRef<(() => void) | null>(null);
-  const sheetTrigger = useRef<HTMLElement | null>(null);
+  const [sheetTrigger, setSheetTrigger] = useState<HTMLElement | null>(null);
   function show(next: Panel, trigger: HTMLElement) {
     afterClose.current = null;
-    sheetTrigger.current = trigger;
+    setSheetTrigger(trigger);
     setPanel(next);
     setOpen(true);
   }
@@ -85,6 +87,7 @@ export default function Navigation({
       <header className="topbar">
         <div className="topbar-inner">
           <button
+            ref={menuToggle}
             className="icon-button menu-toggle"
             aria-label="فتح القائمة"
             aria-haspopup="dialog"
@@ -141,7 +144,7 @@ export default function Navigation({
       </header>
       <Sheet
         open={open}
-        returnFocusTo={sheetTrigger.current}
+        returnFocusTo={sheetTrigger}
         title={
           panel === "menu"
             ? "القائمة"
@@ -178,7 +181,7 @@ export default function Navigation({
             settings={settings}
             close={close}
             about={() => {
-              const trigger = sheetTrigger.current;
+              const trigger = sheetTrigger;
               close(() => {
                 if (trigger) show("about", trigger);
               });

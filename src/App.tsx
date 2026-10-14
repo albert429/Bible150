@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useRef, useState } from "react";
 import { Check, X } from "lucide-react";
 import { useProgress } from "./plan/useProgress";
 import { dayIndex, pageFor, scheduledDay } from "./plan/schedule";
@@ -11,6 +11,7 @@ import { useResource } from "./lib/useResource";
 import { useToday } from "./lib/useToday";
 import { useNotice } from "./lib/useNotice";
 import { useAdjacentPrefetch } from "./reader/useAdjacentPrefetch";
+import { useModalDialog } from "./components/useModalDialog";
 import { days } from "./plan/readings";
 const Dialogs = lazy(() => import("./plan/dialogs"));
 
@@ -26,8 +27,7 @@ export default function App() {
   const [modal, setModal] = useState<Modal | null>(null);
   const [notice, setNotice] = useNotice();
   const currentDate = useToday();
-  const dialog = useRef<HTMLDialogElement>(null);
-  const dialogTrigger = useRef<HTMLElement | null>(null);
+  const menuToggle = useRef<HTMLButtonElement>(null);
   const main = useRef<HTMLElement>(null);
   const start = member?.startDate || currentDate;
   const current = dayIndex(start, currentDate);
@@ -51,7 +51,6 @@ export default function App() {
     navigate("read");
   }
   function openModal(next: Modal) {
-    if (!modal) dialogTrigger.current = document.activeElement as HTMLElement;
     progress.clearError();
     setModal(next);
   }
@@ -76,17 +75,13 @@ export default function App() {
           : "تم حفظ قراءتك. خطوة جديدة في الرحلة!",
       );
   }
-  useEffect(() => {
-    if (modal) {
-      if (!dialog.current?.open) dialog.current?.showModal();
-    } else if (dialog.current?.open) {
-      dialog.current.close();
-      const trigger = dialogTrigger.current;
-      if (trigger?.isConnected && !trigger.closest("dialog:not([open])"))
-        trigger.focus();
-      else document.querySelector<HTMLButtonElement>(".menu-toggle")?.focus();
-    }
-  }, [modal]);
+  const { dialog, dialogProps } = useModalDialog({
+    open: modal !== null,
+    onClose: closeModal,
+    cancel: "native",
+    syncNativeClose: false,
+    fallbackFocus: menuToggle,
+  });
   return (
     <div className="app">
       <Navigation
@@ -94,6 +89,7 @@ export default function App() {
         navigate={navigate}
         settings={() => openModal({ kind: member ? "settings" : "join" })}
         invite={(text) => openModal({ kind: "invite", text })}
+        menuToggle={menuToggle}
         selected={selected}
         reading={reading.data}
         readingError={reading.error}
@@ -145,10 +141,7 @@ export default function App() {
         className="app-dialog"
         aria-label="إدارة الرحلة"
         ref={dialog}
-        onCancel={closeModal}
-        onClick={(event) => {
-          if (event.target === dialog.current) closeModal();
-        }}
+        {...dialogProps}
       >
         <div className="dialog-content">
           <button
