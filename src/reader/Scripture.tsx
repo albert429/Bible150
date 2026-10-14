@@ -4,6 +4,7 @@ import type { Day } from "../plan/readings";
 import PassageReference from "../components/PassageReference";
 import ListenButton from "./ListenButton";
 import { passageHeadingId, passageId } from "./scriptureDom";
+import "./Scripture.css";
 
 type Props = {
   reading: Day;

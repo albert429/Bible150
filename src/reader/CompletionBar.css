@@ -1,0 +1,31 @@
+.reading-completion {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
+.reading-completion .primary {
+  width: min(100%, 300px);
+}
+.completion-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--olive);
+  font-weight: 600;
+  animation: completion-enter 120ms ease-out;
+}
+@keyframes completion-enter {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

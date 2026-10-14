@@ -4,7 +4,8 @@
 
 | Path                      | Responsibility                                                                                             |
 | ------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `src/main.tsx`            | React bootstrap and global styles                                                                          |
+| `src/main.tsx`            | React bootstrap                                                                                            |
+| `src/styles/`             | Global styles: `tokens`, `base`, `global`; component CSS sits next to its component                        |
 | `src/App.tsx`             | Reader state, navigation, progress actions, and application dialogs                                        |
 | `src/lib/`                | Infrastructure: `jsonClient` (cache, deduplication, timeout, validation), `useResource`, `format`          |
 | `src/plan/`               | 150-day plan: `readings`, `schedule` (days, pages, status), `labels`, `progress`, `Calendar`, `Dialogs`    |

@@ -12,6 +12,7 @@ import type { Reader } from "./progress";
 import { planIndex } from "./readings";
 import { useResource } from "../lib/useResource";
 import { Loading, LoadError } from "../components/Feedback";
+import "./Calendar.css";
 
 const STATUS_LABELS = {
   done: "مكتمل",

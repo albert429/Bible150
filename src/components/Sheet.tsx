@@ -8,6 +8,7 @@ import {
 } from "react";
 import { X } from "lucide-react";
 import { useModalDialog } from "./useModalDialog";
+import "./Sheet.css";
 
 type Props = {
   open: boolean;

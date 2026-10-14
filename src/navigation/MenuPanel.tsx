@@ -10,6 +10,7 @@ import type { View } from "./Navigation";
 import { ar } from "../lib/format";
 import { APP_INFO } from "../appInfo";
 import logo from "../assets/favicon.svg";
+import "./MenuPanel.css";
 
 const links = [
   { view: "read" as const, label: "القراءة اليومية", icon: BookOpen },

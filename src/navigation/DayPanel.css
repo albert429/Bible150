@@ -1,0 +1,67 @@
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: Noto, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  padding: 2px 9px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  color: var(--muted);
+}
+.tag.complete {
+  color: var(--olive);
+  background: var(--soft);
+  border-color: transparent;
+}
+.day-sheet-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  color: var(--muted);
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+.passage-list {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.passage-list li + li {
+  border-top: 1px solid var(--line);
+}
+.passage-list a {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 8px 4px;
+  color: var(--olive);
+  font-size: 15px;
+}
+.passage-list a:hover {
+  background: var(--soft);
+}
+.sheet-actions {
+  display: grid;
+  gap: 10px;
+  margin-top: 20px;
+}
+.day-sheet-navigation {
+  display: none;
+}
+@media (max-width: 299px) {
+  .day-sheet-navigation {
+    display: flex;
+    gap: 8px;
+    margin-top: 20px;
+  }
+  .day-sheet-navigation button {
+    flex: 1;
+    min-width: 0;
+    font-size: 12px;
+  }
+}

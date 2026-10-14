@@ -49,6 +49,7 @@ import AiAnswer from "./AiAnswer";
 import AiSpark from "./AiSpark";
 import { reveal } from "./Section";
 import type { GreekToken } from "./types";
+import "../components/form.css";
 
 type Problem = AiErrorKind | "cap" | "attempts" | "stopped";
 type View =

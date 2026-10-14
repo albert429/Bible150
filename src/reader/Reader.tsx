@@ -7,6 +7,7 @@ import CompletionBar from "./CompletionBar";
 import Scripture from "./Scripture";
 import { useAdjacentPrefetch } from "./useAdjacentPrefetch";
 import { useVerseTap } from "./useVerseTap";
+import "./Reader.css";
 const AudioPlayer = lazy(() => import("../audio/AudioPlayer"));
 
 type Props = {

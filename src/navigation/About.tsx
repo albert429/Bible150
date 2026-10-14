@@ -1,6 +1,7 @@
 import { APP_INFO } from "../appInfo";
 import ReactIcon from "../components/ReactIcon";
 import churchLogo from "../assets/church-logo-192.png";
+import "./About.css";
 
 export default function About() {
   return (
