@@ -2,55 +2,56 @@
 
 ## Structure
 
-| Path                      | Responsibility                                                                                             |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `src/main.tsx`            | React bootstrap                                                                                            |
-| `src/styles/`             | Global styles: `tokens`, `base`, `global`; component CSS sits next to its component                        |
-| `src/App.tsx`             | Reader state, navigation, progress actions, and application dialogs                                        |
-| `src/lib/`                | Infrastructure: `jsonClient` (cache, deduplication, timeout, validation), `useResource`, `format`          |
-| `src/plan/`               | 150-day plan: `readings`, `schedule` (days, pages, status), `labels`, `progress`, `Calendar`, `Dialogs`    |
-| `src/bible/`              | Scripture identity shared with build scripts: `verse` (verse IDs), `reference` (range text, bidi isolates) |
-| `src/reader/`             | `Reader` (continuous Scripture, verse tap, completion) and `useAdjacentPrefetch`                           |
-| `src/navigation/`         | Toolbar, menu, day and appearance panels, `About`, `useAppearance`, `share`                                |
-| `src/components/`         | Shared primitives: `Sheet`, `Feedback`, `PassageReference`, `ReactIcon`                                    |
-| `src/study/`              | Verse study: `VerseStudy` shell (main bundle) and the lazy panel with translations and Greek words         |
-| `src/ai/`                 | Optional AI explanations: config, prompt, streaming, on-device cache                                       |
-| `src/audio/`              | Audio player, manifest and delivery                                                                        |
-| `src/useReading.ts`       | Static reading loader with stale-response protection                                                       |
-| `src/appInfo.ts`          | App credits, contact links, and Scripture source                                                           |
-| `data/`                   | Canonical Scripture plan and extracted source table                                                        |
-| `data/books.json`         | 66 books: USFM, OSIS and STEPBible codes with Arabic names                                                 |
-| `data/study/`             | Imported study data (CC BY / CC BY-SA; see `data/study/LICENSE.md`)                                        |
-| `scripts/import-study.py` | Builds `data/study/` from downloaded sources, with coverage gates                                          |
-| `scripts/build-data.js`   | Writes `public/readings`, `public/study` and `public/audio/*.json` (the builders take an output directory) |
-| `scripts/lib/books.js`    | Arabic book name to USFM code, read from `data/books.json`                                                 |
-| `scripts/build-study.js`  | Splits study data into `public/study/{day}[.tr\|.lex].json`, with budgets                                  |
-| `scripts/sse-stub.mjs`    | Local stand-in for the AI streaming API, used only by browser tests                                        |
-| `scripts/`                | Static build, imports, asset regeneration, visual and performance checks                                   |
-| `tests/`                  | Unit/data checks and mobile browser workflows                                                              |
-| `docs/assets/`            | README artwork and actual app screenshot; never shipped in the app                                         |
+| Path                                               | Responsibility                                                                                                             |
+| -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `src/main.tsx`, `src/App.tsx`                      | React bootstrap; app shell wiring reader, plan, navigation, and dialogs                                                    |
+| `src/appInfo.ts`                                   | App credits, contact links, and Scripture source                                                                           |
+| `src/lib/`                                         | Shared helpers: `jsonClient` (cache, deduplication, timeout), `useResource`, `network`, `format`, `useNotice`, `useToday`  |
+| `src/bible/`                                       | Verse and reference parsing shared by reader, study, and audio                                                             |
+| `src/plan/`                                        | Plan state: `readings` loading, `progress` profiles, `useProgress`, `schedule`, `backup`, `labels`, `PlanView`, `Calendar` |
+| `src/plan/dialogs/`                                | Join, Invite, Settings, and restore dialogs, loaded on demand                                                              |
+| `src/reader/`                                      | Reader, Scripture rendering, verse tap handling, completion bar, listen button, adjacent-day prefetch                      |
+| `src/navigation/`                                  | Toolbar, menu, day details, appearance panel and preferences, share, About                                                 |
+| `src/components/`                                  | Shared UI: native-dialog `Sheet` (`useModalDialog`), `Feedback`, `PassageReference`, `ReactIcon`, form styles              |
+| `src/audio/`                                       | Audio player and controls, manifest loading, media element, Media Session, verse highlighting, delivery contract           |
+| `src/study/`                                       | Lazy verse study sheet: translations, Greek key words, and AI explanations panel                                           |
+| `src/ai/`                                          | AI explanation pipeline: config, prompt, provider chain (`providers/openrouter.ts`), SSE parsing, cache, answer formatting |
+| `src/styles/`                                      | Design `tokens.css`, `base.css`, and `global.css`; component CSS sits beside its component                                 |
+| `data/`                                            | Canonical Scripture plan, extracted source table, `books.json` (66 books: USFM, OSIS, STEPBible codes with Arabic names)   |
+| `data/study/`                                      | Imported study data (CC BY / CC BY-SA; see `data/study/LICENSE.md`)                                                        |
+| `data/audio/`                                      | Verse timing alignments and audio sources (see `data/audio/SOURCES.md`)                                                    |
+| `scripts/build-data.js`                            | Runs the three builders below into `public/` (`predev`/`prebuild`)                                                         |
+| `scripts/build-{readings,study,audio-index}.js`    | Split plan, study data, and audio manifests into static JSON, with budgets; `scripts/lib/books.js` is shared               |
+| `scripts/import*.py`, `extract-plan.py`, `usfm.py` | Source extraction and importers, with coverage gates                                                                       |
+| `scripts/{align,build}-audio.py`, `audio_text.py`  | Audio alignment and build; `scripts/tests/` holds Python tests for `audio_text.py`                                         |
+| `scripts/{prepare,verify}-audio-host.*`            | Prepare and verify the static audio host                                                                                   |
+| `scripts/snapshot.mjs`                             | Build-output snapshot and compare tool (`npm run snapshot`)                                                                |
+| `scripts/`                                         | Also: asset regeneration, AI model check, SSE stub, visual and performance checks                                          |
+| `tests/`                                           | Unit/data checks; `tests/browser/` holds mobile browser workflows                                                          |
+| `docs/assets/`                                     | README artwork and actual app screenshot; never shipped in the app                                                         |
 
 ## Commands
 
-| Command                                            | Purpose                                                                    |
-| -------------------------------------------------- | -------------------------------------------------------------------------- |
-| `npm run dev`                                      | Development server, port 5173; generates static data first                 |
-| `npm run build`                                    | Generate static data, type-check the app, and build `dist/`                |
-| `npm start`                                        | Preview `dist/`, port 4173                                                 |
-| `npm test`                                         | Progress, dates, loading, and exact static-data fidelity                   |
-| `npm run test:e2e`                                 | Fixture build, then Chromium and WebKit workflows, layout and axe          |
-| `npm run ai:models`                                | Check that the configured AI models still exist and are free               |
-| `npm run format` / `format:check`                  | Apply / verify repository formatting                                       |
-| `npm run lint`                                     | ESLint (TypeScript, React hooks) over the whole repository                 |
-| `npm run typecheck`                                | Type-check the app, configs, browser specs and scripts                     |
-| `npm run snapshot -- save <dir>`                   | Record hashes of generated data and sizes of `dist/assets/`                |
-| `npm run snapshot -- compare <dir>`                | Fail on any data change or initial JS/CSS growth over 0.5KB                |
-| `npm run audio:host:prepare`                       | Build the Cloudflare Pages audio bundle in `artifacts/pages-audio`         |
-| `npm run audio:host:deploy`                        | Prepare, then deploy that bundle with wrangler                             |
-| `npm run validate`                                 | Formatting, lint, type-check, unit/data checks, and build                  |
-| `python3 -I -m unittest discover -s scripts/tests` | Python audio hash tests (standard library only; CI also runs `py_compile`) |
-| `npm run test:visual`                              | Save preview screenshots under `artifacts/`                                |
-| `npm run audit:performance`                        | Save repeatable mobile Lighthouse reports under `artifacts/`               |
+| Command                                            | Purpose                                                                                  |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `npm run dev`                                      | Development server, port 5173; generates static data first                               |
+| `npm run build`                                    | Generate static data, type-check the app, and build `dist/`                              |
+| `npm start`                                        | Preview `dist/`, port 4173                                                               |
+| `npm test`                                         | Progress, dates, loading, and exact static-data fidelity                                 |
+| `npm run test:e2e`                                 | Fixture build, then Chromium and WebKit workflows, layout and axe                        |
+| `npm run test:browser`                             | Playwright against the current `dist/` without rebuilding (set the same env as test:e2e) |
+| `npm run ai:models`                                | Check that the configured AI models still exist and are free                             |
+| `npm run format` / `format:check`                  | Apply / verify repository formatting                                                     |
+| `npm run lint`                                     | ESLint (TypeScript, React hooks) over the whole repository                               |
+| `npm run typecheck`                                | Type-check the app, configs, browser specs and scripts                                   |
+| `npm run snapshot -- save <dir>`                   | Record hashes of generated data and sizes of `dist/assets/`                              |
+| `npm run snapshot -- compare <dir>`                | Fail on any data change or initial JS/CSS growth over 0.5KB                              |
+| `npm run audio:host:prepare`                       | Build the Cloudflare Pages audio bundle in `artifacts/pages-audio`                       |
+| `npm run audio:host:deploy`                        | Prepare, then deploy that bundle with wrangler                                           |
+| `npm run validate`                                 | Formatting, lint, type-check, unit/data checks, and build                                |
+| `python3 -I -m unittest discover -s scripts/tests` | Python audio hash tests (standard library only; CI also runs `py_compile`)               |
+| `npm run test:visual`                              | Save preview screenshots under `artifacts/`                                              |
+| `npm run audit:performance`                        | Save repeatable mobile Lighthouse reports under `artifacts/`                             |
 
 `tsconfig.json` only references `tsconfig.app.json` (`src/`), `tsconfig.node.json` (`vite.config.ts`, `playwright.config.ts`, the unit tests in `tests/*.test.ts` and `tests/browser/`, strict) and `tsconfig.scripts.json` (`scripts/` and `hosting/` JavaScript, checked but not strict). `build` checks only the app, so tests and scripts cannot block a deploy.
 
@@ -179,7 +180,7 @@ On Vercel, import the repository, use the **Vite** preset, build with **`npm run
 
 Study data is generated the same way into `public/study/` and served with the same revalidating cache header. Nothing under `/study/` loads until a reader opens a verse.
 
-If the app shows **تعذر تحميل القراءة**, verify that `/readings/plan.json` and `/readings/1.json` return JSON. The build must run `npm run build`, which invokes `prebuild`; running `vite build` directly skips the reading-data generation step.
+If the app shows **تعذر تحميل القراءة**, verify that `/readings/plan.json` and `/readings/1.json` return JSON. The build must run `npm run build`, which invokes `prebuild` (`scripts/build-data.js`); running `vite build` directly skips the data generation step.
 
 ## Source regeneration
 
