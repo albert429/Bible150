@@ -1,19 +1,9 @@
 import { Minus, Plus, Sun, Moon } from "lucide-react";
 import { ar } from "../lib/format";
-import { FONT_MIN, FONT_MAX } from "./useAppearance";
+import { FONT_MIN, FONT_MAX, useAppearance } from "./appearance";
 
-type Props = {
-  font: number;
-  setFont: (font: number) => void;
-  dark: boolean;
-  setDark: (dark: boolean) => void;
-};
-export default function AppearancePanel({
-  font,
-  setFont,
-  dark,
-  setDark,
-}: Props) {
+export default function AppearancePanel() {
+  const { font, setFont, dark, setDark } = useAppearance();
   return (
     <>
       <div className="appearance-row">

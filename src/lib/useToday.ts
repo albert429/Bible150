@@ -1,16 +1,35 @@
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { today } from "./format";
 
-export function useToday() {
-  const [date, setDate] = useState(today);
-  useEffect(() => {
-    const tick = () => setDate(today());
-    const timer = setInterval(tick, 30000);
+const listeners = new Set<() => void>();
+let date = today();
+let timer: ReturnType<typeof setInterval>;
+
+function tick() {
+  const next = today();
+  if (next === date) return;
+  date = next;
+  listeners.forEach((listener) => listener());
+}
+function get() {
+  if (!listeners.size) date = today();
+  return date;
+}
+function subscribe(listener: () => void) {
+  if (!listeners.size) {
+    timer = setInterval(tick, 30000);
     document.addEventListener("visibilitychange", tick);
-    return () => {
+  }
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+    if (!listeners.size) {
       clearInterval(timer);
       document.removeEventListener("visibilitychange", tick);
-    };
-  }, []);
-  return date;
+    }
+  };
+}
+
+export function useToday() {
+  return useSyncExternalStore(subscribe, get);
 }

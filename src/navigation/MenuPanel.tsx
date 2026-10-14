@@ -5,7 +5,7 @@ import {
   Settings,
   Info,
 } from "lucide-react";
-import type { Reader } from "../plan/progress";
+import { useProgress } from "../plan/useProgress";
 import type { View } from "./Navigation";
 import { ar } from "../lib/format";
 import { APP_INFO } from "../appInfo";
@@ -22,7 +22,6 @@ const links = [
 type Props = {
   view: View;
   navigate: (view: View) => void;
-  member: Reader | null;
   settings: () => void;
   about: () => void;
   close: (action?: () => void) => void;
@@ -30,11 +29,11 @@ type Props = {
 export default function MenuPanel({
   view,
   navigate,
-  member,
   settings,
   about,
   close,
 }: Props) {
+  const { member } = useProgress();
   const count = member?.completed.length || 0;
   return (
     <>
