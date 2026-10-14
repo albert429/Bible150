@@ -3,10 +3,14 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { getEventListeners } from "node:events";
+import type { AiBuildConfig } from "../src/ai/config.ts";
+import type { AskInput } from "../src/ai/run.ts";
+import type { AiError, ChipId } from "../src/ai/types.ts";
+import type { Verse } from "../src/readings.ts";
 
-const requests = [];
-const pending = [];
-const study = {
+const requests: string[] = [];
+const pending: (() => void)[] = [];
+const study: Record<string, unknown> = {
   "10.tr.json": {
     v: 1,
     day: 10,
@@ -20,11 +24,11 @@ const study = {
   "11.tr.json": { v: 1, day: 11, verses: {} },
   "11.lex.json": { v: 1, day: 11, lex: {} },
 };
-globalThis.fetch = async (url, init = {}) => {
+globalThis.fetch = async (url: RequestInfo | URL, init: RequestInit = {}) => {
   const path = String(url);
   requests.push(path);
   if (path.endsWith("/chat/completions")) {
-    const body = JSON.parse(init.body);
+    const body = JSON.parse(String(init.body));
     requests.push(body.messages[1].content);
     return new Response(
       'data: {"model":"m:free","choices":[{"delta":{"content":"جواب"}}]}\n\n' +
@@ -43,8 +47,7 @@ globalThis.fetch = async (url, init = {}) => {
     ? Response.json(study[name])
     : new Response("{}", { status: 404 });
 };
-globalThis.location = { origin: "https://app.test" };
-globalThis.__AI_CONFIG__ = {
+const aiConfig = {
   providers: [
     {
       id: "openrouter",
@@ -55,13 +58,17 @@ globalThis.__AI_CONFIG__ = {
   ],
   dailyCap: 10,
   attemptCap: 20,
-};
+} satisfies AiBuildConfig;
+Object.assign(globalThis, {
+  location: { origin: "https://app.test" },
+  __AI_CONFIG__: aiConfig,
+});
 
 const { ask } = await import("../src/ai/run.ts");
 const { abortable } = await import("../src/ai/types.ts");
 
-const verse = { number: 15, text: "فلمس يدها" };
-const input = (chip, day = 10) => ({
+const verse: Verse = { number: 15, text: "فلمس يدها" };
+const input = (chip: ChipId, day = 10): AskInput => ({
   chip,
   day,
   id: "MAT.8.15",
@@ -81,6 +88,7 @@ test("A typed question loads the lexicon, so the Greek meaning is the lexicon's"
   await ask(input("ask"), new AbortController().signal, quiet, () => sent++);
   assert.ok(requests.some((r) => r.endsWith("/study/10.lex.json")));
   const prompt = requests.find((r) => r.startsWith("المرجع"));
+  assert.ok(prompt);
   assert.match(prompt, /G0681: to touch/);
   assert.doesNotMatch(prompt, /to kindle/);
   assert.match(prompt, /الترجمة الإنجليزية \(KJV\):\nAnd he touched/);
@@ -103,7 +111,7 @@ test("Stopping while the study files load ends the request at once and sends not
   const result = await Promise.race([
     run.then(
       () => "resolved",
-      (error) => error.kind,
+      (error: AiError) => error.kind,
     ),
     new Promise((resolve) => setTimeout(() => resolve("still waiting"), 500)),
   ]);

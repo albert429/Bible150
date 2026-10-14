@@ -8,9 +8,12 @@ import {
   OFF_TOPIC,
   plainArabic,
   SYSTEM_PROMPT,
+  type Material,
 } from "../src/ai/prompt.ts";
+import type { Passage, Verse } from "../src/readings.ts";
+import type { GreekToken } from "../src/study/types.ts";
 
-const verses = [
+const verses: Verse[] = [
   {
     number: 14,
     text: "وَلَمَّا جَاءَ يَسُوعُ إِلَى بَيْتِ بُطْرُسَ،",
@@ -26,14 +29,20 @@ const verses = [
   },
   { number: 17, text: "لِكَيْ يَتِمَّ مَا قِيلَ بِإِشَعْيَاءَ ٱلنَّبِيِّ" },
 ];
-const passage = { book: "متى", chapter: 8, start: 14, end: 17, verses };
-const g = [
+const passage: Passage = {
+  book: "متى",
+  chapter: 8,
+  start: 14,
+  end: 17,
+  verses,
+};
+const g: GreekToken[] = [
   ["καὶ", "kai", "G2532", "CONJ", "and", 0, 0],
   ["ἥψατο", "hēpsato", "G0681", "V-AMI-3S", "to kindle", 0, 0],
   ["χειρὸς", "cheiros", "G5495", "N-GSF", "hand", 1, 1],
   ["πυρετός,", "puretos", "G4446", "N-NSM", "fever", 3, 3],
 ];
-const material = {
+const material: Material = {
   book: "متى",
   passage,
   verse: verses[1],
@@ -53,7 +62,7 @@ const material = {
 };
 
 test("Every chip gets the reference, heading, verse, ±3 context and both translations", () => {
-  for (const chip of ["explain", "words", "background"]) {
+  for (const chip of ["explain", "words", "background"] as const) {
     const { system, prompt, maxOutputTokens } = buildPrompt(chip, material);
     assert.equal(system, SYSTEM_PROMPT);
     assert.equal(maxOutputTokens, MAX_OUTPUT_TOKENS);
@@ -130,7 +139,7 @@ test("Context is exactly three verses either side, clipped at the passage edges"
     ...(i === 0 ? { heading: "عنوان أول" } : {}),
     ...(i === 6 ? { heading: "عنوان ثان" } : {}),
   }));
-  const at = (number) =>
+  const at = (number: number) =>
     buildPrompt("explain", {
       ...material,
       passage: { ...passage, verses: long },
@@ -183,7 +192,7 @@ test("Prompts stay bounded and never read device storage", () => {
     assert.match(prompt, /المطلوب:\n/);
   } finally {
     if (original) Object.defineProperty(globalThis, "localStorage", original);
-    else delete globalThis.localStorage;
+    else Reflect.deleteProperty(globalThis, "localStorage");
   }
 });
 

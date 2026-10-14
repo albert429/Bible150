@@ -1,4 +1,4 @@
-import { APP_INFO } from "./appInfo";
+import { APP_INFO } from "./appInfo.ts";
 
 export function appShareData(): ShareData {
   return {

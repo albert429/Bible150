@@ -8,6 +8,7 @@ import {
   tokens,
   verseId,
 } from "../src/study/verse.ts";
+import type { GreekToken } from "../src/study/types.ts";
 
 test("Greek words lose punctuation and editorial marks but keep elision", () => {
   const cases = [
@@ -39,7 +40,15 @@ test("Spans join Van Dyck tokens without trailing punctuation", () => {
 });
 
 test("Rows group consecutive tokens sharing an Arabic span; unaligned stay single", () => {
-  const t = (w, a0, a1) => [w, "", "G1", "N", "", a0, a1];
+  const t = (w: string, a0: number | null, a1: number | null): GreekToken => [
+    w,
+    "",
+    "G1",
+    "N",
+    "",
+    a0,
+    a1,
+  ];
   const groups = groupRows([
     t("ὁ", 3, 3),
     t("λόγος", 3, 3),
@@ -61,7 +70,12 @@ test("Rows group consecutive tokens sharing an Arabic span; unaligned stay singl
 });
 
 test("Key words drop function words and repeat each Greek word once", () => {
-  const t = (w, strong, morph, a0) => [w, "", strong, morph, "", a0, a0];
+  const t = (
+    w: string,
+    strong: string,
+    morph: string,
+    a0: number | null,
+  ): GreekToken => [w, "", strong, morph, "", a0, a0];
   // John 1:1, abridged: Ἐν ἀρχῇ ἦν ὁ λόγος, καὶ ὁ λόγος ἦν πρὸς τὸν θεόν … θεὸς
   const groups = keyGroups([
     t("Ἐν", "G1722", "PREP", 0),

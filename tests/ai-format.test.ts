@@ -8,7 +8,7 @@ import {
   wellFormed,
 } from "../src/ai/format.ts";
 
-const texts = (blocks) => JSON.stringify(blocks);
+const texts = (blocks: unknown) => JSON.stringify(blocks);
 
 test("HTML-looking output stays literal text in the AST", () => {
   const blocks = parseAnswer(
@@ -62,14 +62,19 @@ test("Paragraphs, lists, headings and bold become blocks", () => {
 test("A numbered list split by a paragraph continues from the model's number", () => {
   const blocks = parseAnswer("1. أ\n2. ب\nفقرة\n3. ج\n٤) د");
   assert.deepEqual(
-    blocks.map((b) => [b.kind, b.start, (b.items ?? []).length]),
+    blocks.map((b) => [
+      b.kind,
+      b.kind === "ol" ? b.start : undefined,
+      "items" in b ? b.items.length : 0,
+    ]),
     [
       ["ol", 1, 2],
       ["p", undefined, 0],
       ["ol", 3, 2],
     ],
   );
-  assert.equal(parseAnswer("٧. سابعًا")[0].start, 7);
+  const [list] = parseAnswer("٧. سابعًا");
+  assert.equal(list.kind === "ol" ? list.start : undefined, 7);
 });
 
 test("Lone surrogates are dropped, so the text always URI-encodes", () => {

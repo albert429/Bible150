@@ -6,11 +6,15 @@ import {
   matchesReading,
   validManifest,
   cueAt,
+  type AudioManifest,
+  type Cue,
 } from "../src/audio/manifest.ts";
 import { audioUrl } from "../src/audio/url.ts";
+import type { Day } from "../src/readings.ts";
 
-const reading = {
+const reading: Day = {
   day: 1,
+  verseCount: 3,
   passages: [
     {
       book: "لوقا",
@@ -31,12 +35,12 @@ const reading = {
     },
   ],
 };
-const cues = [
+const cues: Cue[] = [
   { passage: 0, verse: 1, start: 0.2, end: 2 },
   { passage: 0, verse: 2, start: 3, end: 6 },
   { passage: 1, verse: 1, start: 6.5, end: 8 },
 ];
-const manifest = async () => ({
+const manifest = async (): Promise<AudioManifest> => ({
   version: 1,
   day: 1,
   readingHash: await readingHash(reading),
@@ -58,7 +62,7 @@ test("Audio matches the precise reading, including repeated passages", async () 
     false,
   );
   const changed = structuredClone(reading);
-  changed.passages[0].verses[0].text += " مصحح";
+  changed.passages[0].verses![0].text += " مصحح";
   assert.equal(await matchesReading(m, changed), false);
 });
 
@@ -119,10 +123,10 @@ test("Static hosting and an HTTPS CDN use the same immutable asset path", () => 
 
 // The production catalog is independently checked without needing media binaries.
 test("Every prepared day matches Scripture and has ordered, complete cues", async () => {
-  const plan = JSON.parse(
+  const plan: Day[] = JSON.parse(
     readFileSync(new URL("../data/plan.json", import.meta.url), "utf8"),
   );
-  const { days } = JSON.parse(
+  const { days }: { days: number[] } = JSON.parse(
     readFileSync(
       new URL("../data/audio/catalog.json", import.meta.url),
       "utf8",
@@ -144,11 +148,10 @@ test("Every prepared day matches Scripture and has ordered, complete cues", asyn
       validManifest(manifest, String(day)),
       `Invalid day ${day} timings`,
     );
+    const reading = plan.find((r) => r.day === day);
+    assert.ok(reading, `Day ${day} is not in the plan`);
     assert.ok(
-      await matchesReading(
-        manifest,
-        plan.find((r) => r.day === day),
-      ),
+      await matchesReading(manifest, reading),
       `Stale/incomplete day ${day}`,
     );
   }

@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { readings, type Day } from "./readings";
+import { readings, type Day } from "./readings.ts";
 
 type Connection = { saveData?: boolean; effectiveType?: string };
 

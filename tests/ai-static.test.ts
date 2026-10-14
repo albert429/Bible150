@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 
 const root = new URL("../src/", import.meta.url);
-const files = readdirSync(root, { recursive: true })
+const files = readdirSync(root, { recursive: true, encoding: "utf8" })
   .filter((name) => /\.(ts|tsx)$/.test(name))
   .map((name) => ({
     name: name.replaceAll("\\", "/"),

@@ -1,11 +1,17 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { runChain } from "../src/ai/chain.ts";
-import { AiError } from "../src/ai/types.ts";
+import {
+  AiError,
+  type AiErrorKind,
+  type AiMeta,
+  type AiRequest,
+  type StreamCallbacks,
+} from "../src/ai/types.ts";
 
-const request = { system: "s", prompt: "p", maxOutputTokens: 10 };
-const sleep = (ms, signal) =>
-  new Promise((resolve, reject) => {
+const request: AiRequest = { system: "s", prompt: "p", maxOutputTokens: 10 };
+const sleep = (ms: number, signal?: AbortSignal) =>
+  new Promise<void>((resolve, reject) => {
     const timer = setTimeout(resolve, ms);
     signal?.addEventListener("abort", () => {
       clearTimeout(timer);
@@ -13,27 +19,36 @@ const sleep = (ms, signal) =>
     });
   });
 /** A provider that runs a script of steps against the callbacks. */
-const provider = (id, script) => ({
+type Script = (
+  signal: AbortSignal,
+  cb: Required<StreamCallbacks>,
+) => Promise<AiMeta | void>;
+const provider = (id: string, script: Script) => ({
   id,
   calls: 0,
-  async stream(_req, signal, cb) {
+  async stream(
+    this: { calls: number },
+    _req: AiRequest,
+    signal: AbortSignal,
+    cb: Required<StreamCallbacks>,
+  ) {
     this.calls++;
-    return script(signal, cb);
+    return (await script(signal, cb)) as AiMeta;
   },
 });
 const collect = () => {
-  const seen = { text: "", meta: [], activity: 0 };
+  const seen = { text: "", meta: [] as string[], activity: 0 };
   return {
     seen,
     cb: {
-      onText: (t) => (seen.text += t),
-      onMeta: (m) => seen.meta.push(m),
+      onText: (t: string) => (seen.text += t),
+      onMeta: (m: string) => seen.meta.push(m),
       onActivity: () => seen.activity++,
     },
   };
 };
 const fast = { firstTokenMs: 60, ceilingMs: 200, idleMs: 60 };
-const kindOf = (kind, after) => (e) => {
+const kindOf = (kind: AiErrorKind, after?: boolean) => (e: unknown) => {
   assert.ok(e instanceof AiError);
   assert.equal(e.kind, kind);
   if (after !== undefined) assert.equal(e.afterFirstToken, after);
@@ -48,7 +63,7 @@ test("Falls through to the next provider on failures before any text", async () 
     "network",
     "rate",
     "unavailable",
-  ]) {
+  ] as const) {
     const a = provider("a", async () => {
       throw new AiError(kind);
     });
@@ -71,7 +86,7 @@ test("Falls through to the next provider on failures before any text", async () 
 });
 
 test("Auth disables a provider for later calls; all disabled is auth", async () => {
-  const disabled = new Set();
+  const disabled = new Set<string>();
   const a = provider("a", async () => {
     throw new AiError("auth");
   });
@@ -107,8 +122,9 @@ test("An error after text is final: partial text kept, next provider never tried
   const { seen, cb } = collect();
   await assert.rejects(
     runChain([a, b], request, new AbortController().signal, cb, fast),
-    (e) => {
+    (e: unknown) => {
       kindOf("server", true)(e);
+      assert.ok(e instanceof AiError);
       assert.equal(e.model, "a/model:free");
       return true;
     },
@@ -197,7 +213,7 @@ test("An outer abort stops immediately and never tries the next provider", async
 });
 
 test("When every provider fails, the most useful reason wins", async () => {
-  const fail = (id, kind) =>
+  const fail = (id: string, kind: AiErrorKind) =>
     provider(id, async () => {
       throw new AiError(kind);
     });

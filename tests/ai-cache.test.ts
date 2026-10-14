@@ -16,15 +16,15 @@ import {
   USAGE_KEY,
 } from "../src/ai/cache.ts";
 
-function memory(initial = {}) {
+function memory(initial: Record<string, string> = {}) {
   const map = new Map(Object.entries(initial));
-  const touched = new Set();
+  const touched = new Set<string>();
   return {
     map,
     touched,
-    getItem: (k) => (touched.add(k), map.has(k) ? map.get(k) : null),
-    setItem: (k, v) => (touched.add(k), map.set(k, String(v))),
-    removeItem: (k) => (touched.add(k), map.delete(k)),
+    getItem: (k: string) => (touched.add(k), map.get(k) ?? null),
+    setItem: (k: string, v: string) => void (touched.add(k), map.set(k, v)),
+    removeItem: (k: string) => void (touched.add(k), map.delete(k)),
   };
 }
 
@@ -80,7 +80,7 @@ test("A new prompt version drops older answers; total size is bounded", () => {
       { text: "x".repeat(6000), model: "m" },
       2,
     );
-  const stored = JSON.parse(s.map.get(CACHE_KEY)).e;
+  const stored: [string, string][] = JSON.parse(s.map.get(CACHE_KEY) ?? "{}").e;
   assert.ok(stored.reduce((n, e) => n + e[1].length, 0) <= 200000);
 });
 

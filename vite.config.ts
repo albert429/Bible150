@@ -2,7 +2,7 @@ import { defineConfig, loadEnv } from "vite";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import react from "@vitejs/plugin-react";
-import { audioUrl } from "./src/audio/url";
+import { audioUrl } from "./src/audio/url.ts";
 import { aiBuildConfig } from "./src/ai/config.ts";
 
 export default defineConfig(({ mode }) => {
