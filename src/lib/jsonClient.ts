@@ -30,8 +30,8 @@ export function createJsonClient<T>(
         cache.set(key, data);
         return data;
       })
-      .catch(() => {
-        throw new Error(message(key));
+      .catch((cause) => {
+        throw new Error(message(key), { cause });
       })
       .finally(() => {
         clearTimeout(timeout);
@@ -40,5 +40,11 @@ export function createJsonClient<T>(
     pending.set(key, request);
     return request;
   }
-  return { load, peek: (key: string) => cache.get(key) };
+  return {
+    load,
+    peek: (key: string) => cache.get(key),
+    invalidate: (key: string) => {
+      cache.delete(key);
+    },
+  };
 }

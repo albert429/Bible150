@@ -33,7 +33,11 @@ test("HTTP and validation failures reject with the message and are not cached", 
     return Response.json({ key: "b" });
   });
   await assert.rejects(client.load("b"), /تعذر تحميل b/);
-  await assert.rejects(client.load("b"), /تعذر تحميل b/);
+  await assert.rejects(client.load("b"), (error: Error) => {
+    assert.equal(error.message, "تعذر تحميل b");
+    assert.match(String(error.cause), /Invalid data/);
+    return true;
+  });
   assert.equal(client.peek("b"), undefined);
   assert.deepEqual(await client.load("b"), { key: "b" });
   assert.equal(requests, 3);
@@ -55,4 +59,31 @@ test("A request that outlives the timeout is aborted and can be retried", async 
   await assert.rejects(client.load("c"), /تعذر تحميل c/);
   assert.ok(aborted);
   assert.equal(client.peek("c"), undefined);
+});
+
+test("Failures keep the underlying error as the cause", async () => {
+  const client = createJsonClient(
+    options,
+    async () => new Response("down", { status: 503 }),
+  );
+  await assert.rejects(client.load("a"), (error: Error) => {
+    assert.equal(error.message, "تعذر تحميل a");
+    assert.equal((error.cause as Error).message, "HTTP 503");
+    return true;
+  });
+});
+
+test("Invalidating a key drops only that cached value", async () => {
+  const urls: string[] = [];
+  const client = createJsonClient(options, async (url) => {
+    urls.push(String(url));
+    return Response.json({ key: String(url).slice(6, -5) });
+  });
+  await client.load("a");
+  await client.load("b");
+  client.invalidate("a");
+  assert.equal(client.peek("a"), undefined);
+  assert.deepEqual(client.peek("b"), { key: "b" });
+  assert.deepEqual(await client.load("a"), { key: "a" });
+  assert.deepEqual(urls, ["/data/a.json", "/data/b.json", "/data/a.json"]);
 });
