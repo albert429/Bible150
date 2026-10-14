@@ -14,6 +14,7 @@ import {
 import { Check, RotateCcw, Headphones } from "lucide-react";
 import { ar } from "../lib/format";
 import type { Day } from "../plan/readings";
+import { readingLabel } from "../plan/labels";
 import { Loading, LoadError, ChunkBoundary } from "../components/Feedback";
 import PassageReference from "../components/PassageReference";
 import VerseStudy, { type StudyTarget } from "../study/VerseStudy";
@@ -161,7 +162,7 @@ export default function Reader({
     >
       <article
         className="reader"
-        aria-label={`قراءة اليوم ${ar(selected)}`}
+        aria-label={readingLabel(selected)}
         data-day={selected}
         aria-busy={!reading && !error}
         onPointerDown={onPointerDown}

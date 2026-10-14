@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Pause, Play, SkipBack, SkipForward } from "lucide-react";
 import type { Day } from "../plan/readings";
-import { ar } from "../lib/format";
+import { chapterVerse } from "../bible/reference";
+import { dayLabel, readingLabel } from "../plan/labels";
 import { cueAt } from "./manifest";
 import { useAudioManifest } from "./useAudioManifest";
 import "./audio.css";
@@ -140,7 +141,7 @@ export default function AudioPlayer({
     if (!("mediaSession" in navigator) || !manifest) return;
     const session = navigator.mediaSession;
     session.metadata = new MediaMetadata({
-      title: `قراءة اليوم ${ar(reading.day)}`,
+      title: readingLabel(reading.day),
       artist: "ترجمة فان دايك · Faith Comes By Hearing",
       album: "العهد الجديد بالترتيب الزمني",
       artwork: [{ src: appIcon, sizes: "any", type: "image/svg+xml" }],
@@ -236,13 +237,11 @@ export default function AudioPlayer({
         />
         <div className="audio-player-inner">
           <div className="audio-current">
-            <span>{ended ? "انتهى التسجيل" : `اليوم ${ar(reading.day)}`}</span>
+            <span>{ended ? "انتهى التسجيل" : dayLabel(reading.day)}</span>
             {passage && cue && (
               <span className="audio-reference">
                 {passage.book}{" "}
-                <bdi dir="ltr">
-                  {ar(passage.chapter)}: {ar(cue.verse)}
-                </bdi>
+                <bdi dir="ltr">{chapterVerse(passage.chapter, cue.verse)}</bdi>
               </span>
             )}
           </div>

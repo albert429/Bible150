@@ -5,7 +5,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { gzipSync } from "node:zlib";
 import { BUDGETS, buildStudy } from "../scripts/build-study.js";
+import { verseId } from "../src/bible/verse.ts";
 import type { Day } from "../src/plan/readings.ts";
+import { usfmByName } from "../scripts/lib/books.js";
 
 const read = (path: string) =>
   JSON.parse(readFileSync(new URL("../" + path, import.meta.url), "utf8"));
@@ -17,11 +19,10 @@ test("Static study days match the study data for every plan verse", (t) => {
   const readOut = (name: string) =>
     JSON.parse(readFileSync(join(out, name), "utf8"));
   const plan: Day[] = read("data/plan.json");
-  const books: string[][] = read("data/books.json");
   const greek = read("data/study/greek.json");
   const nav = read("data/study/nav.json");
   const kjv = read("data/study/kjv.json");
-  const usfm = new Map(books.map((row) => [row[3], row[0]]));
+  const usfm = usfmByName();
   const seen = new Map();
   assert.equal(plan.length, 150);
   for (const day of plan) {
@@ -38,7 +39,11 @@ test("Static study days match the study data for every plan verse", (t) => {
     );
     for (const passage of day.passages) {
       for (const verse of passage.verses ?? []) {
-        const id = `${usfm.get(passage.book)}.${passage.chapter}.${verse.number}`;
+        const id = verseId(
+          usfm.get(passage.book)!,
+          passage.chapter,
+          verse.number,
+        );
         const entry = core.verses[id];
         assert.ok(entry, id);
         assert.deepEqual(entry, { g: greek[id] || [] });

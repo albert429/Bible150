@@ -10,7 +10,8 @@ import {
 import type { Reader } from "../plan/progress";
 import type { Day } from "../plan/readings";
 import { appShareData } from "./share";
-import { ar } from "../lib/format";
+import { PLAN_DAYS } from "../plan/schedule";
+import { dayLabel, readingLabel } from "../plan/labels";
 import { ChunkBoundary, Loading } from "../components/Feedback";
 import Sheet from "../components/Sheet";
 import MenuPanel from "./MenuPanel";
@@ -127,18 +128,18 @@ export default function Navigation({
               <h1 className="toolbar-day">
                 <button
                   className="day-trigger"
-                  aria-label={`تفاصيل اليوم ${ar(selected)}`}
+                  aria-label={`تفاصيل ${dayLabel(selected)}`}
                   aria-haspopup="dialog"
                   aria-expanded={open && panel === "day"}
                   onClick={(event) => show("day", event.currentTarget)}
                 >
-                  <span>اليوم {ar(selected)}</span>
+                  <span>{dayLabel(selected)}</span>
                   <ChevronDown size={14} aria-hidden="true" />
                 </button>
               </h1>
               <button
                 className="icon-button next-day"
-                disabled={selected === 150}
+                disabled={selected === PLAN_DAYS}
                 onClick={() => go(selected + 1)}
                 aria-label="اليوم التالي"
               >
@@ -166,7 +167,7 @@ export default function Navigation({
           panel === "menu"
             ? "القائمة"
             : panel === "day"
-              ? `قراءة اليوم ${ar(selected)}`
+              ? readingLabel(selected)
               : panel === "about"
                 ? "About the app"
                 : "إعدادات القراءة"

@@ -3,6 +3,8 @@ import { readFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { gzipSync } from "node:zlib";
 import { fileURLToPath } from "node:url";
+import { verseId } from "../src/bible/verse.ts";
+import { usfmByName } from "./lib/books.js";
 
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
 
@@ -27,13 +29,12 @@ const shortLex = ({ l, g, d }) => ({
 export function buildStudy({ out, root = ROOT }) {
   const read = (path) => JSON.parse(readFileSync(join(root, path), "utf8"));
   const plan = read("data/plan.json");
-  const books = read("data/books.json");
   const greek = read("data/study/greek.json");
   const lexicon = read("data/study/lexicon.json");
   const nav = read("data/study/nav.json");
   const kjv = read("data/study/kjv.json");
   mkdirSync(out, { recursive: true });
-  const usfmFor = new Map(books.map(([usfm, , , name]) => [name, usfm]));
+  const usfmFor = usfmByName(root);
 
   const write = (name, data) => {
     const body = JSON.stringify(data);
@@ -55,7 +56,7 @@ export function buildStudy({ out, root = ROOT }) {
     const tr = {};
     day.passages.forEach((passage, index) => {
       for (const verse of passage.verses) {
-        const id = `${p[index]}.${passage.chapter}.${verse.number}`;
+        const id = verseId(p[index], passage.chapter, verse.number);
         const g = greek[id] || [];
         const count = verse.text.split(" ").length;
         for (const [, , strong, , , a0, a1] of g) {

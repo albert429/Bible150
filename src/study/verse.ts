@@ -1,8 +1,5 @@
 import type { GreekToken } from "./types.ts";
 
-export const verseId = (usfm: string, chapter: number, verse: number) =>
-  `${usfm}.${chapter}.${verse}`;
-
 export const tokens = (text: string) => text.split(" ");
 
 /**
