@@ -1,0 +1,103 @@
+{
+  "version": 1,
+  "algorithm": "mms-fa-v2",
+  "book": "2CO",
+  "chapter": 9,
+  "file": "B08___09_2CorinthiansARZVDVN1DA.mp3",
+  "audioHash": "a7ade2f70c8263d514b79688c8240911266ac681be47df588570056f2073c816",
+  "textHash": "67109815174fc7b7a631cfcb0a932dcd584e42485de6c5a25a6c3d22e7dccdae",
+  "duration": 155.428625,
+  "method": "MMS_FA/uroman, machine aligned; review before publication",
+  "verses": [
+    {
+      "verse": 1,
+      "start": 3.52,
+      "end": 9.76,
+      "score": 0.5847
+    },
+    {
+      "verse": 2,
+      "start": 10.72,
+      "end": 25.24,
+      "score": 0.6187
+    },
+    {
+      "verse": 3,
+      "start": 25.26,
+      "end": 35.54,
+      "score": 0.5986
+    },
+    {
+      "verse": 4,
+      "start": 36.46,
+      "end": 48.74,
+      "score": 0.5997
+    },
+    {
+      "verse": 5,
+      "start": 49.62,
+      "end": 65.6,
+      "score": 0.5917
+    },
+    {
+      "verse": 6,
+      "start": 66.46,
+      "end": 76.42,
+      "score": 0.6018
+    },
+    {
+      "verse": 7,
+      "start": 77.44,
+      "end": 84.76,
+      "score": 0.5924
+    },
+    {
+      "verse": 8,
+      "start": 84.96,
+      "end": 94.24,
+      "score": 0.607
+    },
+    {
+      "verse": 9,
+      "start": 94.76,
+      "end": 101.0,
+      "score": 0.5898
+    },
+    {
+      "verse": 10,
+      "start": 101.66,
+      "end": 111.64,
+      "score": 0.5733
+    },
+    {
+      "verse": 11,
+      "start": 112.52,
+      "end": 118.1,
+      "score": 0.6404
+    },
+    {
+      "verse": 12,
+      "start": 119.08,
+      "end": 129.04,
+      "score": 0.6456
+    },
+    {
+      "verse": 13,
+      "start": 129.06,
+      "end": 139.56,
+      "score": 0.6108
+    },
+    {
+      "verse": 14,
+      "start": 140.28,
+      "end": 147.64,
+      "score": 0.6291
+    },
+    {
+      "verse": 15,
+      "start": 148.5,
+      "end": 155.36,
+      "score": 0.6119
+    }
+  ]
+}

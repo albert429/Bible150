@@ -1,0 +1,103 @@
+{
+  "version": 1,
+  "algorithm": "mms-fa-v2",
+  "book": "3JN",
+  "chapter": 1,
+  "file": "B25___01_3John_______ARZVDVN1DA.mp3",
+  "audioHash": "ab58f81c36c7a38eb7cc0377c04fd7f9e4e4ee580a34e232a22cdf62e5ce8480",
+  "textHash": "8f73b3c2e2a1170586d5e14b778b5afe1c6ea6eb3daa74f1ba94e091afa080a8",
+  "duration": 137.7436875,
+  "method": "MMS_FA/uroman, machine aligned; review before publication",
+  "verses": [
+    {
+      "verse": 1,
+      "start": 2.46,
+      "end": 9.84,
+      "score": 0.6085
+    },
+    {
+      "verse": 2,
+      "start": 9.84,
+      "end": 18.76,
+      "score": 0.6152
+    },
+    {
+      "verse": 3,
+      "start": 18.78,
+      "end": 27.42,
+      "score": 0.5822
+    },
+    {
+      "verse": 4,
+      "start": 27.42,
+      "end": 36.18,
+      "score": 0.6026
+    },
+    {
+      "verse": 5,
+      "start": 36.18,
+      "end": 42.26,
+      "score": 0.6024
+    },
+    {
+      "verse": 6,
+      "start": 42.72,
+      "end": 51.88,
+      "score": 0.6042
+    },
+    {
+      "verse": 7,
+      "start": 51.88,
+      "end": 56.6,
+      "score": 0.6099
+    },
+    {
+      "verse": 8,
+      "start": 57.48,
+      "end": 64.22,
+      "score": 0.5974
+    },
+    {
+      "verse": 9,
+      "start": 64.22,
+      "end": 71.8,
+      "score": 0.5816
+    },
+    {
+      "verse": 10,
+      "start": 71.92,
+      "end": 90.72,
+      "score": 0.6046
+    },
+    {
+      "verse": 11,
+      "start": 90.72,
+      "end": 101.06,
+      "score": 0.6333
+    },
+    {
+      "verse": 12,
+      "start": 101.54,
+      "end": 112.22,
+      "score": 0.5914
+    },
+    {
+      "verse": 13,
+      "start": 112.38,
+      "end": 118.58,
+      "score": 0.5872
+    },
+    {
+      "verse": 14,
+      "start": 119.34,
+      "end": 124.48,
+      "score": 0.5582
+    },
+    {
+      "verse": 15,
+      "start": 124.98,
+      "end": 132.48,
+      "score": 0.5623
+    }
+  ]
+}

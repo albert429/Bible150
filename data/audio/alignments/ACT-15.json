@@ -1,0 +1,259 @@
+{
+  "version": 1,
+  "algorithm": "mms-fa-v2",
+  "book": "ACT",
+  "chapter": 15,
+  "file": "B05___15_Acts________ARZVDVN1DA.mp3",
+  "audioHash": "58a8d1de5575c67cad0074d7e71dd59f93b80071af5b844b990345a0f933ac82",
+  "textHash": "d42c9af298d6b1c4b3f73ca005dcf9d324bcb94f47aba5aaddbc033d09a743ce",
+  "duration": 373.6033125,
+  "method": "MMS_FA/uroman, machine aligned; review before publication",
+  "verses": [
+    {
+      "verse": 1,
+      "start": 3.84,
+      "end": 14.12,
+      "score": 0.6055
+    },
+    {
+      "verse": 2,
+      "start": 14.82,
+      "end": 30.4,
+      "score": 0.5971
+    },
+    {
+      "verse": 3,
+      "start": 31.52,
+      "end": 43.22,
+      "score": 0.589
+    },
+    {
+      "verse": 4,
+      "start": 43.9,
+      "end": 51.78,
+      "score": 0.5909
+    },
+    {
+      "verse": 5,
+      "start": 52.58,
+      "end": 66.64,
+      "score": 0.6344
+    },
+    {
+      "verse": 6,
+      "start": 67.06,
+      "end": 70.34,
+      "score": 0.6179
+    },
+    {
+      "verse": 7,
+      "start": 71.3,
+      "end": 88.14,
+      "score": 0.5756
+    },
+    {
+      "verse": 8,
+      "start": 88.78,
+      "end": 94.72,
+      "score": 0.6586
+    },
+    {
+      "verse": 9,
+      "start": 95.72,
+      "end": 100.82,
+      "score": 0.6053
+    },
+    {
+      "verse": 10,
+      "start": 101.94,
+      "end": 110.0,
+      "score": 0.6094
+    },
+    {
+      "verse": 11,
+      "start": 110.76,
+      "end": 116.04,
+      "score": 0.6165
+    },
+    {
+      "verse": 12,
+      "start": 117.08,
+      "end": 128.14,
+      "score": 0.6029
+    },
+    {
+      "verse": 13,
+      "start": 129.18,
+      "end": 135.8,
+      "score": 0.6141
+    },
+    {
+      "verse": 14,
+      "start": 136.72,
+      "end": 143.68,
+      "score": 0.6516
+    },
+    {
+      "verse": 15,
+      "start": 144.42,
+      "end": 148.96,
+      "score": 0.6269
+    },
+    {
+      "verse": 16,
+      "start": 149.88,
+      "end": 158.5,
+      "score": 0.5976
+    },
+    {
+      "verse": 17,
+      "start": 159.2,
+      "end": 169.54,
+      "score": 0.619
+    },
+    {
+      "verse": 18,
+      "start": 169.54,
+      "end": 173.88,
+      "score": 0.6161
+    },
+    {
+      "verse": 19,
+      "start": 174.76,
+      "end": 180.02,
+      "score": 0.5682
+    },
+    {
+      "verse": 20,
+      "start": 180.72,
+      "end": 187.76,
+      "score": 0.6354
+    },
+    {
+      "verse": 21,
+      "start": 188.84,
+      "end": 197.5,
+      "score": 0.5669
+    },
+    {
+      "verse": 22,
+      "start": 198.52,
+      "end": 216.32,
+      "score": 0.5867
+    },
+    {
+      "verse": 23,
+      "start": 216.32,
+      "end": 228.52,
+      "score": 0.567
+    },
+    {
+      "verse": 24,
+      "start": 228.52,
+      "end": 241.14,
+      "score": 0.5682
+    },
+    {
+      "verse": 25,
+      "start": 241.82,
+      "end": 252.46,
+      "score": 0.587
+    },
+    {
+      "verse": 26,
+      "start": 252.52,
+      "end": 257.88,
+      "score": 0.5547
+    },
+    {
+      "verse": 27,
+      "start": 258.8,
+      "end": 264.48,
+      "score": 0.6277
+    },
+    {
+      "verse": 28,
+      "start": 264.98,
+      "end": 272.88,
+      "score": 0.5789
+    },
+    {
+      "verse": 29,
+      "start": 273.02,
+      "end": 284.22,
+      "score": 0.5951
+    },
+    {
+      "verse": 30,
+      "start": 285.14,
+      "end": 291.02,
+      "score": 0.5447
+    },
+    {
+      "verse": 31,
+      "start": 291.9,
+      "end": 295.9,
+      "score": 0.5637
+    },
+    {
+      "verse": 32,
+      "start": 295.9,
+      "end": 303.14,
+      "score": 0.6237
+    },
+    {
+      "verse": 33,
+      "start": 303.94,
+      "end": 308.98,
+      "score": 0.6156
+    },
+    {
+      "verse": 34,
+      "start": 309.84,
+      "end": 312.54,
+      "score": 0.5671
+    },
+    {
+      "verse": 35,
+      "start": 312.9,
+      "end": 322.36,
+      "score": 0.4986
+    },
+    {
+      "verse": 36,
+      "start": 324.5,
+      "end": 335.6,
+      "score": 0.6177
+    },
+    {
+      "verse": 37,
+      "start": 336.52,
+      "end": 342.24,
+      "score": 0.6145
+    },
+    {
+      "verse": 38,
+      "start": 342.24,
+      "end": 351.08,
+      "score": 0.6018
+    },
+    {
+      "verse": 39,
+      "start": 351.82,
+      "end": 361.18,
+      "score": 0.5993
+    },
+    {
+      "verse": 40,
+      "start": 361.18,
+      "end": 367.72,
+      "score": 0.6249
+    },
+    {
+      "verse": 41,
+      "start": 367.72,
+      "end": 371.4,
+      "score": 0.5795
+    }
+  ]
+}

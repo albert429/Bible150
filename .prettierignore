@@ -12,3 +12,5 @@ public/study/
 public/audio/
 data/audio/manifests/
 dist-ai/
+data/audio/catalog.json
+data/audio/alignments/

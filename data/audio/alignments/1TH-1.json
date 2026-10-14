@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "algorithm": "mms-fa-v2",
+  "book": "1TH",
+  "chapter": 1,
+  "file": "B13___01_1Thess______ARZVDVN1DA.mp3",
+  "audioHash": "a26ae932b5c35b0d09ef47ab3a59060c9f6d88904525545a528549b9de3fdb3b",
+  "textHash": "2ef73d3b87e376196dc8b473b5148d2b55ad82da0dbb973bd89a24caea86ca40",
+  "duration": 116.898,
+  "method": "MMS_FA/uroman, machine aligned; review before publication",
+  "verses": [
+    {
+      "verse": 1,
+      "start": 7.26,
+      "end": 25.78,
+      "score": 0.6193
+    },
+    {
+      "verse": 2,
+      "start": 25.78,
+      "end": 33.78,
+      "score": 0.6175
+    },
+    {
+      "verse": 3,
+      "start": 33.78,
+      "end": 48.8,
+      "score": 0.5787
+    },
+    {
+      "verse": 4,
+      "start": 48.86,
+      "end": 52.34,
+      "score": 0.6106
+    },
+    {
+      "verse": 5,
+      "start": 52.88,
+      "end": 64.78,
+      "score": 0.6035
+    },
+    {
+      "verse": 6,
+      "start": 65.44,
+      "end": 73.42,
+      "score": 0.572
+    },
+    {
+      "verse": 7,
+      "start": 73.42,
+      "end": 80.62,
+      "score": 0.594
+    },
+    {
+      "verse": 8,
+      "start": 80.62,
+      "end": 95.44,
+      "score": 0.5565
+    },
+    {
+      "verse": 9,
+      "start": 96.14,
+      "end": 106.36,
+      "score": 0.6329
+    },
+    {
+      "verse": 10,
+      "start": 106.84,
+      "end": 114.78,
+      "score": 0.5977
+    }
+  ]
+}

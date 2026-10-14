@@ -2,33 +2,33 @@
 
 ## Structure
 
-| Path                                                | Responsibility                                                               |
-| --------------------------------------------------- | ---------------------------------------------------------------------------- |
-| `src/main.tsx`                                      | React bootstrap and global styles                                            |
-| `src/App.tsx`                                       | Reader state, navigation, progress actions, and application dialogs          |
-| `src/components/Reader.tsx`                         | Continuous Arabic Scripture, verse tap/keyboard trigger, and completion      |
-| `src/components/VerseStudy.tsx`                     | Verse study sheet shell; loads the study chunk on demand                     |
-| `src/study/`                                        | Lazy verse study panel: translations and Greek key words                     |
-| `src/ai/`                                           | Optional AI explanations: config, prompt, streaming, on-device cache         |
-| `src/jsonClient.ts`                                 | Shared static JSON loader: cache, deduplication, timeout, validation         |
-| `src/components/Navigation.tsx`                     | Sticky toolbar and sheet coordination                                        |
-| `src/components/navigation/`                        | Menu, day details, and appearance panels                                     |
-| `src/components/Sheet.tsx`                          | Accessible native dialog, restrained motion, focus restoration               |
-| `src/components/{About,Calendar,Dialogs,Share}.tsx` | Secondary screens loaded on demand                                           |
-| `src/{readings,useReading}.ts`                      | Static fetching, validation, cache, deduplication, stale-response protection |
-| `src/progress.ts`                                   | Validated local profiles, completion, backups, and restore                   |
-| `src/useAppearance.ts`                              | Saved font size and theme preferences                                        |
-| `src/useAdjacentPrefetch.ts`                        | Deferred, connection-aware preparation of neighbouring readings              |
-| `src/appInfo.ts`                                    | App credits, contact links, and Scripture source                             |
-| `data/`                                             | Canonical Scripture plan and extracted source table                          |
-| `data/books.json`                                   | 66 books: USFM, OSIS and STEPBible codes with Arabic names                   |
-| `data/study/`                                       | Imported study data (CC BY / CC BY-SA; see `data/study/LICENSE.md`)          |
-| `scripts/import-study.py`                           | Builds `data/study/` from downloaded sources, with coverage gates            |
-| `scripts/build-study.js`                            | Splits study data into `public/study/{day}[.tr\|.lex].json`, with budgets    |
-| `scripts/sse-stub.mjs`                              | Local stand-in for the AI streaming API, used only by browser tests          |
-| `scripts/`                                          | Static build, imports, asset regeneration, visual and performance checks     |
-| `tests/`                                            | Unit/data checks and mobile browser workflows                                |
-| `docs/assets/`                                      | README artwork and actual app screenshot; never shipped in the app           |
+| Path                                                   | Responsibility                                                               |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------- |
+| `src/main.tsx`                                         | React bootstrap and global styles                                            |
+| `src/App.tsx`                                          | Reader state, navigation, progress actions, and application dialogs          |
+| `src/components/Reader.tsx`                            | Continuous Arabic Scripture, verse tap/keyboard trigger, and completion      |
+| `src/components/VerseStudy.tsx`                        | Verse study sheet shell; loads the study chunk on demand                     |
+| `src/study/`                                           | Lazy verse study panel: translations and Greek key words                     |
+| `src/ai/`                                              | Optional AI explanations: config, prompt, streaming, on-device cache         |
+| `src/jsonClient.ts`                                    | Shared static JSON loader: cache, deduplication, timeout, validation         |
+| `src/components/Navigation.tsx`                        | Sticky toolbar and sheet coordination                                        |
+| `src/components/navigation/`                           | Menu, day details, and appearance panels                                     |
+| `src/components/Sheet.tsx`                             | Accessible native dialog, restrained motion, focus restoration               |
+| `src/components/{About,Calendar,Dialogs,Feedback}.tsx` | Secondary screens loaded on demand                                           |
+| `src/{readings,useReading}.ts`                         | Static fetching, validation, cache, deduplication, stale-response protection |
+| `src/progress.ts`                                      | Validated local profiles, completion, backups, and restore                   |
+| `src/useAppearance.ts`                                 | Saved font size and theme preferences                                        |
+| `src/useAdjacentPrefetch.ts`                           | Deferred, connection-aware preparation of neighbouring readings              |
+| `src/appInfo.ts`                                       | App credits, contact links, and Scripture source                             |
+| `data/`                                                | Canonical Scripture plan and extracted source table                          |
+| `data/books.json`                                      | 66 books: USFM, OSIS and STEPBible codes with Arabic names                   |
+| `data/study/`                                          | Imported study data (CC BY / CC BY-SA; see `data/study/LICENSE.md`)          |
+| `scripts/import-study.py`                              | Builds `data/study/` from downloaded sources, with coverage gates            |
+| `scripts/build-study.js`                               | Splits study data into `public/study/{day}[.tr\|.lex].json`, with budgets    |
+| `scripts/sse-stub.mjs`                                 | Local stand-in for the AI streaming API, used only by browser tests          |
+| `scripts/`                                             | Static build, imports, asset regeneration, visual and performance checks     |
+| `tests/`                                               | Unit/data checks and mobile browser workflows                                |
+| `docs/assets/`                                         | README artwork and actual app screenshot; never shipped in the app           |
 
 ## Commands
 

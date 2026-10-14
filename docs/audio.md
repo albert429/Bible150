@@ -34,7 +34,7 @@ python3 scripts/build-audio.py /path/to/Arabic_arb_VDV_NT_Drama
 npm run build
 ```
 
-Alignment results are resumable under `artifacts/audio-work/aligned/`. For a pilot,
+Alignment results are resumable under `data/audio/alignments/`, which is committed (timings only, no audio). For a pilot,
 use `--chapters MAT:1,MRK:1,LUK:1,LUK:2,JHN:1` on alignment and `--days 1,2,3`
 on assembly. They contain machine-generated timestamps and confidence scores,
 **not a claim of manual verification**. Listen to passage boundaries and review
@@ -78,7 +78,7 @@ Cache-Control: public, max-age=31536000, immutable
 
 The host must support byte ranges and return correct `Content-Length` and
 `Content-Range` headers. Never reuse an immutable media URL for changed audio.
-Day JSON remains on Vercel with revalidation, so timing fixes take effect.
+Day JSON remains on Vercel with revalidation, so timing fixes take effect. `vercel.json` sets `Vercel-CDN-Cache-Control: no-store` on `/audio/days/*`, so Vercel never caches proxied media itself; the browser and Cloudflare do.
 
 ## Current deployment: Vercel + Cloudflare Pages
 
@@ -153,7 +153,7 @@ Serve `public/audio/days/` from the deployment and leave `VITE_AUDIO_BASE_URL`
 unset. `vercel.json` sets immutable media caching. The media must be present at
 build/deploy time; it is intentionally absent from a fresh Git checkout.
 
-Vercel automatically caches static files, but the downloads count toward transfer
+Vercel serves static files from its CDN, but the downloads count toward transfer
 allowances. Hobby currently includes 100 GB of Fast Data Transfer. At 3 MB per
 daily play, 1,000 readers listening on 30 days would use roughly 90 GB before
 other site traffic. Browser cache hits can reduce transfers, but do not assume
@@ -194,7 +194,7 @@ configuration. Local tests without this flag use the actual prepared media.
 
 ## Local verification — 11 October 2026
 
-- 25 unit/data tests, 64 Chromium/WebKit browser checks, and 12 additional
+- The unit/data tests, the Chromium/WebKit browser checks, and additional
   real-recording browser checks passed. Accessibility checks use axe.
 - All 150 manifests match the current Scripture, passage order, and verse counts.
   All media files are mono AAC at 24 kHz with fast-start metadata. The local

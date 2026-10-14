@@ -1,0 +1,169 @@
+{
+  "version": 1,
+  "algorithm": "mms-fa-v2",
+  "book": "GAL",
+  "chapter": 5,
+  "file": "B09___05_Galatians___ARZVDVN1DA.mp3",
+  "audioHash": "fa69584e38daf50e0a640d5d7fd62b5dbef003c84669d1927ae6757c412005a0",
+  "textHash": "609b1692f54a7b444f528bde64137b21eec69435865d93fa35f5d7031fc79b76",
+  "duration": 252.52575,
+  "method": "MMS_FA/uroman, machine aligned; review before publication",
+  "verses": [
+    {
+      "verse": 1,
+      "start": 3.62,
+      "end": 13.8,
+      "score": 0.6209
+    },
+    {
+      "verse": 2,
+      "start": 14.68,
+      "end": 22.98,
+      "score": 0.5971
+    },
+    {
+      "verse": 3,
+      "start": 24.16,
+      "end": 32.98,
+      "score": 0.6095
+    },
+    {
+      "verse": 4,
+      "start": 33.98,
+      "end": 42.5,
+      "score": 0.6097
+    },
+    {
+      "verse": 5,
+      "start": 43.18,
+      "end": 48.12,
+      "score": 0.6105
+    },
+    {
+      "verse": 6,
+      "start": 48.82,
+      "end": 59.02,
+      "score": 0.5959
+    },
+    {
+      "verse": 7,
+      "start": 59.02,
+      "end": 65.26,
+      "score": 0.6199
+    },
+    {
+      "verse": 8,
+      "start": 65.98,
+      "end": 69.28,
+      "score": 0.6277
+    },
+    {
+      "verse": 9,
+      "start": 70.32,
+      "end": 75.44,
+      "score": 0.5975
+    },
+    {
+      "verse": 10,
+      "start": 75.54,
+      "end": 88.06,
+      "score": 0.6006
+    },
+    {
+      "verse": 11,
+      "start": 89.04,
+      "end": 100.76,
+      "score": 0.6074
+    },
+    {
+      "verse": 12,
+      "start": 101.8,
+      "end": 105.5,
+      "score": 0.6297
+    },
+    {
+      "verse": 13,
+      "start": 106.72,
+      "end": 120.2,
+      "score": 0.6019
+    },
+    {
+      "verse": 14,
+      "start": 121.18,
+      "end": 129.26,
+      "score": 0.582
+    },
+    {
+      "verse": 15,
+      "start": 130.28,
+      "end": 139.16,
+      "score": 0.6437
+    },
+    {
+      "verse": 16,
+      "start": 140.16,
+      "end": 147.3,
+      "score": 0.6017
+    },
+    {
+      "verse": 17,
+      "start": 148.34,
+      "end": 162.44,
+      "score": 0.6157
+    },
+    {
+      "verse": 18,
+      "start": 162.44,
+      "end": 168.1,
+      "score": 0.6079
+    },
+    {
+      "verse": 19,
+      "start": 168.16,
+      "end": 177.76,
+      "score": 0.6135
+    },
+    {
+      "verse": 20,
+      "start": 178.42,
+      "end": 188.76,
+      "score": 0.6549
+    },
+    {
+      "verse": 21,
+      "start": 189.34,
+      "end": 207.08,
+      "score": 0.6289
+    },
+    {
+      "verse": 22,
+      "start": 208.02,
+      "end": 220.14,
+      "score": 0.6365
+    },
+    {
+      "verse": 23,
+      "start": 221.18,
+      "end": 227.56,
+      "score": 0.6278
+    },
+    {
+      "verse": 24,
+      "start": 228.94,
+      "end": 234.98,
+      "score": 0.6053
+    },
+    {
+      "verse": 25,
+      "start": 235.04,
+      "end": 242.16,
+      "score": 0.6475
+    },
+    {
+      "verse": 26,
+      "start": 242.18,
+      "end": 250.14,
+      "score": 0.6214
+    }
+  ]
+}

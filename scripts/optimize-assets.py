@@ -21,8 +21,8 @@ for source in (root / "assets/source-fonts").glob("*.ttf"):
     for table in ("GSUB", "GPOS"):
         assert font.getTableData(table) == restored.getTableData(table)
     print(f"{source.name}: {source.stat().st_size} -> {target.stat().st_size} bytes")
-with Image.open(root / "public/church-logo.png") as original:
-    for size in (96, 192):
+with Image.open(root / "assets/source-images/church-logo.png") as original:
+    for size in (192,):
         target = output / f"church-logo-{size}.png"
         artwork = original.convert("RGBA")
         artwork.thumbnail((size, size), Image.Resampling.LANCZOS)

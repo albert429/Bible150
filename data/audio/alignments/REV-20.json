@@ -1,0 +1,103 @@
+{
+  "version": 1,
+  "algorithm": "mms-fa-v2",
+  "book": "REV",
+  "chapter": 20,
+  "file": "B27___20_Revelation__ARZVDVN1DA.mp3",
+  "audioHash": "f2b15b287e4c3e996c278fd164534548f98e1e12739accd8c2ee32dc556540f7",
+  "textHash": "643e701745a1b953cc2b7a6692654fc3c420cd289581b9bb0f00dd25c64bab78",
+  "duration": 185.2343125,
+  "method": "MMS_FA/uroman, machine aligned; review before publication",
+  "verses": [
+    {
+      "verse": 1,
+      "start": 3.46,
+      "end": 10.66,
+      "score": 0.5986
+    },
+    {
+      "verse": 2,
+      "start": 11.92,
+      "end": 20.12,
+      "score": 0.5878
+    },
+    {
+      "verse": 3,
+      "start": 20.88,
+      "end": 35.72,
+      "score": 0.5954
+    },
+    {
+      "verse": 4,
+      "start": 36.56,
+      "end": 63.9,
+      "score": 0.5918
+    },
+    {
+      "verse": 5,
+      "start": 64.72,
+      "end": 73.04,
+      "score": 0.6312
+    },
+    {
+      "verse": 6,
+      "start": 73.04,
+      "end": 89.5,
+      "score": 0.5917
+    },
+    {
+      "verse": 7,
+      "start": 90.46,
+      "end": 94.8,
+      "score": 0.6225
+    },
+    {
+      "verse": 8,
+      "start": 95.8,
+      "end": 107.74,
+      "score": 0.6061
+    },
+    {
+      "verse": 9,
+      "start": 108.68,
+      "end": 119.46,
+      "score": 0.5934
+    },
+    {
+      "verse": 10,
+      "start": 120.3,
+      "end": 134.3,
+      "score": 0.6021
+    },
+    {
+      "verse": 11,
+      "start": 134.3,
+      "end": 143.54,
+      "score": 0.608
+    },
+    {
+      "verse": 12,
+      "start": 144.24,
+      "end": 159.28,
+      "score": 0.626
+    },
+    {
+      "verse": 13,
+      "start": 159.98,
+      "end": 170.76,
+      "score": 0.6143
+    },
+    {
+      "verse": 14,
+      "start": 171.18,
+      "end": 177.28,
+      "score": 0.6261
+    },
+    {
+      "verse": 15,
+      "start": 177.84,
+      "end": 183.22,
+      "score": 0.5794
+    }
+  ]
+}

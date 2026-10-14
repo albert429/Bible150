@@ -1,0 +1,109 @@
+{
+  "version": 1,
+  "algorithm": "mms-fa-v2",
+  "book": "TIT",
+  "chapter": 1,
+  "file": "B17___01_Titus_______ARZVDVN1DA.mp3",
+  "audioHash": "72fe0c791cbd352835d228b7d1eec1b1c98d1490942608c80093e5d00b5914f8",
+  "textHash": "3bf71a7ef7b00f733c7f10f71686decd67facc4a0dd474042f055ed3aa87013e",
+  "duration": 201.43025,
+  "method": "MMS_FA/uroman, machine aligned; review before publication",
+  "verses": [
+    {
+      "verse": 1,
+      "start": 6.28,
+      "end": 19.2,
+      "score": 0.6217
+    },
+    {
+      "verse": 2,
+      "start": 20.3,
+      "end": 30.72,
+      "score": 0.6123
+    },
+    {
+      "verse": 3,
+      "start": 30.72,
+      "end": 42.82,
+      "score": 0.59
+    },
+    {
+      "verse": 4,
+      "start": 43.3,
+      "end": 56.86,
+      "score": 0.6254
+    },
+    {
+      "verse": 5,
+      "start": 58.02,
+      "end": 69.24,
+      "score": 0.5969
+    },
+    {
+      "verse": 6,
+      "start": 69.24,
+      "end": 82.1,
+      "score": 0.6198
+    },
+    {
+      "verse": 7,
+      "start": 82.1,
+      "end": 98.52,
+      "score": 0.6342
+    },
+    {
+      "verse": 8,
+      "start": 98.52,
+      "end": 108.32,
+      "score": 0.6366
+    },
+    {
+      "verse": 9,
+      "start": 108.92,
+      "end": 120.12,
+      "score": 0.6098
+    },
+    {
+      "verse": 10,
+      "start": 120.8,
+      "end": 129.86,
+      "score": 0.5946
+    },
+    {
+      "verse": 11,
+      "start": 130.38,
+      "end": 140.46,
+      "score": 0.6051
+    },
+    {
+      "verse": 12,
+      "start": 141.4,
+      "end": 154.14,
+      "score": 0.633
+    },
+    {
+      "verse": 13,
+      "start": 155.08,
+      "end": 164.16,
+      "score": 0.6299
+    },
+    {
+      "verse": 14,
+      "start": 165.28,
+      "end": 171.54,
+      "score": 0.6037
+    },
+    {
+      "verse": 15,
+      "start": 172.36,
+      "end": 185.08,
+      "score": 0.6438
+    },
+    {
+      "verse": 16,
+      "start": 185.9,
+      "end": 201.28,
+      "score": 0.6039
+    }
+  ]
+}

@@ -27,7 +27,7 @@ def digest(data):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("source", type=Path)
-    parser.add_argument("--output", type=Path, default=ROOT / "artifacts/audio-work/aligned")
+    parser.add_argument("--output", type=Path, default=ROOT / "data/audio/alignments")
     parser.add_argument("--books", help="Comma-separated USFM codes; default all NT books")
     parser.add_argument("--chapters", help="Comma-separated USFM:chapter keys for a pilot")
     parser.add_argument("--device", default="mps" if torch.backends.mps.is_available() else "cpu")

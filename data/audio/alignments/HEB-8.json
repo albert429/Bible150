@@ -1,0 +1,91 @@
+{
+  "version": 1,
+  "algorithm": "mms-fa-v2",
+  "book": "HEB",
+  "chapter": 8,
+  "file": "B19___08_Hebrews_____ARZVDVN1DA.mp3",
+  "audioHash": "15974b95708485beeb63e76d0ab8eb35b789b190d1e00097bd7f2d6b6beeeda8",
+  "textHash": "aeac216b7a10bc0ab6d8ff155b26c0da3af06ba621e82959150ff77179120cc7",
+  "duration": 177.058,
+  "method": "MMS_FA/uroman, machine aligned; review before publication",
+  "verses": [
+    {
+      "verse": 1,
+      "start": 1.22,
+      "end": 13.98,
+      "score": 0.6121
+    },
+    {
+      "verse": 2,
+      "start": 13.98,
+      "end": 20.26,
+      "score": 0.6556
+    },
+    {
+      "verse": 3,
+      "start": 21.42,
+      "end": 32.9,
+      "score": 0.5953
+    },
+    {
+      "verse": 4,
+      "start": 33.62,
+      "end": 42.62,
+      "score": 0.5949
+    },
+    {
+      "verse": 5,
+      "start": 43.26,
+      "end": 60.24,
+      "score": 0.6177
+    },
+    {
+      "verse": 6,
+      "start": 60.88,
+      "end": 71.48,
+      "score": 0.606
+    },
+    {
+      "verse": 7,
+      "start": 72.06,
+      "end": 78.02,
+      "score": 0.6216
+    },
+    {
+      "verse": 8,
+      "start": 78.78,
+      "end": 94.0,
+      "score": 0.6053
+    },
+    {
+      "verse": 9,
+      "start": 95.04,
+      "end": 112.68,
+      "score": 0.5996
+    },
+    {
+      "verse": 10,
+      "start": 112.76,
+      "end": 136.52,
+      "score": 0.63
+    },
+    {
+      "verse": 11,
+      "start": 137.68,
+      "end": 153.96,
+      "score": 0.5986
+    },
+    {
+      "verse": 12,
+      "start": 155.16,
+      "end": 164.64,
+      "score": 0.5958
+    },
+    {
+      "verse": 13,
+      "start": 165.62,
+      "end": 174.86,
+      "score": 0.6022
+    }
+  ]
+}
