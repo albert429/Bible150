@@ -32,28 +32,28 @@
 
 ## Commands
 
-| Command                             | Purpose                                                            |
-| ----------------------------------- | ------------------------------------------------------------------ |
-| `npm run dev`                       | Development server, port 5173; generates static readings first     |
-| `npm run build`                     | Generate readings, type-check the app, and build `dist/`           |
-| `npm start`                         | Preview `dist/`, port 4173                                         |
-| `npm test`                          | Progress, dates, loading, and exact static-data fidelity           |
-| `npm run test:browser`              | Mobile Chromium and WebKit workflows, layout and axe accessibility |
-| `npm run ai:models`                 | Check that the configured AI models still exist and are free       |
-| `npm run format` / `format:check`   | Apply / verify repository formatting                               |
-| `npm run lint`                      | ESLint (TypeScript, React hooks) over the whole repository         |
-| `npm run typecheck`                 | Type-check the app, configs, browser specs and scripts             |
-| `npm run snapshot -- save <dir>`    | Record hashes of generated data and sizes of `dist/assets/`        |
-| `npm run snapshot -- compare <dir>` | Fail on any data change or initial JS/CSS growth over 0.5KB        |
-| `npm run validate`                  | Formatting, lint, type-check, unit/data checks, and build          |
-| `npm run test:visual`               | Save preview screenshots under `artifacts/`                        |
-| `npm run audit:performance`         | Save repeatable mobile Lighthouse reports under `artifacts/`       |
+| Command                             | Purpose                                                           |
+| ----------------------------------- | ----------------------------------------------------------------- |
+| `npm run dev`                       | Development server, port 5173; generates static readings first    |
+| `npm run build`                     | Generate readings, type-check the app, and build `dist/`          |
+| `npm start`                         | Preview `dist/`, port 4173                                        |
+| `npm test`                          | Progress, dates, loading, and exact static-data fidelity          |
+| `npm run test:e2e`                  | Fixture build, then Chromium and WebKit workflows, layout and axe |
+| `npm run ai:models`                 | Check that the configured AI models still exist and are free      |
+| `npm run format` / `format:check`   | Apply / verify repository formatting                              |
+| `npm run lint`                      | ESLint (TypeScript, React hooks) over the whole repository        |
+| `npm run typecheck`                 | Type-check the app, configs, browser specs and scripts            |
+| `npm run snapshot -- save <dir>`    | Record hashes of generated data and sizes of `dist/assets/`       |
+| `npm run snapshot -- compare <dir>` | Fail on any data change or initial JS/CSS growth over 0.5KB       |
+| `npm run validate`                  | Formatting, lint, type-check, unit/data checks, and build         |
+| `npm run test:visual`               | Save preview screenshots under `artifacts/`                       |
+| `npm run audit:performance`         | Save repeatable mobile Lighthouse reports under `artifacts/`      |
 
-`tsconfig.json` only references `tsconfig.app.json` (`src/`), `tsconfig.node.json` (`vite.config.ts`, `playwright.config.ts` and `tests/browser/`, strict) and `tsconfig.scripts.json` (`scripts/` and `hosting/` JavaScript, checked but not strict). `build` checks only the app, so tests and scripts cannot block a deploy.
+`tsconfig.json` only references `tsconfig.app.json` (`src/`), `tsconfig.node.json` (`vite.config.ts`, `playwright.config.ts`, the unit tests in `tests/*.test.ts` and `tests/browser/`, strict) and `tsconfig.scripts.json` (`scripts/` and `hosting/` JavaScript, checked but not strict). `build` checks only the app, so tests and scripts cannot block a deploy.
 
 `npm install` sets `core.hooksPath` to `.githooks/`. `pre-commit` runs Prettier and ESLint on the staged files, then `npm run typecheck`; `pre-push` runs `npm test`. Skip them in an emergency with `--no-verify`.
 
-Browser tests start the production preview themselves. Run `npm run build` first: it generates `public/readings/` and `public/study/`, which the separate AI test build (`dist-ai/`, see below) reuses. Install their browsers with `npx playwright install chromium webkit` (`--with-deps` on Linux). `CHROMIUM_PATH` optionally selects an existing Chromium executable; WebKit uses its own installed browser.
+`npm run test:e2e` builds with `AUDIO_TEST_FIXTURES=1` and `VITE_AUDIO_BASE_URL=https://audio.example.test`, then runs Playwright with the same variables; without them the audio specs fail on a fresh clone. Playwright starts the production preview itself, and the build generates `public/readings/` and `public/study/`, which the separate AI test build (`dist-ai/`, see below) reuses. Outside CI it reuses servers already listening on ports 4173, 4174 and the stub's, so stop a stale `npm start` (or any server serving an old `dist/`) first or the specs run against the old build. Install their browsers with `npx playwright install chromium webkit` (`--with-deps` on Linux). `CHROMIUM_PATH` optionally selects an existing Chromium executable; WebKit uses its own installed browser.
 
 Visual and performance scripts expect a running `npm start`. `BASELINE_URL` optionally adds a baseline site. Compare builds using the same server, throttling, and environment. Reports and traces are ignored by Git.
 
@@ -156,7 +156,7 @@ When the prompt, chips or models change, bump `PROMPT_VERSION` in `src/ai/chips.
 
 ### Tests
 
-`tests/ai-*.test.js` cover:
+`tests/ai-*.test.ts` cover:
 
 - the configuration rules;
 - SSE parsing;

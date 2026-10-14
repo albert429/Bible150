@@ -3,14 +3,16 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { gzipSync } from "node:zlib";
 import { BUDGETS } from "../scripts/build-study.js";
+import type { Day } from "../src/readings.ts";
 
-const read = (path) =>
+const read = (path: string) =>
   JSON.parse(readFileSync(new URL("../" + path, import.meta.url), "utf8"));
-const raw = (path) => readFileSync(new URL("../" + path, import.meta.url));
+const raw = (path: string) =>
+  readFileSync(new URL("../" + path, import.meta.url));
 
 test("Static study days match the study data for every plan verse", () => {
-  const plan = read("data/plan.json");
-  const books = read("data/books.json");
+  const plan: Day[] = read("data/plan.json");
+  const books: string[][] = read("data/books.json");
   const greek = read("data/study/greek.json");
   const nav = read("data/study/nav.json");
   const kjv = read("data/study/kjv.json");
@@ -30,7 +32,7 @@ test("Static study days match the study data for every plan verse", () => {
       day.passages.map((p) => usfm.get(p.book)),
     );
     for (const passage of day.passages) {
-      for (const verse of passage.verses) {
+      for (const verse of passage.verses ?? []) {
         const id = `${usfm.get(passage.book)}.${passage.chapter}.${verse.number}`;
         const entry = core.verses[id];
         assert.ok(entry, id);
@@ -49,7 +51,7 @@ test("Static study days match the study data for every plan verse", () => {
       ["core", `${day.day}.json`],
       ["lex", `${day.day}.lex.json`],
       ["tr", `${day.day}.tr.json`],
-    ])
+    ] as const)
       assert.ok(
         gzipSync(raw("public/study/" + name)).length <= BUDGETS[kind],
         `${name} within budget`,

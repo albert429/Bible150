@@ -6,7 +6,7 @@ const bytes = new Uint8Array(256).map((_, i) => i);
 function host(status = 200) {
   return {
     ASSETS: {
-      fetch: async (request) => {
+      fetch: async (request: Request) => {
         // Simulate Pages ignoring ranges. This is the failure found in deployment.
         return new Response(request.method === "HEAD" ? null : bytes, {
           status,
@@ -16,7 +16,7 @@ function host(status = 200) {
     },
   };
 }
-function request(headers = {}, method = "GET") {
+function request(headers: Record<string, string> = {}, method = "GET") {
   return new Request("https://audio.example/audio/days/001-test.m4a", {
     headers,
     method,
@@ -31,7 +31,7 @@ test("Audio host serves byte-exact cold ranges, Safari probes, suffixes and open
     ["bytes=-3", 253, 255],
     ["bytes=250-999", 250, 255],
     ["bytes=-999", 0, 255],
-  ]) {
+  ] as const) {
     const response = await worker.fetch(request({ Range: range }), host());
     assert.equal(response.status, 206);
     assert.equal(

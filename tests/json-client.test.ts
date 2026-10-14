@@ -2,16 +2,18 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createJsonClient } from "../src/jsonClient.ts";
 
+type Item = { key: string };
 const options = {
-  url: (key) => `/data/${key}.json`,
-  validate: (data, key) => data?.key === key,
-  message: (key) => `تعذر تحميل ${key}`,
+  url: (key: string) => `/data/${key}.json`,
+  validate: (data: unknown, key: string): data is Item =>
+    (data as Item | null)?.key === key,
+  message: (key: string) => `تعذر تحميل ${key}`,
 };
 
 test("Concurrent loads share one request and successes are cached", async () => {
-  const urls = [];
+  const urls: string[] = [];
   const client = createJsonClient(options, async (url) => {
-    urls.push(url);
+    urls.push(String(url));
     return Response.json({ key: "a" });
   });
   const first = client.load("a");
@@ -43,7 +45,7 @@ test("A request that outlives the timeout is aborted and can be retried", async 
     options,
     (_url, init) =>
       new Promise((_, reject) =>
-        init.signal.addEventListener("abort", () => {
+        init?.signal?.addEventListener("abort", () => {
           aborted = true;
           reject(new DOMException("Aborted", "AbortError"));
         }),

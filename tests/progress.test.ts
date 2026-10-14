@@ -12,11 +12,16 @@ import {
   PROGRESS_KEY,
 } from "../src/progress.ts";
 function storage() {
-  const values = new Map();
+  const values = new Map<string, string>();
   return {
-    getItem: (k) => values.get(k) ?? null,
-    setItem: (k, v) => values.set(k, v),
+    getItem: (k: string) => values.get(k) ?? null,
+    setItem: (k: string, v: string) => void values.set(k, v),
   };
+}
+function current(s: ReturnType<typeof storage>) {
+  const reader = currentReader(s);
+  assert.ok(reader);
+  return reader;
 }
 test("Local progress survives reopening, is idempotent, supports reading ahead and undo", () => {
   const s = storage();
@@ -24,10 +29,10 @@ test("Local progress survives reopening, is idempotent, supports reading ahead a
   setCompletion(s, r.id, 1, true);
   setCompletion(s, r.id, 1, true);
   setCompletion(s, r.id, 150, true);
-  assert.deepEqual(currentReader(s).completed, [1, 150]);
-  assert.equal(currentReader(s).startDate, "2026-10-01");
+  assert.deepEqual(current(s).completed, [1, 150]);
+  assert.equal(current(s).startDate, "2026-10-01");
   setCompletion(s, r.id, 1, false);
-  assert.deepEqual(currentReader(s).completed, [150]);
+  assert.deepEqual(current(s).completed, [150]);
   assert.throws(() => setCompletion(s, r.id, 151, true));
 });
 test("Switching between duplicate names preserves separate progress", () => {
@@ -40,7 +45,7 @@ test("Switching between duplicate names preserves separate progress", () => {
   selectReader(s, null);
   assert.equal(currentReader(s), null);
   selectReader(s, a.id);
-  assert.deepEqual(currentReader(s).completed, [9]);
+  assert.deepEqual(current(s).completed, [9]);
   assert.equal(loadProgress(s).profiles.length, 2);
 });
 test("Backup can move to another browser and never overwrites an existing profile", () => {
@@ -56,7 +61,7 @@ test("Backup can move to another browser and never overwrites an existing profil
   assert.deepEqual(restored.completed, [3]);
   assert.notEqual(restored.id, r.id);
   selectReader(second, existing.id);
-  assert.deepEqual(currentReader(second).completed, [2]);
+  assert.deepEqual(current(second).completed, [2]);
 });
 test("Bad dates, malformed backups, and corrupt stored data do not replace progress", () => {
   const s = storage();
@@ -93,5 +98,5 @@ test("Blocked storage reports failed saving instead of pretending success", () =
     },
   };
   assert.throws(() => setCompletion(blocked, r.id, 1, true), /لم يتم الحفظ/);
-  assert.deepEqual(currentReader(s).completed, []);
+  assert.deepEqual(current(s).completed, []);
 });

@@ -46,7 +46,7 @@ Open `http://localhost:5173`. Development and production builds automatically ge
 ```sh
 npm run validate                    # Formatting, unit/data tests, production build
 npx playwright install chromium webkit
-npm run test:browser                # Mobile Chromium + WebKit, including accessibility (after a build)
+npm run test:e2e                    # Build, then mobile Chromium + WebKit, including accessibility
 npm start                           # Preview the production build on port 4173
 ```
 

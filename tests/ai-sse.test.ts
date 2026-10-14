@@ -6,12 +6,14 @@ import {
   readChatStream,
   retryAtFrom,
 } from "../src/ai/sse.ts";
-import { AiError } from "../src/ai/types.ts";
+import { AiError, type AiErrorKind } from "../src/ai/types.ts";
 
 const encoder = new TextEncoder();
+const classify = (code: unknown, message?: unknown, metadata?: unknown) =>
+  classifyCode(code, message, metadata);
 /** A byte stream delivered in the given pieces (strings or byte arrays). */
-const stream = (...parts) =>
-  new ReadableStream({
+const stream = (...parts: (string | Uint8Array)[]) =>
+  new ReadableStream<Uint8Array>({
     start(controller) {
       for (const part of parts)
         controller.enqueue(
@@ -20,8 +22,8 @@ const stream = (...parts) =>
       controller.close();
     },
   });
-const data = (chunk) => `data: ${JSON.stringify(chunk)}\n\n`;
-const delta = (content, extra = {}) => ({
+const data = (chunk: unknown) => `data: ${JSON.stringify(chunk)}\n\n`;
+const delta = (content: string | null, extra = {}) => ({
   model: "google/gemma-4-31b-it:free",
   choices: [{ index: 0, delta: { content, ...extra }, finish_reason: null }],
 });
@@ -30,18 +32,22 @@ const finish = (reason = "stop") => ({
   choices: [{ index: 0, delta: {}, finish_reason: reason }],
 });
 function collect() {
-  const seen = { text: "", meta: [], activity: 0 };
+  const seen = { text: "", meta: [] as string[], activity: 0 };
   return {
     seen,
     callbacks: {
-      onText: (t) => (seen.text += t),
-      onMeta: (m) => seen.meta.push(m),
+      onText: (t: string) => (seen.text += t),
+      onMeta: (m: string) => seen.meta.push(m),
       onActivity: () => seen.activity++,
     },
   };
 }
-const fails = async (promise, kind, after) => {
-  await assert.rejects(promise, (error) => {
+const fails = async (
+  promise: Promise<unknown>,
+  kind: AiErrorKind,
+  after?: boolean,
+) => {
+  await assert.rejects(promise, (error: unknown) => {
     assert.ok(error instanceof AiError);
     assert.equal(error.kind, kind);
     if (after !== undefined) assert.equal(error.afterFirstToken, after);
@@ -116,7 +122,7 @@ test("The usage chunk repeats finish_reason harmlessly; length is reported", asy
 });
 
 test("Errors after HTTP 200: before and after text, numeric or string codes", async () => {
-  const errorChunk = (code, message = "x") => ({
+  const errorChunk = (code: unknown, message = "x") => ({
     error: { code, message },
     choices: [{ delta: { content: "" }, finish_reason: "error" }],
   });
@@ -192,25 +198,25 @@ test("Empty, cut-off, oversized and malformed streams fail clearly", async () =>
 });
 
 test("Error codes and rate-limit metadata are classified", () => {
-  assert.equal(classifyCode(401), "auth");
-  assert.equal(classifyCode(402), "quota");
-  assert.equal(classifyCode(403), "refused");
-  assert.equal(classifyCode(404), "unavailable");
-  assert.equal(classifyCode(400), "unavailable");
-  assert.equal(classifyCode(408), "server");
-  assert.equal(classifyCode(503), "server");
+  assert.equal(classify(401), "auth");
+  assert.equal(classify(402), "quota");
+  assert.equal(classify(403), "refused");
+  assert.equal(classify(404), "unavailable");
+  assert.equal(classify(400), "unavailable");
+  assert.equal(classify(408), "server");
+  assert.equal(classify(503), "server");
   assert.equal(
-    classifyCode(429, "Rate limit exceeded: free-models-per-day"),
+    classify(429, "Rate limit exceeded: free-models-per-day"),
     "quota",
   );
   assert.equal(
-    classifyCode(429, "Rate limit exceeded: free-models-per-min.", {
+    classify(429, "Rate limit exceeded: free-models-per-min.", {
       provider_name: null,
     }),
     "rate",
   );
   assert.equal(
-    classifyCode(429, "Provider returned error", {
+    classify(429, "Provider returned error", {
       provider_name: "Google AI Studio",
     }),
     "server",

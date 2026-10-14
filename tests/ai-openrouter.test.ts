@@ -3,10 +3,16 @@ import assert from "node:assert/strict";
 import {
   classifyStatus,
   createOpenRouter,
+  type OpenRouterOptions,
 } from "../src/ai/providers/openrouter.ts";
-import { AiError } from "../src/ai/types.ts";
+import { AiError, type AiErrorKind, type AiRequest } from "../src/ai/types.ts";
 
-const options = {
+type Call = {
+  url: string;
+  init: RequestInit & { headers: Record<string, string>; body: string };
+};
+
+const options: OpenRouterOptions = {
   id: "openrouter",
   apiKey: "sk-or-v1-test",
   models: ["google/gemma-4-31b-it:free", "openrouter/free"],
@@ -14,8 +20,12 @@ const options = {
   referer: "https://example.app/",
   title: "Bible150",
 };
-const request = { system: "نظام", prompt: "سؤال", maxOutputTokens: 2000 };
-const sse = (...chunks) =>
+const request: AiRequest = {
+  system: "نظام",
+  prompt: "سؤال",
+  maxOutputTokens: 2000,
+};
+const sse = (...chunks: unknown[]) =>
   new Response(
     chunks
       .map((c) =>
@@ -36,9 +46,9 @@ const ok = (model = "google/gemma-4-31b-it:free") =>
 const callbacks = () => ({ onText() {}, onMeta() {}, onActivity() {} });
 
 test("Sends one ASCII-only streaming request with the free model list", async () => {
-  const calls = [];
+  const calls: Call[] = [];
   const provider = createOpenRouter(options, async (url, init) => {
-    calls.push({ url, init });
+    calls.push({ url: String(url), init: init as Call["init"] });
     return ok();
   });
   const meta = await provider.stream(
@@ -84,7 +94,7 @@ test("Sends one ASCII-only streaming request with the free model list", async ()
 });
 
 test("HTTP errors map to kinds without exposing server text", () => {
-  const cases = [
+  const cases: [number, unknown, AiErrorKind][] = [
     [401, {}, "auth"],
     [402, {}, "quota"],
     [
@@ -153,9 +163,9 @@ test("HTTP errors map to kinds without exposing server text", () => {
 });
 
 test("An unavailable model list gets exactly one retry through the free router", async () => {
-  const bodies = [];
+  const bodies: unknown[] = [];
   const provider = createOpenRouter(options, async (_url, init) => {
-    bodies.push(JSON.parse(init.body).models);
+    bodies.push(JSON.parse(String(init?.body)).models);
     return bodies.length === 1
       ? Response.json(
           { error: { code: 404, message: "No endpoints found" } },
@@ -181,7 +191,7 @@ test("An unavailable model list gets exactly one retry through the free router",
   );
   await assert.rejects(
     routerOnly.stream(request, new AbortController().signal, callbacks()),
-    (e) => e.kind === "unavailable",
+    (e: AiError) => e.kind === "unavailable",
   );
   assert.equal(count, 1);
 });
@@ -235,9 +245,11 @@ test("Network failures and aborts are told apart", async () => {
   const slow = createOpenRouter(
     options,
     (_url, init) =>
-      new Promise((_, reject) =>
-        init.signal.addEventListener("abort", () => reject(init.signal.reason)),
-      ),
+      new Promise((_, reject) => {
+        const signal = init?.signal;
+        assert.ok(signal);
+        signal.addEventListener("abort", () => reject(signal.reason));
+      }),
   );
   const pending = slow.stream(request, controller.signal, callbacks());
   controller.abort("stop");

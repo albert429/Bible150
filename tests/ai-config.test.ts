@@ -46,6 +46,7 @@ test("Configured models are deduplicated and the router is kept last", () => {
     VITE_OPENROUTER_MODELS: " a/one:free, openrouter/free , a/one:free",
     VITE_AI_DAILY_CAP: "3",
   });
+  assert.ok(config);
   assert.deepEqual(config.providers[0].models, ["a/one:free", ROUTER_MODEL]);
   assert.equal(config.dailyCap, 3);
   assert.equal(config.attemptCap, 6);
@@ -75,6 +76,7 @@ test("A local base URL is allowed only with the test-only flag", () => {
     VITE_OPENROUTER_BASE_URL: "http://127.0.0.1:4175/api/v1/",
     VITE_AI_ALLOW_LOCAL: "1",
   });
+  assert.ok(config);
   assert.equal(config.providers[0].baseUrl, "http://127.0.0.1:4175/api/v1");
   assert.throws(() =>
     aiBuildConfig({

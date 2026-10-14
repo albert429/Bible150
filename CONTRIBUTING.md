@@ -10,8 +10,10 @@ Before opening a pull request:
 npm run format
 npm run validate
 npx playwright install chromium webkit
-npm run test:browser
+npm run test:e2e
 ```
+
+`npm run test:e2e` first builds with the audio test fixtures (`AUDIO_TEST_FIXTURES=1` and `VITE_AUDIO_BASE_URL=https://audio.example.test`), then runs the Playwright suite with the same variables. A plain `playwright test` against an ordinary build fails every audio spec. Outside CI, Playwright reuses a server already running on ports 4173 or 4174, so stop any `npm start` or preview first; otherwise the suite runs against a stale `dist/`.
 
 Explain the user-facing change and include relevant validation. For UI changes, include a mobile screenshot and check narrow widths, both themes, large Arabic text, keyboard focus, and reduced motion. Keep reading uncluttered and put secondary actions in sheets.
 

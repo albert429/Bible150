@@ -12,11 +12,17 @@
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "allowJs": true,
-    "checkJs": true,
+    "checkJs": false,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "erasableSyntaxOnly": true
   },
-  "include": ["vite.config.ts", "playwright.config.ts", "tests/browser/**/*"]
+  "include": [
+    "vite.config.ts",
+    "playwright.config.ts",
+    "src/vite-env.d.ts",
+    "tests/*.test.ts",
+    "tests/browser/**/*"
+  ]
 }
