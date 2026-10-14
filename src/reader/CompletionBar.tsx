@@ -1,4 +1,5 @@
 import { Check, RotateCcw } from "lucide-react";
+import "./CompletionBar.css";
 
 export default function CompletionBar({
   done,

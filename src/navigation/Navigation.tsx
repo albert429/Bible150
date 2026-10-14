@@ -18,6 +18,7 @@ import MenuPanel from "./MenuPanel";
 import DayPanel from "./DayPanel";
 import AppearancePanel from "./AppearancePanel";
 import logo from "../assets/favicon.svg";
+import "./Navigation.css";
 const About = lazy(() => import("./About"));
 
 export type View = "read" | "calendar";

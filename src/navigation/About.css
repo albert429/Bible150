@@ -1,0 +1,92 @@
+.react-credit {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+}
+.react-credit svg {
+  flex-shrink: 0;
+}
+.about-content a {
+  color: var(--olive);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.about-content {
+  font-size: 15px;
+  line-height: 2;
+}
+.about-content p {
+  margin: 0 0 16px;
+}
+.about-intro {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 100px;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.about-content .about-purpose {
+  margin: 0;
+  font-size: 17px;
+}
+.about-church-logo {
+  position: relative;
+  overflow: hidden;
+}
+.about-church-logo img {
+  position: absolute;
+  left: 50%;
+  width: auto;
+  height: 100%;
+  max-width: none;
+  transform: translateX(-50%);
+}
+.about-contact-label {
+  color: var(--muted);
+  font-size: 13px;
+}
+.about-contacts {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 24px;
+  padding: 0;
+  list-style: none;
+}
+.about-contacts li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0 12px;
+}
+.about-contacts span {
+  color: var(--muted);
+  font-size: 13px;
+}
+.about-contacts a {
+  display: inline-block;
+  min-height: 44px;
+  padding-block: 7px;
+  overflow-wrap: anywhere;
+}
+.about-content .about-rights {
+  margin-bottom: 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12px;
+}
+.about-content .react-credit {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+@media (max-width: 299px) {
+  .about-intro {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .about-church-logo {
+    order: -1;
+    height: 96px;
+  }
+}

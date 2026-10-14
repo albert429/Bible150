@@ -4,6 +4,8 @@ import { useProgress } from "../useProgress";
 import Invite from "./Invite";
 import Join from "./Join";
 import Settings from "./Settings";
+import "../../components/form.css";
+import "./dialogs.css";
 
 export type Modal =
   { kind: "join" } | { kind: "settings" } | { kind: "invite"; text: string };

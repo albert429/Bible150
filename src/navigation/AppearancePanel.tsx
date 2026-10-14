@@ -1,6 +1,7 @@
 import { Minus, Plus, Sun, Moon } from "lucide-react";
 import { ar } from "../lib/format";
 import { FONT_MIN, FONT_MAX, useAppearance } from "./appearance";
+import "./AppearancePanel.css";
 
 export default function AppearancePanel() {
   const { font, setFont, dark, setDark } = useAppearance();

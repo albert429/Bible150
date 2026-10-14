@@ -1,5 +1,6 @@
 import { chapterRange, rangeAriaLabel } from "../bible/reference";
 import type { Passage } from "../plan/readings";
+import "./PassageReference.css";
 
 export default function PassageReference({ passage }: { passage: Passage }) {
   return (

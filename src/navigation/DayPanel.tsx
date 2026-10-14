@@ -19,6 +19,7 @@ import { useToday } from "../lib/useToday";
 import { Loading, LoadError } from "../components/Feedback";
 import PassageReference from "../components/PassageReference";
 import { passageId } from "../reader/scriptureDom";
+import "./DayPanel.css";
 
 const STATUS_LABELS = {
   done: "مكتمل",
