@@ -3,8 +3,10 @@ import { chapterVerse, isolate } from "../bible/reference";
 import type { Day } from "../plan/readings";
 import { ChunkBoundary, Loading } from "../components/Feedback";
 import Sheet from "../components/Sheet";
+import { verseNumberButton } from "../reader/scriptureDom";
 
-const StudyPanel = lazy(() => import("./StudyPanel"));
+export const loadStudyPanel = () => import("./StudyPanel");
+const StudyPanel = lazy(loadStudyPanel);
 
 export type StudyTarget = { passage: number; verse: number; el: HTMLElement };
 
@@ -31,7 +33,7 @@ export default function VerseStudy({
       title={`${passage.book} ${isolate(chapterVerse(passage.chapter, verse.number))}`}
       onClose={onClose}
       onAfterClose={onAfterClose}
-      returnFocusTo={target.el.querySelector<HTMLElement>(".verse-number")}
+      returnFocusTo={verseNumberButton(target.el)}
     >
       <p className="study-verse">{verse.text}</p>
       <ChunkBoundary>

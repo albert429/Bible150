@@ -2,6 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { Pause, Play, SkipBack, SkipForward } from "lucide-react";
 import type { Day } from "../plan/readings";
 import { chapterVerse } from "../bible/reference";
+import {
+  clearListening,
+  markListening,
+  verseElement,
+} from "../reader/scriptureDom";
 import { dayLabel, readingLabel } from "../plan/labels";
 import { cueAt } from "./manifest";
 import { useAudioManifest } from "./useAudioManifest";
@@ -82,7 +87,7 @@ export default function AudioPlayer({
       element?.pause();
       element?.removeAttribute("src");
       element?.load();
-      if (highlighted.current) delete highlighted.current.dataset.listening;
+      if (highlighted.current) clearListening(highlighted.current);
     };
   }, []);
 
@@ -106,15 +111,11 @@ export default function AudioPlayer({
   }, []);
 
   useEffect(() => {
-    if (highlighted.current) delete highlighted.current.dataset.listening;
-    const element = cue
-      ? document.querySelector<HTMLElement>(
-          `#passage-${cue.passage} .verse[data-v="${cue.verse}"]`,
-        )
-      : null;
+    if (highlighted.current) clearListening(highlighted.current);
+    const element = cue ? verseElement(cue.passage, cue.verse) : null;
     highlighted.current = element;
     if (!element) return;
-    element.dataset.listening = "";
+    markListening(element);
     if (playing) {
       const rect = element.getBoundingClientRect();
       const top =

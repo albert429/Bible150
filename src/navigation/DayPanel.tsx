@@ -18,6 +18,7 @@ import { useProgress } from "../plan/useProgress";
 import { useToday } from "../lib/useToday";
 import { Loading, LoadError } from "../components/Feedback";
 import PassageReference from "../components/PassageReference";
+import { passageId } from "../reader/scriptureDom";
 
 const STATUS_LABELS = {
   done: "مكتمل",
@@ -69,7 +70,7 @@ export default function DayPanel({
           {reading.passages.map((passage, index) => (
             <li key={index}>
               <a
-                href={`#passage-${index}`}
+                href={`#${passageId(index)}`}
                 onClick={(event) => {
                   event.preventDefault();
                   jump(index);

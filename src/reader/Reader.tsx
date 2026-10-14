@@ -1,73 +1,14 @@
-import {
-  memo,
-  Fragment,
-  useEffect,
-  useRef,
-  useState,
-  type MouseEvent,
-  type PointerEvent,
-  type ReactNode,
-  lazy,
-  Suspense,
-} from "react";
-import { Check, RotateCcw, Headphones } from "lucide-react";
-import { ar } from "../lib/format";
+import { useCallback, useRef, useState, lazy, Suspense } from "react";
 import type { Day } from "../plan/readings";
 import { readingLabel } from "../plan/labels";
 import { Loading, LoadError, ChunkBoundary } from "../components/Feedback";
-import PassageReference from "../components/PassageReference";
-import VerseStudy, { type StudyTarget } from "../study/VerseStudy";
-import { allowsReadingPrefetch } from "./useAdjacentPrefetch";
+import VerseStudy from "../study/VerseStudy";
+import CompletionBar from "./CompletionBar";
+import Scripture from "./Scripture";
+import { useAdjacentPrefetch } from "./useAdjacentPrefetch";
+import { useVerseTap } from "./useVerseTap";
 const AudioPlayer = lazy(() => import("../audio/AudioPlayer"));
 
-const Scripture = memo(function Scripture({
-  reading,
-  listen,
-}: {
-  reading: Day;
-  listen?: ReactNode;
-}) {
-  return (
-    <div className="scripture">
-      {reading.passages.map((passage, index) => (
-        <section
-          className="passage"
-          id={`passage-${index}`}
-          aria-labelledby={`passage-heading-${index}`}
-          tabIndex={-1}
-          key={index}
-        >
-          <div className="passage-title-row">
-            <h2 id={`passage-heading-${index}`}>
-              {passage.book} <PassageReference passage={passage} />
-            </h2>
-            {index === 0 && listen}
-          </div>
-          <div className="verse-text">
-            {passage.verses?.map((verse) => (
-              <Fragment key={verse.number}>
-                {verse.heading && <h3>{verse.heading}</h3>}
-                <span className="verse" data-v={verse.number}>
-                  <sup>
-                    <button
-                      type="button"
-                      className="verse-number"
-                      aria-haspopup="dialog"
-                      aria-label={`تفاصيل الآية ${ar(verse.number)}`}
-                    >
-                      {ar(verse.number)}
-                    </button>
-                  </sup>
-                  {verse.text}{" "}
-                </span>
-              </Fragment>
-            ))}
-          </div>
-        </section>
-      ))}
-    </div>
-  );
-});
 type Props = {
   selected: number;
   reading?: Day;
@@ -76,6 +17,7 @@ type Props = {
   done: boolean;
   complete: () => void;
 };
+
 export default function Reader({
   selected,
   reading,
@@ -84,70 +26,20 @@ export default function Reader({
   done,
   complete,
 }: Props) {
-  const [target, setTarget] = useState<StudyTarget | null>(null);
-  const [open, setOpen] = useState(false);
-  const [listening, setListening] = useState<number | null>(null);
+  useAdjacentPrefetch(selected, reading, error, true);
+  const [listening, setListening] = useState(false);
   const listenButton = useRef<HTMLButtonElement>(null);
-  const press = useRef<{ t: number; x: number; y: number; selection: boolean }>(
-    null,
-  );
-  const warmed = useRef(false);
+  const toggleListen = useCallback(() => setListening((on) => !on), []);
+  const tap = useVerseTap(reading);
 
-  // The sheet stays mounted after its first use, so it can animate; a new day
-  // replaces the verse elements it points to.
-  useEffect(() => {
-    setOpen(false);
-    setTarget(null);
-    setListening(null);
-  }, [reading?.day]);
-
-  function onPointerDown(event: PointerEvent) {
-    press.current = {
-      t: performance.now(),
-      x: event.clientX,
-      y: event.clientY,
-      selection: !(getSelection()?.isCollapsed ?? true),
-    };
-    if (!warmed.current) {
-      warmed.current = true;
-      const connection = (
-        navigator as Navigator & {
-          connection?: Parameters<typeof allowsReadingPrefetch>[0];
-        }
-      ).connection;
-      // Warm the code chunk only; study data loads when a verse opens.
-      if (allowsReadingPrefetch(connection))
-        void import("../study/StudyPanel").catch(() => {});
-    }
-  }
-
-  // A plain tap on a verse opens its study sheet; selecting, long-pressing or
-  // dragging to read does not. Keyboard users activate the verse number.
-  function onClick(event: MouseEvent) {
-    const verseEl = (event.target as Element).closest<HTMLElement>(".verse");
-    if (!verseEl || !reading) return;
-    if (event.detail === 0) {
-      if (!(event.target as Element).closest(".verse-number")) return;
-    } else {
-      const start = press.current;
-      press.current = null;
-      if (
-        !start ||
-        start.selection ||
-        !(getSelection()?.isCollapsed ?? true) ||
-        performance.now() - start.t > 500 ||
-        Math.hypot(event.clientX - start.x, event.clientY - start.y) > 10
-      )
-        return;
-    }
-    const section = verseEl.closest("section.passage");
-    const passage = Number(section?.id.replace("passage-", ""));
-    const verse = Number(verseEl.dataset.v);
-    if (!section || !Number.isInteger(passage) || !Number.isInteger(verse))
-      return;
-    verseEl.dataset.selected = "";
-    setTarget({ passage, verse, el: verseEl });
-    setOpen(true);
+  // The sheet and player belong to one day's verse elements. Resetting during
+  // render means no render pairs a new day with the previous day's state.
+  const day = reading?.day;
+  const [seenDay, setSeenDay] = useState(day);
+  if (seenDay !== day) {
+    setSeenDay(day);
+    setListening(false);
+    tap.reset();
   }
 
   return (
@@ -157,40 +49,24 @@ export default function Reader({
         aria-label={readingLabel(selected)}
         data-day={selected}
         aria-busy={!reading && !error}
-        onPointerDown={onPointerDown}
-        onClick={onClick}
+        onPointerDown={tap.onPointerDown}
+        onClick={tap.onClick}
       >
         {error ? (
           <LoadError message={error} retry={retry} />
         ) : reading ? (
           <Scripture
             reading={reading}
-            listen={
-              __AUDIO_DAYS__.includes(selected) ? (
-                <button
-                  ref={listenButton}
-                  className="listen-button"
-                  onClick={() =>
-                    setListening((day) => (day === selected ? null : selected))
-                  }
-                  aria-label={
-                    listening === selected
-                      ? "إيقاف وإغلاق المشغل"
-                      : "استمع إلى قراءة اليوم"
-                  }
-                  aria-pressed={listening === selected}
-                >
-                  <Headphones size={16} aria-hidden="true" />
-                  {listening === selected ? "إغلاق المشغل" : "استمع"}
-                </button>
-              ) : undefined
-            }
+            audio={__AUDIO_DAYS__.includes(selected)}
+            listening={listening}
+            onToggleListen={toggleListen}
+            listenButton={listenButton}
           />
         ) : (
           <Loading />
         )}
       </article>
-      {listening === selected && reading && (
+      {listening && reading && (
         <div className="audio-launch">
           <ChunkBoundary>
             <Suspense fallback={<Loading label="جارٍ فتح المشغل…" />}>
@@ -198,7 +74,7 @@ export default function Reader({
                 reading={reading}
                 onClose={() => {
                   const trigger = listenButton.current;
-                  setListening(null);
+                  setListening(false);
                   requestAnimationFrame(() => {
                     if (trigger?.isConnected)
                       trigger.focus({ preventScroll: true });
@@ -209,34 +85,16 @@ export default function Reader({
           </ChunkBoundary>
         </div>
       )}
-      {target && reading && (
+      {tap.target && reading && (
         <VerseStudy
-          open={open}
+          open={tap.open}
           reading={reading}
-          target={target}
-          onClose={() => setOpen(false)}
-          onAfterClose={() => delete target.el.dataset.selected}
+          target={tap.target}
+          onClose={tap.close}
+          onAfterClose={tap.afterClose}
         />
       )}
-      <div className={`reading-completion ${done ? "is-complete" : ""}`}>
-        {done && (
-          <p className="completion-state">
-            <Check size={18} aria-hidden="true" /> تمت قراءة هذا اليوم
-          </p>
-        )}
-        <button
-          className={done ? "quiet-button" : "primary"}
-          disabled={!reading}
-          onClick={complete}
-        >
-          {done ? (
-            <RotateCcw size={18} aria-hidden="true" />
-          ) : (
-            <Check size={18} aria-hidden="true" />
-          )}
-          {done ? "تراجع" : "تمت القراءة"}
-        </button>
-      </div>
+      <CompletionBar done={done} disabled={!reading} onComplete={complete} />
     </div>
   );
 }
