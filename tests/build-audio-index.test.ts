@@ -1,10 +1,8 @@
-// scripts/build-audio-index.js resolves every path from its own location, so it
-// runs here on a copy inside a scratch repository and never touches public/.
+// buildAudioIndex reads a scratch repository and writes a scratch directory, so
+// these tests never touch public/.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
 import {
-  copyFileSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -14,10 +12,10 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { buildAudioIndex } from "../scripts/build-audio-index.js";
 import { readingHash } from "../src/audio/manifest.ts";
 import type { Day } from "../src/plan/readings.ts";
 
-const script = new URL("../scripts/build-audio-index.js", import.meta.url);
 const reading: Day = {
   day: 1,
   verseCount: 2,
@@ -45,10 +43,7 @@ const manifest = (readingHash: string) => ({
 
 function repository(days: number[], hash: string) {
   const root = mkdtempSync(join(tmpdir(), "audio-index-"));
-  mkdirSync(join(root, "scripts"));
   mkdirSync(join(root, "data/audio/manifests"), { recursive: true });
-  copyFileSync(script, join(root, "scripts/build-audio-index.js"));
-  writeFileSync(join(root, "package.json"), '{"type":"module"}');
   writeFileSync(join(root, "data/plan.json"), JSON.stringify([reading]));
   writeFileSync(
     join(root, "data/audio/catalog.json"),
@@ -60,18 +55,14 @@ function repository(days: number[], hash: string) {
   );
   return root;
 }
-const run = (root: string) =>
-  spawnSync(process.execPath, [join(root, "scripts/build-audio-index.js")], {
-    encoding: "utf8",
-  });
+const build = (root: string) =>
+  buildAudioIndex({ root, out: join(root, "public/audio") });
 
 test("A manifest whose hash matches the Scripture is published to public/audio", async () => {
   const hash = await readingHash(reading);
   const root = repository([1], hash);
   try {
-    const result = run(root);
-    assert.equal(result.status, 0, result.stderr);
-    assert.match(result.stdout, /Prepared 1 audio manifests/);
+    assert.match(build(root), /Prepared 1 audio manifests/);
     assert.deepEqual(
       JSON.parse(readFileSync(join(root, "public/audio/1.json"), "utf8")),
       manifest(hash),
@@ -84,9 +75,22 @@ test("A manifest whose hash matches the Scripture is published to public/audio",
 test("A stale manifest hash fails the build and publishes nothing", () => {
   const root = repository([1], "0".repeat(64));
   try {
-    const result = run(root);
-    assert.notEqual(result.status, 0);
-    assert.match(result.stderr, /Audio for day 1 is stale/);
+    assert.throws(() => build(root), /Audio for day 1 is stale/);
+    assert.equal(existsSync(join(root, "public/audio/1.json")), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("A malformed manifest fails the build instead of the player", async () => {
+  const hash = await readingHash(reading);
+  const root = repository([1], hash);
+  writeFileSync(
+    join(root, "data/audio/manifests/1.json"),
+    JSON.stringify({ ...manifest(hash), cues: [] }),
+  );
+  try {
+    assert.throws(() => build(root), /manifest for day 1 is malformed/);
     assert.equal(existsSync(join(root, "public/audio/1.json")), false);
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -96,9 +100,7 @@ test("A stale manifest hash fails the build and publishes nothing", () => {
 test("A catalog day that is not in the plan fails the build", async () => {
   const root = repository([2], await readingHash(reading));
   try {
-    const result = run(root);
-    assert.notEqual(result.status, 0);
-    assert.match(result.stderr, /Invalid audio day 2/);
+    assert.throws(() => build(root), /Invalid audio day 2/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

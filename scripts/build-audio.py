@@ -5,27 +5,18 @@ Requires ffmpeg/ffprobe, but no Python ML dependencies. Sources stay in the
 user's folder; generated audio stays out of Git. Re-run after timing corrections.
 """
 import argparse
-import hashlib
 import json
 import subprocess
 import tempfile
 from pathlib import Path
 
+from audio_text import chapter_text_hash, chapter_verses, compact, digest, reading_hash
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def compact(value):
-    return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
-
-
-def sha(value):
-    return hashlib.sha256(value).hexdigest()
-
-
 def assemble(day, books, chapter_hashes, source, aligned, output):
-    transcript = [[p["book"], p["chapter"], p["start"], p["end"],
-                   [[v["number"], v["text"]] for v in p["verses"]]] for p in day["passages"]]
-    reading_hash = sha(compact(transcript).encode())
+    day_hash = reading_hash(day)
     clips, cues, offset = [], [], 0
     for index, passage in enumerate(day["passages"]):
         path = aligned / f"{books[passage['book']]}-{passage['chapter']}.json"
@@ -35,7 +26,7 @@ def assemble(day, books, chapter_hashes, source, aligned, output):
         if chapter["textHash"] != chapter_hashes[(passage["book"], passage["chapter"])]:
             raise ValueError(f"Transcript changed: realign {path.name} before rebuilding")
         file = source / chapter["file"]
-        if sha(file.read_bytes()) != chapter["audioHash"]:
+        if digest(file.read_bytes()) != chapter["audioHash"]:
             raise ValueError(f"Source changed: {file.name}")
         verses = chapter["verses"]
         selected = [v for v in verses if passage["start"] <= v["verse"] <= passage["end"]]
@@ -58,7 +49,7 @@ def assemble(day, books, chapter_hashes, source, aligned, output):
         offset += end - begin
     settings = {"codec": "aac", "bitrate": "48k", "rate": 24000, "channels": 1}
     portable_clips = [{**clip, "file": Path(clip["file"]).name} for clip in clips]
-    identity = sha(compact([reading_hash, portable_clips, cues, settings]).encode())[:20]
+    identity = digest(compact([day_hash, portable_clips, cues, settings]).encode())[:20]
     name = f"{day['day']:03d}-{identity}.m4a"
     target = output / "days" / name
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -83,7 +74,7 @@ def assemble(day, books, chapter_hashes, source, aligned, output):
     for cue in cues:
         if cue["start"] < 0 or cue["end"] > duration + .1:
             raise ValueError(f"Cue exceeds encoded duration: day {day['day']}")
-    return {"version": 1, "day": day["day"], "readingHash": reading_hash,
+    return {"version": 1, "day": day["day"], "readingHash": day_hash,
             "src": f"/audio/days/{name}", "duration": duration, "cues": cues}
 
 
@@ -96,14 +87,7 @@ def main():
     args = parser.parse_args()
     books = {row[3]: row[0] for row in json.loads((ROOT / "data/books.json").read_text())}
     plan = json.loads((ROOT / "data/plan.json").read_text())
-    chapters = {}
-    for day in plan:
-        for passage in day["passages"]:
-            verses = chapters.setdefault((passage["book"], passage["chapter"]), {})
-            for verse in passage["verses"]:
-                verses[verse["number"]] = verse["text"]
-    chapter_hashes = {key: sha(json.dumps(sorted(verses.items()), ensure_ascii=False).encode())
-                      for key, verses in chapters.items()}
+    chapter_hashes = {key: chapter_text_hash(verses) for key, verses in chapter_verses(plan).items()}
     manifests = ROOT / "data/audio/manifests"
     manifests.mkdir(parents=True, exist_ok=True)
     for day in plan:
@@ -112,7 +96,6 @@ def main():
         manifest = assemble(day, books, chapter_hashes, args.source, args.aligned, args.output)
         content = compact(manifest) + "\n"
         (manifests / f"{day['day']}.json").write_text(content)
-        (args.output / f"{day['day']}.json").write_text(content)
         print(f"Built day {day['day']}: {manifest['duration']:.1f}s", flush=True)
     days = sorted(int(p.stem) for p in manifests.glob("*.json"))
     (ROOT / "data/audio/catalog.json").write_text(json.dumps({"days": days}, indent=2) + "\n")

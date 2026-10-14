@@ -31,8 +31,8 @@
     "typecheck": "tsc -b",
     "snapshot": "node scripts/snapshot.mjs",
     "validate": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run build",
-    "predev": "node scripts/build-readings.js",
-    "prebuild": "node scripts/build-readings.js",
+    "predev": "node --experimental-strip-types --no-warnings=ExperimentalWarning scripts/build-data.js",
+    "prebuild": "node --experimental-strip-types --no-warnings=ExperimentalWarning scripts/build-data.js",
     "prepare": "git config core.hooksPath .githooks || true"
   },
   "dependencies": {

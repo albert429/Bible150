@@ -1,16 +1,21 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { gzipSync } from "node:zlib";
-import { BUDGETS } from "../scripts/build-study.js";
+import { BUDGETS, buildStudy } from "../scripts/build-study.js";
 import type { Day } from "../src/plan/readings.ts";
 
 const read = (path: string) =>
   JSON.parse(readFileSync(new URL("../" + path, import.meta.url), "utf8"));
-const raw = (path: string) =>
-  readFileSync(new URL("../" + path, import.meta.url));
 
-test("Static study days match the study data for every plan verse", () => {
+test("Static study days match the study data for every plan verse", (t) => {
+  const out = mkdtempSync(join(tmpdir(), "study-"));
+  t.after(() => rmSync(out, { recursive: true, force: true }));
+  buildStudy({ out });
+  const readOut = (name: string) =>
+    JSON.parse(readFileSync(join(out, name), "utf8"));
   const plan: Day[] = read("data/plan.json");
   const books: string[][] = read("data/books.json");
   const greek = read("data/study/greek.json");
@@ -20,9 +25,9 @@ test("Static study days match the study data for every plan verse", () => {
   const seen = new Map();
   assert.equal(plan.length, 150);
   for (const day of plan) {
-    const core = read(`public/study/${day.day}.json`);
-    const lex = read(`public/study/${day.day}.lex.json`);
-    const tr = read(`public/study/${day.day}.tr.json`);
+    const core = readOut(`${day.day}.json`);
+    const lex = readOut(`${day.day}.lex.json`);
+    const tr = readOut(`${day.day}.tr.json`);
     for (const file of [core, lex, tr]) {
       assert.equal(file.v, 1);
       assert.equal(file.day, day.day);
@@ -53,7 +58,7 @@ test("Static study days match the study data for every plan verse", () => {
       ["tr", `${day.day}.tr.json`],
     ] as const)
       assert.ok(
-        gzipSync(raw("public/study/" + name)).length <= BUDGETS[kind],
+        gzipSync(readFileSync(join(out, name))).length <= BUDGETS[kind],
         `${name} within budget`,
       );
   }

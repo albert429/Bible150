@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
 import {
   readingHash,
+  readingTranscript,
   matchesReading,
   validManifest,
   cueAt,
@@ -47,6 +48,17 @@ const manifest = async (): Promise<AudioManifest> => ({
   src: "/audio/days/001-abc123.m4a",
   duration: 9,
   cues,
+});
+
+test("The transcript and hash match the golden fixture shared with the Python tools", async () => {
+  const golden = JSON.parse(
+    readFileSync(
+      new URL("./fixtures/transcript.json", import.meta.url),
+      "utf8",
+    ),
+  );
+  assert.equal(readingTranscript(golden.day), golden.transcript);
+  assert.equal(await readingHash(golden.day), golden.readingHash);
 });
 
 test("Audio matches the precise reading, including repeated passages", async () => {
