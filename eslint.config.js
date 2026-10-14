@@ -13,6 +13,7 @@ export default tseslint.config(
       "public/audio",
       "artifacts",
       ".claude/worktrees",
+      ".agents",
       "node_modules",
       "test-results",
       "playwright-report",

@@ -21,3 +21,4 @@ public/study/
 public/audio/
 dist-ai/
 .claude/worktrees/
+.agents/
