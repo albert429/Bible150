@@ -1,6 +1,17 @@
 import { test, expect, type Page, type Request } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { closeSheet, noOverflow, ready, seed } from "./helpers";
+import {
+  closeSheet,
+  noOverflow,
+  openSection,
+  ready,
+  section,
+  seed,
+  study,
+  tap,
+  textPoint,
+  verse,
+} from "./helpers";
 
 test.use({ reducedMotion: "reduce" });
 
@@ -13,28 +24,6 @@ function studyRequests(page: Page) {
       requests.push(url.pathname);
   });
   return requests;
-}
-const verse = (page: Page, index: number) => page.locator(".verse").nth(index);
-/** A point on the verse's own text: the centre of its widest line box. */
-async function textPoint(page: Page, index: number) {
-  return verse(page, index).evaluate((el) => {
-    const rects = [...el.getClientRects()].sort((a, b) => b.width - a.width);
-    return {
-      x: rects[0].x + rects[0].width / 2,
-      y: rects[0].y + rects[0].height / 2,
-    };
-  });
-}
-async function tap(page: Page, index: number) {
-  const { x, y } = await textPoint(page, index);
-  await page.mouse.click(x, y);
-}
-const study = (page: Page) => page.getByRole("dialog");
-/** A section's heading button; its name is the title and, if any, the count. */
-const section = (page: Page, title: string) =>
-  study(page).getByRole("button", { name: new RegExp(`^${title}( [٠-٩]+)?$`) });
-async function openSection(page: Page, title: string) {
-  await section(page, title).click();
 }
 /** The core study file has loaded once the collapsed sections appear. */
 async function sectionsReady(page: Page) {

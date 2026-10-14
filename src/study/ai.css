@@ -1,0 +1,123 @@
+/* Loaded with the lazy AI card. Tokens only, so both themes work. */
+.ai {
+  display: grid;
+  gap: 12px;
+  padding-block: 4px;
+}
+.ai-consent {
+  font-size: 14px;
+  line-height: 1.9;
+}
+.ai-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ai-chip {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+  font-size: 14px;
+  font-weight: 600;
+}
+.ai-chip[aria-pressed="true"] {
+  border-color: var(--olive);
+  background: var(--soft);
+  color: var(--olive);
+}
+.ai [aria-disabled="true"] {
+  cursor: not-allowed;
+}
+@media (hover: hover) {
+  .ai-chip:hover:not([aria-disabled="true"]) {
+    background: var(--soft);
+  }
+}
+.ai-ask {
+  display: grid;
+  gap: 6px;
+}
+.ai-ask label {
+  font-size: 13px;
+  font-weight: 600;
+}
+.ai-ask-row {
+  display: flex;
+  gap: 8px;
+}
+.ai-ask input {
+  flex: 1;
+  min-width: 0;
+  min-height: 46px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 15px;
+}
+.ai-note {
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+.ai-answer {
+  display: grid;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  font-size: 15px;
+  line-height: 1.9;
+  overflow-wrap: anywhere;
+}
+.ai-answer ul,
+.ai-answer ol {
+  margin: 0;
+  padding-inline-start: 20px;
+}
+.ai-answer ol {
+  list-style-type: arabic-indic;
+}
+.ai-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--muted);
+}
+.ai-progress svg {
+  color: var(--olive);
+  animation: ai-pulse 1.2s ease-in-out infinite;
+}
+@keyframes ai-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+.ai-error {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  font-size: 14px;
+}
+.ai-footer {
+  display: grid;
+  gap: 2px;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+.ai-actions {
+  display: flex;
+  flex-wrap: wrap;
+  margin-inline-start: -12px;
+}
+.ai .text-button {
+  justify-self: start;
+}
+.ai-forget {
+  margin-inline-start: -12px;
+  font-size: 13px;
+}

@@ -78,6 +78,14 @@ export default function About() {
           مصدر التسجيل
         </a>
       </p>
+      {__AI_ENABLED__ && (
+        <p className="about-rights">
+          شرح الآيات بالذكاء الاصطناعي اختياري: عند استخدامه تُرسَل الآية
+          وسياقها، وسؤالك إن كتبته، إلى خدمة <bdi>OpenRouter</bdi> ثم إلى مزوّد
+          النموذج، الذي قد يحتفظ بالنص ويستخدمه لتحسين نماذجه. لا يُرسَل اسمك أو
+          تقدّمك. الإجابات آلية وقد تحتوي أخطاء.
+        </p>
+      )}
       <p className="react-credit" lang="en" dir="ltr">
         <ReactIcon />
         <span>Built using React</span>

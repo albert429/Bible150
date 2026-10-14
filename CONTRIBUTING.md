@@ -15,6 +15,6 @@ Explain the user-facing change and include relevant validation. For UI changes, 
 
 Preserve Scripture wording, section headings, passage order, and existing progress/backup formats. Do not edit generated `public/readings/` or `public/study/` files, and change `data/study/` only through `scripts/import-study.py`; change the canonical sources through the documented import workflow and verify the data tests. Avoid changing the reading plan without checking the original table.
 
-Keep names, saved progress, backups, credentials, and generated test reports out of commits. Generated reports belong in ignored `artifacts/`. Documentation images belong in `docs/assets/`, not the runtime bundle.
+Keep names, saved progress, backups, credentials, and generated test reports out of commits. Never commit a `.env*` file other than `.env.example`, or any real API key: the AI build compiles its key into public JavaScript, so keys belong only in an ignored `.env.development.local` or in the host's environment settings. Generated reports belong in ignored `artifacts/`. Documentation images belong in `docs/assets/`, not the runtime bundle.
 
 See [docs/development.md](docs/development.md) for architecture and data regeneration. Contributions do not change the repository's [license terms](LICENSE).

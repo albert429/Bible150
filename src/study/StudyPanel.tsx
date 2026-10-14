@@ -1,12 +1,19 @@
 import "./study.css";
-import { Loading, LoadError } from "../components/Feedback";
+import { lazy, Suspense } from "react";
+import { ChunkBoundary, Loading, LoadError } from "../components/Feedback";
 import type { Day, Verse } from "../readings";
 import { usfmFor } from "./books";
 import { studyCore } from "./client";
 import GreekWords from "./GreekWords";
+import AiSpark from "./AiSpark";
 import OtherTranslation from "./OtherTranslation";
+import Section from "./Section";
 import { useResource } from "./useResource";
 import { verseId } from "./verse";
+
+// Optional AI explanations: without the build flag this branch, the lazy
+// import and every AI module are left out of the bundle.
+const AiPanel = __AI_ENABLED__ ? lazy(() => import("./AiPanel")) : null;
 
 export default function StudyPanel({
   day,
@@ -40,9 +47,28 @@ export default function StudyPanel({
         <p className="study-empty">لا تتوفر دراسة لهذه الآية.</p>
       ) : (
         <div className="study-sections">
-          {/* Phase 2: the AI row goes here. */}
           <OtherTranslation day={day} id={id} />
           <GreekWords text={verse.text} g={entry.g} />
+          {AiPanel && (
+            <Section
+              key={id}
+              title="اسأل الذكاء الاصطناعي"
+              hint="شرح الآية وخلفيتها ومعاني كلماتها، أو سؤالك"
+              icon={<AiSpark />}
+            >
+              <ChunkBoundary>
+                <Suspense fallback={<Loading label="جارٍ التحميل…" />}>
+                  <AiPanel
+                    day={day}
+                    id={id}
+                    passage={passage}
+                    verse={verse}
+                    g={entry.g}
+                  />
+                </Suspense>
+              </ChunkBoundary>
+            </Section>
+          )}
         </div>
       )}
     </div>

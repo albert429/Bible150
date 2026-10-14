@@ -1,10 +1,7 @@
 import { Languages } from "lucide-react";
-import { keyGroups, span } from "./verse";
+import { gloss, greekWord, keyGroups, span } from "./verse";
 import type { GreekToken } from "./types";
 import Section from "./Section";
-
-const greekWord = (word: string) => word.replace(/[,.;·:]+$/, "");
-const gloss = (value: string) => value.replace(/\.$/, "");
 
 export default function GreekWords({
   text,

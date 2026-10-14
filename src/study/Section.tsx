@@ -3,7 +3,7 @@ import { ChevronDown } from "lucide-react";
 import { ar } from "../format";
 
 /** Scroll the sheet just enough to show an opened section, keeping its heading visible. */
-function reveal(section: HTMLElement) {
+export function reveal(section: HTMLElement) {
   const scroller = section.closest(".sheet-body");
   if (!scroller) return;
   const view = scroller.getBoundingClientRect();

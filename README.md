@@ -34,7 +34,7 @@ The banner and community illustration are generated artwork. The mobile screensh
 
 ## Run locally
 
-Use **Node.js 22** and npm. No credentials or environment variables are required.
+Use **Node.js 22** and npm. No credentials or environment variables are required. The optional AI explanations need an OpenRouter key; see the [development guide](docs/development.md#ai-explanations-optional).
 
 ```sh
 npm ci
@@ -46,7 +46,7 @@ Open `http://localhost:5173`. Development and production builds automatically ge
 ```sh
 npm run validate                    # Formatting, unit/data tests, production build
 npx playwright install chromium webkit
-npm run test:browser                # Mobile Chromium + WebKit, including accessibility
+npm run test:browser                # Mobile Chromium + WebKit, including accessibility (after a build)
 npm start                           # Preview the production build on port 4173
 ```
 
@@ -55,6 +55,8 @@ npm start                           # Preview the production build on port 4173
 React, TypeScript, and Vite build a static `dist/` directory. Vercel settings are checked into `vercel.json`; use the Vite preset and `npm run build`. The app requires no backend, database, or public API.
 
 Progress and appearance preferences stay in the current browser. There is no automatic account sync or live group tracking. Backups contain the reader's name, start date, and completed days; keep them private. Readings need a network connection on their first fetch; the app does not currently provide persistent offline access.
+
+The optional AI explanations («اسأل الذكاء الاصطناعي») are off unless a deployment enables them. When a reader uses them, after a one-time notice, the verse, its context and any question they type go to OpenRouter and the model's provider, which may keep the text and train on it. The reader's name and progress are never sent. The key is public by design, so it is limited to free models and a $0 credit limit; see the [development guide](docs/development.md#ai-explanations-optional).
 
 See the [development guide](docs/development.md) for architecture, deployment troubleshooting, source regeneration, and performance checks. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before making changes.
 

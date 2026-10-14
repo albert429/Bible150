@@ -1,12 +1,30 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  greekWord,
   groupRows,
   keyGroups,
   span,
   tokens,
   verseId,
 } from "../src/study/verse.ts";
+
+test("Greek words lose punctuation and editorial marks but keep elision", () => {
+  const cases = [
+    ["λόγος,", "λόγος"],
+    ["λέγων\u0387", "λέγων"], // ano teleia
+    ["αὐτοῦ\u037e", "αὐτοῦ"], // Greek question mark
+    ["θεοῦ\u00b7", "θεοῦ"],
+    ["σωθήσομαι.\u00b6", "σωθήσομαι"],
+    ["ἔσται\u037e\u00b6", "ἔσται"],
+    ["γῆν.]]", "γῆν"],
+    ["[[Καὶ", "Καὶ"],
+    ["x,\u00b6\u00ac", "x"],
+    ["ἐφ\u1fbd", "ἐφ\u1fbd"], // elision stays
+    ["δι\u2019", "δι\u2019"],
+  ];
+  for (const [raw, word] of cases) assert.equal(greekWord(raw), word, raw);
+});
 
 test("Verse IDs join the USFM book code, chapter and verse", () => {
   assert.equal(verseId("JHN", 1, 1), "JHN.1.1");

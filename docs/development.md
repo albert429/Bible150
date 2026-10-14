@@ -9,6 +9,7 @@
 | `src/components/Reader.tsx`                         | Continuous Arabic Scripture, verse tap/keyboard trigger, and completion      |
 | `src/components/VerseStudy.tsx`                     | Verse study sheet shell; loads the study chunk on demand                     |
 | `src/study/`                                        | Lazy verse study panel: translations and Greek key words                     |
+| `src/ai/`                                           | Optional AI explanations: config, prompt, streaming, on-device cache         |
 | `src/jsonClient.ts`                                 | Shared static JSON loader: cache, deduplication, timeout, validation         |
 | `src/components/Navigation.tsx`                     | Sticky toolbar and sheet coordination                                        |
 | `src/components/navigation/`                        | Menu, day details, and appearance panels                                     |
@@ -24,6 +25,7 @@
 | `data/study/`                                       | Imported study data (CC BY / CC BY-SA; see `data/study/LICENSE.md`)          |
 | `scripts/import-study.py`                           | Builds `data/study/` from downloaded sources, with coverage gates            |
 | `scripts/build-study.js`                            | Splits study data into `public/study/{day}[.tr\|.lex].json`, with budgets    |
+| `scripts/sse-stub.mjs`                              | Local stand-in for the AI streaming API, used only by browser tests          |
 | `scripts/`                                          | Static build, imports, asset regeneration, visual and performance checks     |
 | `tests/`                                            | Unit/data checks and mobile browser workflows                                |
 | `docs/assets/`                                      | README artwork and actual app screenshot; never shipped in the app           |
@@ -37,12 +39,13 @@
 | `npm start`                       | Preview `dist/`, port 4173                                         |
 | `npm test`                        | Progress, dates, loading, and exact static-data fidelity           |
 | `npm run test:browser`            | Mobile Chromium and WebKit workflows, layout and axe accessibility |
+| `npm run ai:models`               | Check that the configured AI models still exist and are free       |
 | `npm run format` / `format:check` | Apply / verify repository formatting                               |
 | `npm run validate`                | Formatting, unit/data checks, and build                            |
 | `npm run test:visual`             | Save preview screenshots under `artifacts/`                        |
 | `npm run audit:performance`       | Save repeatable mobile Lighthouse reports under `artifacts/`       |
 
-Browser tests start the production preview themselves. Install their browsers with `npx playwright install chromium webkit` (`--with-deps` on Linux). `CHROMIUM_PATH` optionally selects an existing Chromium executable; WebKit uses its own installed browser.
+Browser tests start the production preview themselves. Run `npm run build` first: it generates `public/readings/` and `public/study/`, which the separate AI test build (`dist-ai/`, see below) reuses. Install their browsers with `npx playwright install chromium webkit` (`--with-deps` on Linux). `CHROMIUM_PATH` optionally selects an existing Chromium executable; WebKit uses its own installed browser.
 
 Visual and performance scripts expect a running `npm start`. `BASELINE_URL` optionally adds a baseline site. Compare builds using the same server, throttling, and environment. Reports and traces are ignored by Git.
 
@@ -54,15 +57,114 @@ Schedules use Cairo dates. Catch-up and advance reading do not move a reader's s
 
 While reading, adjacent days are prepared 500ms after the selected day and its fonts settle. Save-Data and reported slow-2g, 2g, or 3g connections suppress this background work; browsers without connection information allow it. Navigation cancels queued work, while already-started requests remain shared with foreground loading. Speculative failures are silent and do not prevent a later retry.
 
-Tapping a verse opens its study sheet; a text selection, a press longer than 500ms, or a movement over 10px does not. The verse number is a button for keyboard and screen-reader users. The first press on the reading warms the study code chunk (skipped under Save-Data or slow connections); opening a verse fetches that day's `{day}.json`. The sheet shows the verse above two collapsed cards, in this order: «ترجمات أخرى» and «الكلمات اليونانية». Each card is a heading button with a short hint and, where useful, a count; its content mounts the first time it opens, loading `{day}.tr.json` (New Arabic Version and KJV) for translations, and the sheet scrolls just enough to show it. The study sheet stays mounted after first use.
+Tapping a verse opens its study sheet; a text selection, a press longer than 500ms, or a movement over 10px does not. The verse number is a button for keyboard and screen-reader users. The first press on the reading warms the study code chunk (skipped under Save-Data or slow connections); opening a verse fetches that day's `{day}.json`. The sheet shows the verse above two collapsed cards, in this order: «ترجمات أخرى» and «الكلمات اليونانية» (and a third, «اسأل الذكاء الاصطناعي», when the optional AI explanations are enabled). Each card is a heading button with a short hint and, where useful, a count; its content mounts the first time it opens, loading `{day}.tr.json` (New Arabic Version and KJV) for translations, and the sheet scrolls just enough to show it. The study sheet stays mounted after first use.
 
-The Greek list shows key words only: nouns, verbs, adjectives and interjections, each Greek word once per verse, as Arabic ← Greek with transliteration and gloss. Articles, pronouns, prepositions, conjunctions, particles and adverbs stay in the data (for the planned AI explanations) but are not listed.
+The Greek list shows key words only: nouns, verbs, adjectives and interjections, each Greek word once per verse, as Arabic ← Greek with transliteration and gloss. Articles, pronouns, prepositions, conjunctions, particles and adverbs stay in the data but are not listed.
 
 Closed sheets keep only their native dialog shell mounted. Their content mounts on opening and stays mounted through the exit animation. Opening takes 150ms and closing takes 100ms, with animation completion and a CSS-duration fallback coordinating queued actions. Reduced motion closes immediately. Scripture and font-size changes are not animated.
 
+## AI explanations (optional)
+
+Off by default. With `VITE_AI_PROVIDERS` unset, the build contains no AI code or text. When it is set, the study sheet gets a last collapsed card, «اسأل الذكاء الاصطناعي». The reader chooses «اشرح الآية», «معاني الكلمات» or «الخلفية والسياق», or types a question (3–200 characters). A free model on [OpenRouter](https://openrouter.ai/) then streams a short Arabic answer straight to the browser. There is no backend, and nothing is generated in advance.
+
+### Configuration
+
+| Variable                   | Meaning                                                                                                                                                    |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `VITE_AI_PROVIDERS`        | `openrouter` enables the card; empty disables it                                                                                                           |
+| `VITE_OPENROUTER_API_KEY`  | The key. It is compiled into public JavaScript                                                                                                             |
+| `VITE_OPENROUTER_MODELS`   | Up to two `:free` models, comma-separated. Default: `google/gemma-4-31b-it:free,google/gemma-4-26b-a4b-it:free`. `openrouter/free` is always appended last |
+| `VITE_AI_DAILY_CAP`        | Answers per device per Cairo day, 1–100 (default 10). Requests, including failed ones, are capped at twice this                                            |
+| `VITE_OPENROUTER_BASE_URL` | Optional `https://` endpoint with OpenRouter's API, for a future proxy                                                                                     |
+
+`vite.config.ts` validates these through `src/ai/config.ts` and inlines the result as build constants. An invalid value fails the build, and the app never reads `import.meta.env`. Only zero-priced `:free` models are accepted. `VITE_AI_ALLOW_LOCAL=1` exists only so the browser tests can reach the local stub over `http://127.0.0.1`; never set it in Vercel.
+
+For local testing, put the values in `.env.development.local`. `npm run dev` reads that file, Git ignores it, and `npm run build` does not read it. Never commit a `.env*` file other than `.env.example`.
+
+### Loading
+
+`StudyPanel.tsx` imports the card only when `__AI_ENABLED__` is true; otherwise Rollup drops it. The `AiPanel-*` chunk (interface, chip labels, cache, formatting) loads when the card first opens. The `run-*` chunk (prompt, streaming, the provider and the key) loads on the first request that the on-device cache cannot answer. That request also loads the day's `{day}.tr.json`, plus `{day}.lex.json` for «معاني الكلمات» and typed questions, through the same cache as the study cards. «إيقاف» takes effect at once, even while these are still loading, and a daily attempt counts only once the request is actually sent. The main `index-*` chunk is the same either way.
+
+### What is sent
+
+Each request is one POST to `/chat/completions`. It carries:
+
+- a fixed system prompt;
+- the reference and section heading;
+- the verse and up to three verses either side, in Van Dyck without diacritics;
+- the verse in كتاب الحياة and the KJV;
+- the key Greek words with their lexicon meanings, for «معاني الكلمات» and typed questions, plus lexicon definitions (references removed) for «معاني الكلمات» only;
+- the task, or the reader's question.
+
+It never carries the reader's name, plan day, dates or progress. The headers are the key, `HTTP-Referer` (the site origin), `X-OpenRouter-Title: Bible150` and `X-OpenRouter-App-Visibility: hidden`, and the request sends no cookies.
+
+OpenRouter sees the reader's IP address. Free-model providers may keep prompts and train on them. Readers accept a one-time notice before their first request.
+
+### Limits and on-device data
+
+- **The free allowance belongs to the OpenRouter account, so every reader shares it.** It is 20 requests a minute and 50 a day, rising to 1,000 a day after a one-time purchase of at least $10. It resets at 00:00 UTC. A group that taps the card together, for example during a meeting, can hit the per-minute limit. Those readers see «الخدمة مشغولة الآن» and can retry after 30 seconds to about a minute (OpenRouter's reset time, bounded in case the phone's clock is wrong). When the daily allowance runs out, everyone sees «انتهت حصة الخدمة المشتركة اليوم».
+- **The key is public and cannot be restricted to this site.** Anyone who copies it can use up the shared allowance until the key is rotated. Only a server could prevent this. The checklist below keeps spending at $0 and the models free.
+- **Each device has its own daily caps:** 10 answers and 20 requests by default. Chip answers are cached on the device (`nt-ai-cache-v1`, at most 60 answers); typed questions are not cached. Usage is stored in `nt-ai-usage-v1` and consent in `nt-ai-consent-v1`. «إيقاف الميزة ومسح بياناتها» removes the cache and the consent. None of these keys are part of progress backups. If the browser blocks storage, counts and consent last until the page reloads, so the caps still apply.
+- **Errors use fixed Arabic messages.** Server error text is never shown.
+
+When the prompt, chips or models change, bump `PROMPT_VERSION` in `src/ai/chips.ts` so cached answers are dropped. When what is sent, or who receives it, changes, bump `DISCLOSURE_VERSION` in `src/ai/cache.ts` so readers see the notice again.
+
+### Owner checklist
+
+1. **Create a dedicated OpenRouter account** for the app: no BYOK, auto top-up off, no saved card. Never put a management key in the app.
+2. **Set the privacy settings.** Allow free endpoints that may train on inputs; otherwise the free models are filtered out. Keep prompt publishing and OpenRouter's own input logging off.
+3. **Create a key named `bible150-web`:**
+   - a credit limit of **$0**. If $0 also blocks free models, use $0.01 with a daily reset;
+   - an expiry about 12 months out, with a reminder two weeks before;
+   - a guardrail that allows only the configured models and `openrouter/free`.
+4. **Check the key from a terminal**, never in a chat or a commit. Use the app's exact request body:
+
+   ```sh
+   read -rs KEY   # paste the key; it is not echoed or saved in history
+   curl -sSN https://openrouter.ai/api/v1/chat/completions \
+     -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
+     -H "HTTP-Referer: https://sfk-bible-reading.vercel.app/" -H "X-OpenRouter-Title: Bible150" \
+     -H "X-OpenRouter-App-Visibility: hidden" \
+     -d '{"models":["google/gemma-4-31b-it:free","google/gemma-4-26b-a4b-it:free","openrouter/free"],"messages":[{"role":"user","content":"اشرح يوحنا 3:16 في جملتين."}],"stream":true,"max_tokens":2000,"temperature":0.3,"reasoning":{"exclude":true}}'
+   curl -sS https://openrouter.ai/api/v1/key -H "Authorization: Bearer $KEY"
+   ```
+
+   Keep all three attribution headers on every manual request: the first request with the site's `HTTP-Referer` creates the app's OpenRouter entry, and its visibility is set then. The stream should name a `"model"` in each chunk. Also confirm that:
+   - `"models":["openrouter/free"]` on its own answers;
+   - a paid model returns 402;
+   - a free model outside the guardrail returns 403.
+
+   The `/key` response shows the limit and `free_model_daily_requests`.
+
+5. **Optionally buy $10 of credit once**, which raises the daily allowance to 1,000, then remove the card.
+6. **Try the feature locally.** With the key in `.env.development.local`, run `npm run dev` and try about ten verses with each chip and a few questions. Ask church leadership to review sample answers, and run `npm run ai:models`. It reads the same variables as the build, from the production env files, then the development ones; values that exist only in Vercel can be passed in the shell, e.g. `VITE_OPENROUTER_MODELS=a:free,b:free npm run ai:models`. It never needs or sends the key.
+7. **Turn it on in Vercel.** In Project → Settings → Environment Variables, set `VITE_AI_PROVIDERS=openrouter` and `VITE_OPENROUTER_API_KEY` for **Production only**, then redeploy. The variables are read at build time.
+8. **Test on a real phone.** The next day, check `/api/v1/key` again to confirm the key is still active.
+9. **Every week,** review the activity page and run `npm run ai:models`. Free models are renamed and retired.
+
+**Rotate the key:** create a new key, update the Vercel variable, redeploy, then delete the old key.
+
+**Kill switch:** remove `VITE_AI_PROVIDERS` in Vercel and redeploy. The card disappears.
+
+### Tests
+
+`tests/ai-*.test.js` cover:
+
+- the configuration rules;
+- SSE parsing;
+- the provider's requests and errors;
+- the fallback chain and its timeouts;
+- the prompt;
+- answer formatting;
+- the cache, including the session fallback when storage is blocked;
+- the request path in `run.ts` (which study files load, stopping before anything is sent);
+- static rules: no `import.meta.env`, no HTML injection, and the key confined to `run.ts`.
+
+The `ai-chromium` Playwright project builds `dist-ai/` with a dummy key and serves it on port 4174. It runs `tests/browser/ai.spec.ts` against `scripts/sse-stub.mjs`, a scriptable local stand-in for the streaming API on port 4175. No test reaches OpenRouter, and CI needs no secrets.
+
 ## Static hosting
 
-On Vercel, import the repository, use the **Vite** preset, build with **`npm run build`**, and publish **`dist`**. `vercel.json` records these settings. Pushes to the connected production branch redeploy automatically. There are no `/api` routes or database environment variables.
+On Vercel, import the repository, use the **Vite** preset, build with **`npm run build`**, and publish **`dist`**. `vercel.json` records these settings. Pushes to the connected production branch redeploy automatically. There are no `/api` routes or database environment variables; the optional AI explanations use only the build-time variables described above.
 
 Study data is generated the same way into `public/study/` and served with the same revalidating cache header. Nothing under `/study/` loads until a reader opens a verse.
 
@@ -118,3 +220,5 @@ The subsequent repository refactor and About addition were compared against rele
 The focused responsiveness pass was compared against `781e060`, with three runs per build under the same mobile Lighthouse throttling: median performance **87 → 88**, accessibility **100 → 100**, LCP **3,678 → 3,604ms**, CLS **0.08646 → 0.08646**, and total transfer **525.2 → 501.8KB**, including speculative reading requests. The hidden 192px menu logo no longer loads before opening the menu. In three separate Chromium mobile runs with 150ms network latency and 200,000 bytes/s download throughput, tapping Next after a 1.5s settling period took a median **183.6 → 7.5ms** to paint the next reading. The prefetched reading showed no loading placeholder. These are controlled local measurements, not guarantees for every connection or device.
 
 The verse study panel was compared against `81c73c4` with six runs per build (two rounds of three) under the same mobile Lighthouse throttling: median performance **91.5 → 91**, accessibility **100 → 100**, LCP **3,080 → 3,154ms**, CLS **0.08742 → 0.08742**, and total transfer **490.8 → 491.6KB**. Simulated LCP took only two values in both builds, about 3,005 or 3,155ms (one round trip apart); the baseline landed on the higher value in 3 of 6 runs and the new build in 5 of 6. Initial JavaScript grew by **0.72KB** and CSS by **0.09KB** gzipped; study code (3.4KB) and styles (0.7KB) load only after a reader first presses the text. The first verse still starts at about **162px** at 390×844.
+
+The optional AI explanations leave the default build's sizes unchanged: `index` 82.0KB and `StudyPanel` 3.7KB gzipped, with no AI chunks or text. In an AI build, `StudyPanel` grows by 0.5KB. The card's own chunk (`AiPanel`, 6.2KB plus 0.65KB CSS) loads when the card first opens, and the request chunk (`run`, 5.2KB) loads on the first request. Lighthouse was not re-run, because nothing that loads before a reader opens a verse changed.

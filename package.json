@@ -23,6 +23,7 @@
     "test:visual": "node scripts/capture-preview.mjs",
     "icons:build": "node scripts/export-favicon.mjs",
     "audit:performance": "node scripts/audit-performance.mjs",
+    "ai:models": "node --experimental-strip-types --no-warnings=ExperimentalWarning scripts/check-ai-models.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "validate": "npm run format:check && npm test && npm run build",

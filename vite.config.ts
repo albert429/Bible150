@@ -3,13 +3,11 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import react from "@vitejs/plugin-react";
 import { audioUrl } from "./src/audio/url";
+import { aiBuildConfig } from "./src/ai/config.ts";
 
 export default defineConfig(({ mode }) => {
-  const { VITE_AUDIO_BASE_URL = "" } = loadEnv(
-    mode,
-    process.cwd(),
-    "VITE_AUDIO_",
-  );
+  const env = loadEnv(mode, process.cwd(), "VITE_");
+  const { VITE_AUDIO_BASE_URL = "" } = env;
   if (VITE_AUDIO_BASE_URL)
     audioUrl("/audio/days/check.m4a", VITE_AUDIO_BASE_URL);
   const { days } = JSON.parse(
@@ -24,8 +22,17 @@ export default defineConfig(({ mode }) => {
     );
     return existsSync(resolve("public", "." + manifest.src));
   });
+  // Optional AI explanations: off unless VITE_AI_PROVIDERS is set. Values are
+  // inlined as constants so a disabled build drops every AI module.
+  const ai = aiBuildConfig(env);
   return {
     plugins: [react()],
-    define: { __AUDIO_DAYS__: JSON.stringify(available) },
+    define: {
+      __AUDIO_DAYS__: JSON.stringify(available),
+      __AI_ENABLED__: JSON.stringify(ai !== null),
+      __AI_DAILY_CAP__: JSON.stringify(ai?.dailyCap ?? 0),
+      __AI_ATTEMPT_CAP__: JSON.stringify(ai?.attemptCap ?? 0),
+      __AI_CONFIG__: JSON.stringify(ai),
+    },
   };
 });
