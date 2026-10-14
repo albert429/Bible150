@@ -75,7 +75,6 @@ type Props = {
   error?: string;
   retry: () => void;
   done: boolean;
-  busy: boolean;
   font: number;
   complete: () => void;
 };
@@ -85,7 +84,6 @@ export default function Reader({
   error,
   retry,
   done,
-  busy,
   font,
   complete,
 }: Props) {
@@ -234,7 +232,7 @@ export default function Reader({
         )}
         <button
           className={done ? "quiet-button" : "primary"}
-          disabled={busy || !reading}
+          disabled={!reading}
           onClick={complete}
         >
           {done ? (
@@ -242,7 +240,7 @@ export default function Reader({
           ) : (
             <Check size={18} aria-hidden="true" />
           )}
-          {busy ? "جارٍ الحفظ…" : done ? "تراجع" : "تمت القراءة"}
+          {done ? "تراجع" : "تمت القراءة"}
         </button>
       </div>
     </div>

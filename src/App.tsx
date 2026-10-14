@@ -1,62 +1,35 @@
-import React, { lazy, Suspense, useEffect, useRef, useState } from "react";
-import { ArrowLeft, Check, X } from "lucide-react";
-import {
-  createReader,
-  setCompletion,
-  loadProgress,
-  selectReader,
-  exportBackup,
-  importBackup,
-  PROGRESS_KEY,
-  type Reader as Profile,
-} from "./plan/progress";
-import { today } from "./lib/format";
+import React, { Suspense, lazy, useEffect, useRef, useState } from "react";
+import { Check, X } from "lucide-react";
+import { useProgress } from "./plan/useProgress";
+import { downloadBackup, readBackupFile } from "./plan/backup";
 import { dayIndex, dateFor, pageFor, scheduledDay } from "./plan/schedule";
 import Reader from "./reader/Reader";
 import Navigation, { type View } from "./navigation/Navigation";
+import PlanView from "./plan/PlanView";
 import { ChunkBoundary, Loading } from "./components/Feedback";
 import type { Modal } from "./plan/Dialogs";
 import { useResource } from "./lib/useResource";
+import { useToday } from "./lib/useToday";
+import { useNotice } from "./lib/useNotice";
 import { useAdjacentPrefetch } from "./reader/useAdjacentPrefetch";
 import { days } from "./plan/readings";
 import { useAppearance } from "./navigation/useAppearance";
 import { appShareData } from "./navigation/share";
-const Calendar = lazy(() => import("./plan/Calendar"));
 const Dialogs = lazy(() => import("./plan/Dialogs"));
 
-function initialReader() {
-  try {
-    const state = loadProgress(localStorage);
-    const member =
-      state.profiles.find((profile) => profile.id === state.activeId) || null;
-    return {
-      profiles: state.profiles,
-      member,
-      selected: member ? scheduledDay(member.startDate) : 1,
-      error: "",
-    };
-  } catch (error) {
-    return {
-      profiles: [] as Profile[],
-      member: null,
-      selected: 1,
-      error: (error as Error).message,
-    };
-  }
-}
 export default function App() {
-  const [initial] = useState(initialReader);
-  const [profiles, setProfiles] = useState(initial.profiles);
-  const [member, setMember] = useState<Profile | null>(initial.member);
-  const [selected, setSelected] = useState(initial.selected);
-  const [page, setPage] = useState(pageFor(initial.selected));
+  const progress = useProgress();
+  const { profiles, member, error } = progress;
+  const [selected, setSelected] = useState(() =>
+    member ? scheduledDay(member.startDate) : 1,
+  );
+  const [page, setPage] = useState(() => pageFor(selected));
+  const [seenSwitches, setSeenSwitches] = useState(progress.switches);
   const [view, setView] = useState<View>("read");
   const [modal, setModal] = useState<Modal | null>(null);
   const { font, setFont, dark, setDark } = useAppearance();
-  const [error, setError] = useState(initial.error);
-  const [notice, setNotice] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [currentDate, setCurrentDate] = useState(today);
+  const [notice, setNotice] = useNotice();
+  const currentDate = useToday();
   const [linkText, setLinkText] = useState("");
   const importInput = useRef<HTMLInputElement>(null);
   const dialog = useRef<HTMLDialogElement>(null);
@@ -68,11 +41,9 @@ export default function App() {
   const reading = useResource(days, String(selected));
   useAdjacentPrefetch(selected, reading.data, reading.error, view === "read");
 
-  function applyReader(reader: Profile | null) {
-    const nextProfiles = loadProgress(localStorage).profiles;
-    setMember(reader);
-    setProfiles(nextProfiles);
-    const day = reader ? scheduledDay(reader.startDate) : 1;
+  if (seenSwitches !== progress.switches) {
+    const day = member ? scheduledDay(member.startDate) : 1;
+    setSeenSwitches(progress.switches);
     setSelected(day);
     setPage(pageFor(day));
   }
@@ -87,48 +58,34 @@ export default function App() {
   }
   function openModal(next: Modal) {
     if (!modal) dialogTrigger.current = document.activeElement as HTMLElement;
-    setError("");
+    progress.clearError();
     setModal(next);
   }
   function closeModal() {
     setModal(null);
   }
   function chooseReader(id: string | null) {
-    try {
-      applyReader(selectReader(localStorage, id));
-      setError("");
-      if (id === null) setModal("join");
-      else closeModal();
-      setView("read");
-    } catch (err) {
-      setError((err as Error).message);
-    }
+    if (!progress.select(id)) return;
+    if (id === null) setModal("join");
+    else closeModal();
+    setView("read");
   }
   function backup() {
     if (!member) return;
-    const url = URL.createObjectURL(
-      new Blob([exportBackup(member)], { type: "application/json" }),
-    );
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = `nt-reading-backup-${today()}.json`;
-    anchor.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    downloadBackup(member);
     setNotice("تم تجهيز النسخة الاحتياطية للتنزيل.");
   }
   async function restore(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
     try {
-      if (file.size > 65536)
-        throw Error("اختر ملف نسخة احتياطية صغيرًا بصيغة JSON.");
-      applyReader(importBackup(localStorage, await file.text()));
-      closeModal();
-      navigate("read");
-      setError("");
-      setNotice("تمت الاستعادة كقارئ منفصل. لم تُحذف أي قراءة سابقة.");
+      if (progress.restore(await readBackupFile(file))) {
+        closeModal();
+        navigate("read");
+        setNotice("تمت الاستعادة كقارئ منفصل. لم تُحذف أي قراءة سابقة.");
+      }
     } catch (err) {
-      setError((err as Error).message);
+      progress.fail(err);
     } finally {
       event.target.value = "";
     }
@@ -138,42 +95,25 @@ export default function App() {
       openModal("join");
       return;
     }
-    setBusy(true);
-    setError("");
-    try {
-      setMember(setCompletion(localStorage, member.id, selected, !done));
-      setProfiles(loadProgress(localStorage).profiles);
+    if (progress.complete(member.id, selected, !done))
       setNotice(
         done
           ? "تم التراجع عن إتمام القراءة"
           : "تم حفظ قراءتك. خطوة جديدة في الرحلة!",
       );
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setBusy(false);
-    }
   }
   function join(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
-    setBusy(true);
-    setError("");
-    try {
-      applyReader(
-        createReader(
-          localStorage,
-          String(data.get("name") || ""),
-          String(data.get("start") || ""),
-        ),
-      );
+    if (
+      progress.create(
+        String(data.get("name") || ""),
+        String(data.get("start") || ""),
+      )
+    ) {
       closeModal();
       navigate("read");
       setNotice("أهلًا بك! بدأت رحلتك، وحُفظت على هذا الجهاز.");
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setBusy(false);
     }
   }
   function showLink() {
@@ -190,37 +130,6 @@ export default function App() {
     }
   }
   useEffect(() => {
-    const sync = (event: StorageEvent) => {
-      if (event.key !== PROGRESS_KEY && event.key !== null) return;
-      try {
-        const state = loadProgress(localStorage);
-        const next =
-          state.profiles.find((profile) => profile.id === state.activeId) ||
-          null;
-        if (next?.id !== member?.id) {
-          const day = next ? scheduledDay(next.startDate) : 1;
-          setSelected(day);
-          setPage(pageFor(day));
-        }
-        setMember(next);
-        setProfiles(state.profiles);
-      } catch (err) {
-        setError((err as Error).message);
-      }
-    };
-    window.addEventListener("storage", sync);
-    return () => window.removeEventListener("storage", sync);
-  }, [member?.id]);
-  useEffect(() => {
-    const tick = () => setCurrentDate(today());
-    const timer = setInterval(tick, 30000);
-    document.addEventListener("visibilitychange", tick);
-    return () => {
-      clearInterval(timer);
-      document.removeEventListener("visibilitychange", tick);
-    };
-  }, []);
-  useEffect(() => {
     if (modal) {
       if (!dialog.current?.open) dialog.current?.showModal();
     } else if (dialog.current?.open) {
@@ -231,11 +140,6 @@ export default function App() {
       else document.querySelector<HTMLButtonElement>(".menu-toggle")?.focus();
     }
   }, [modal]);
-  useEffect(() => {
-    if (!notice) return;
-    const timer = setTimeout(() => setNotice(""), 5000);
-    return () => clearTimeout(timer);
-  }, [notice]);
   return (
     <div className="app">
       <Navigation
@@ -268,7 +172,7 @@ export default function App() {
             <span>{error}</span>
             <button
               className="icon-button"
-              onClick={() => setError("")}
+              onClick={progress.clearError}
               aria-label="إغلاق التنبيه"
             >
               <X size={18} />
@@ -283,46 +187,20 @@ export default function App() {
             error={reading.error}
             retry={reading.retry}
             done={done}
-            busy={busy}
             font={font}
             complete={complete}
           />
         ) : (
-          <>
-            <section className="page-heading">
-              <div>
-                <span className="eyebrow">١٥٠ يومًا · بالترتيب الزمني</span>
-                <h1>رحلتك، يومًا بيوم</h1>
-                <p>تابع الأيام المكتملة، وعُد إلى أي قراءة.</p>
-              </div>
-              {!member ? (
-                <button className="primary" onClick={() => openModal("join")}>
-                  ابدأ رحلتك
-                  <ArrowLeft size={18} />
-                </button>
-              ) : (
-                <button
-                  className="quiet-button"
-                  onClick={() => go(scheduledDay(start, currentDate))}
-                >
-                  قراءة اليوم
-                  <ArrowLeft size={18} />
-                </button>
-              )}
-            </section>
-            <ChunkBoundary>
-              <Suspense fallback={<Loading label="جارٍ فتح خطة القراءة…" />}>
-                <Calendar
-                  member={member}
-                  start={start}
-                  current={current}
-                  page={page}
-                  setPage={setPage}
-                  go={go}
-                />
-              </Suspense>
-            </ChunkBoundary>
-          </>
+          <PlanView
+            member={member}
+            start={start}
+            currentDate={currentDate}
+            current={current}
+            page={page}
+            setPage={setPage}
+            go={go}
+            join={() => openModal("join")}
+          />
         )}
       </main>
       <input
@@ -359,7 +237,6 @@ export default function App() {
                   profiles={profiles}
                   currentDate={currentDate}
                   start={start}
-                  busy={busy}
                   error={error}
                   linkText={linkText}
                   join={join}

@@ -1,6 +1,8 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import { PROGRESS_KEY } from "../../src/plan/progress.ts";
 import { chooseFromMenu, profile, ready, seed } from "./helpers";
+
+const day = (page: Page) => page.getByRole("article");
 
 test.describe("progress and backup", () => {
   test("completion, undo, backup, restore, and reader switching preserve profiles", async ({
@@ -87,5 +89,41 @@ test.describe("progress and backup", () => {
         PROGRESS_KEY,
       ),
     ).toEqual([]);
+  });
+
+  test("progress written in another tab updates this one and only a reader change resets the day", async ({
+    page,
+  }) => {
+    await seed(page);
+    await page.goto("/");
+    await ready(page);
+    const other = await page.context().newPage();
+    await seed(other);
+    await other.goto("/");
+    await ready(other);
+    const write = (patch: object) =>
+      other.evaluate(
+        ({ key, patch }) => {
+          const state = JSON.parse(localStorage.getItem(key)!);
+          localStorage.setItem(key, JSON.stringify({ ...state, ...patch }));
+        },
+        { key: PROGRESS_KEY, patch },
+      );
+    await chooseFromMenu(page, "رحلتي في ١٥٠ يومًا");
+    await page.locator(".calendar-day").nth(2).click();
+    await ready(page);
+    await expect(day(page)).toHaveAttribute("data-day", "3");
+    await expect(
+      page.getByRole("button", { name: "تمت القراءة", exact: true }),
+    ).toBeVisible();
+    await write({ profiles: [{ ...profile, completed: [2, 3, 4] }] });
+    await expect(
+      page.getByRole("button", { name: "تراجع", exact: true }),
+    ).toBeVisible();
+    await expect(day(page)).toHaveAttribute("data-day", "3");
+    await write({ activeId: null });
+    await expect(day(page)).toHaveAttribute("data-day", "1");
+    await write({ activeId: profile.id });
+    await expect(day(page)).toHaveAttribute("data-day", "10");
   });
 });
