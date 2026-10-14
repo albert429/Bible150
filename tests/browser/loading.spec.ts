@@ -1,0 +1,217 @@
+import { test, expect } from "@playwright/test";
+import {
+  blockFonts,
+  chooseFromMenu,
+  createGate,
+  nextDay,
+  planDay,
+  previousDay,
+  readingRequests,
+  ready,
+  recordRequests,
+  seed,
+  stubConnection,
+} from "./helpers";
+
+test.describe("loading and caching", () => {
+  test("returning reader fetches their day first; revisits and calendar are cached", async ({
+    page,
+  }) => {
+    await seed(page);
+    const requests = readingRequests(page);
+    await page.goto("/");
+    await ready(page);
+    await expect(page.getByRole("heading", { level: 1 })).toContainText(
+      "اليوم ١٠",
+    );
+    expect(requests[0]).toBe("/readings/10.json");
+    expect(
+      requests.every((url) => /^\/readings\/(9|10|11)\.json$/.test(url)),
+    ).toBe(true);
+    await nextDay(page).click();
+    await ready(page);
+    await previousDay(page).click();
+    await ready(page);
+    expect(requests.filter((url) => url === "/readings/10.json")).toHaveLength(
+      1,
+    );
+    await chooseFromMenu(page, "رحلتي في ١٥٠ يومًا");
+    await expect(page.locator(".calendar-day")).toHaveCount(30);
+    await chooseFromMenu(page, "القراءة اليومية");
+    await ready(page);
+    await chooseFromMenu(page, "رحلتي في ١٥٠ يومًا");
+    await expect(page.locator(".calendar-day")).toHaveCount(30);
+    expect(requests.filter((url) => url.endsWith("plan.json"))).toHaveLength(1);
+  });
+
+  test("reading and calendar errors have working independent retry controls", async ({
+    page,
+  }) => {
+    let failDay = true;
+    let failPlan = true;
+    await page.route("**/readings/1.json", (route) =>
+      failDay
+        ? route.fulfill({ status: 503, body: "failed" })
+        : route.continue(),
+    );
+    await page.route("**/readings/plan.json", (route) =>
+      failPlan
+        ? route.fulfill({ status: 503, body: "failed" })
+        : route.continue(),
+    );
+    await page.goto("/");
+    await expect(page.getByRole("alert")).toContainText("تعذر تحميل القراءة");
+    await expect(
+      page.getByRole("button", { name: "تمت القراءة", exact: true }),
+    ).toBeDisabled();
+    failDay = false;
+    await page.getByRole("button", { name: "إعادة المحاولة" }).click();
+    await ready(page);
+    await chooseFromMenu(page, "رحلتي في ١٥٠ يومًا");
+    await expect(page.getByRole("alert")).toContainText(
+      "تعذر تحميل خطة القراءة",
+    );
+    failPlan = false;
+    await page.getByRole("button", { name: "إعادة المحاولة" }).click();
+    await expect(page.locator(".calendar-day")).toHaveCount(30);
+  });
+
+  test("late responses cannot replace the selected day's Scripture", async ({
+    page,
+  }) => {
+    const gate = createGate();
+    await page.route("**/readings/2.json", async (route) => {
+      await gate.opened;
+      await route.continue();
+    });
+    await page.goto("/");
+    await ready(page);
+    const requested = page.waitForRequest("**/readings/2.json");
+    await nextDay(page).click();
+    await requested;
+    await nextDay(page).click();
+    await ready(page);
+    const response = page.waitForResponse("**/readings/2.json");
+    gate.open();
+    await response;
+    await expect(page.getByRole("article")).toHaveAttribute("data-day", "3");
+    await expect(page.getByRole("heading", { level: 1 })).toContainText(
+      "اليوم ٣",
+    );
+  });
+});
+
+test.describe("prefetch", () => {
+  test("fonts gate adjacent prefetch and a warmed reading opens without a loading flash", async ({
+    page,
+  }) => {
+    const requests = recordRequests(page);
+    const fonts = await blockFonts(page);
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await expect(page.locator(".scripture")).toBeVisible();
+    // A quiet period: prefetch is scheduled 500ms after the fonts settle, so
+    // wait it out to prove that nothing is requested while they are held.
+    await page.waitForTimeout(650);
+    expect(requests.filter((url) => url.includes("/readings/"))).toEqual([
+      "/readings/1.json",
+    ]);
+    expect(requests.some((url) => url.includes("church-logo-192"))).toBe(false);
+    const prefetched = page.waitForResponse("**/readings/2.json");
+    fonts.open();
+    await ready(page);
+    await (await prefetched).finished();
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) => requestAnimationFrame(() => resolve())),
+    );
+    const loadingFlash = await page.evaluate(
+      () =>
+        new Promise<boolean>((resolve) => {
+          const article = document.querySelector("article")!;
+          let loading = false;
+          const observer = new MutationObserver(() => {
+            loading ||= !!article.querySelector(".loading-state");
+            if (
+              article.getAttribute("data-day") === "2" &&
+              article.querySelector(".scripture")
+            ) {
+              observer.disconnect();
+              resolve(loading);
+            }
+          });
+          observer.observe(article, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+          });
+          document.querySelector<HTMLButtonElement>(".next-day")!.click();
+        }),
+    );
+    expect(loadingFlash).toBe(false);
+    expect(requests.filter((url) => url === "/readings/2.json")).toHaveLength(
+      1,
+    );
+    await expect(page.locator(".reader h2").first()).toContainText(
+      planDay(2).passages[0].book,
+    );
+  });
+
+  test("speculative failures stay silent and foreground navigation retries", async ({
+    page,
+  }) => {
+    let attempts = 0;
+    await page.route("**/readings/2.json", (route) =>
+      ++attempts === 1
+        ? route.fulfill({ status: 503, body: "failed" })
+        : route.continue(),
+    );
+    const failed = page.waitForResponse("**/readings/2.json");
+    await page.goto("/");
+    await ready(page);
+    await (await failed).finished();
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) => requestAnimationFrame(() => resolve())),
+    );
+    await expect(page.getByRole("alert")).toHaveCount(0);
+    await nextDay(page).click();
+    await ready(page);
+    await expect(page.getByRole("article")).toHaveAttribute("data-day", "2");
+    expect(attempts).toBe(2);
+  });
+
+  test("data saving and slow connections suppress speculative reads", async ({
+    page,
+  }) => {
+    for (const connection of [
+      { saveData: true, effectiveType: "4g" },
+      { effectiveType: "2g" },
+      { effectiveType: "3g" },
+    ]) {
+      await stubConnection(page, connection);
+      const requests = readingRequests(page);
+      await page.goto("/");
+      await ready(page);
+      // A quiet period: allowed prefetch would fire 500ms after the fonts settle.
+      await page.waitForTimeout(700);
+      expect(requests).toEqual(["/readings/1.json"]);
+      await nextDay(page).click();
+      await ready(page);
+      await expect(page.getByRole("article")).toHaveAttribute("data-day", "2");
+    }
+  });
+
+  test("leaving reading cancels queued prefetch", async ({ page }) => {
+    const requests = readingRequests(page);
+    const fonts = await blockFonts(page);
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await expect(page.locator(".scripture")).toBeVisible();
+    await chooseFromMenu(page, "رحلتي في ١٥٠ يومًا");
+    await expect(page.locator(".calendar-day")).toHaveCount(30);
+    fonts.open();
+    await page.evaluate(() => document.fonts.ready);
+    // A quiet period: the cancelled prefetch would have fired 500ms later.
+    await page.waitForTimeout(700);
+    expect(requests).toEqual(["/readings/1.json", "/readings/plan.json"]);
+  });
+});

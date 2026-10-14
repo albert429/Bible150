@@ -1,30 +1,27 @@
-import { test, expect, type Page, type Request } from "@playwright/test";
-import AxeBuilder from "@axe-core/playwright";
+import { test, expect, type Page } from "@playwright/test";
 import {
   closeSheet,
+  expectAccessible,
+  longPress,
   noOverflow,
   openSection,
   ready,
+  recordRequests,
   section,
   seed,
   study,
+  stubConnection,
   tap,
   textPoint,
   verse,
 } from "./helpers";
 
-test.use({ reducedMotion: "reduce" });
-
 // The seeded reader is on day 10 (Matthew 8:14 onward).
-function studyRequests(page: Page) {
-  const requests: string[] = [];
-  page.on("request", (request: Request) => {
-    const url = new URL(request.url());
-    if (url.pathname.startsWith("/study/") || /StudyPanel/.test(url.pathname))
-      requests.push(url.pathname);
-  });
-  return requests;
-}
+const studyRequests = (page: Page) =>
+  recordRequests(
+    page,
+    (pathname) => pathname.startsWith("/study/") || /StudyPanel/.test(pathname),
+  );
 /** The core study file has loaded once the collapsed sections appear. */
 async function sectionsReady(page: Page) {
   await expect(section(page, "الكلمات اليونانية")).toBeVisible();
@@ -37,7 +34,7 @@ test("tapping a verse opens its study sheet and only then loads study data", asy
   const requests = studyRequests(page);
   await page.goto("/");
   await ready(page);
-  await page.waitForTimeout(700);
+  await page.waitForLoadState("networkidle");
   expect(requests).toEqual([]);
 
   await tap(page, 1);
@@ -60,7 +57,7 @@ test("tapping a verse opens its study sheet and only then loads study data", asy
   await expect(section(page, "الكلمات اليونانية")).toHaveAccessibleDescription(
     "الكلمة العربية ومقابلها في الأصل",
   );
-  await page.waitForTimeout(300);
+  await page.waitForLoadState("networkidle");
   expect(requests.filter((r) => r.startsWith("/study/"))).toEqual([
     "/study/10.json",
   ]);
@@ -104,10 +101,7 @@ test("selecting, long-pressing or dragging over Scripture opens nothing", async 
   await expect(page.locator("dialog[open]")).toHaveCount(0);
 
   const { x, y } = await textPoint(page, 3);
-  await page.mouse.move(x, y);
-  await page.mouse.down();
-  await page.waitForTimeout(600);
-  await page.mouse.up();
+  await longPress(page, { x, y });
   await expect(page.locator("dialog[open]")).toHaveCount(0);
 
   await page.evaluate(() => getSelection()!.removeAllRanges());
@@ -177,11 +171,7 @@ test("the study sheet is accessible in both themes and fits 320px at 38px text",
     await expect(study(page).locator(".greek-row").first()).toBeInViewport();
     await expect(section(page, "الكلمات اليونانية")).toBeInViewport();
     await noOverflow(page);
-    const result = await new AxeBuilder({ page })
-      .include("dialog[open]")
-      .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
-      .analyze();
-    expect(result.violations).toEqual([]);
+    await expectAccessible(page, { include: "dialog[open]", wcag: true });
     await closeSheet(page);
   }
 });
@@ -195,7 +185,7 @@ test("other translations load only when opened and include the KJV", async ({
   await ready(page);
   await tap(page, 1);
   await sectionsReady(page);
-  await page.waitForTimeout(300);
+  await page.waitForLoadState("networkidle");
   expect(requests).not.toContain("/study/10.tr.json");
 
   await openSection(page, "ترجمات أخرى");
@@ -232,21 +222,13 @@ test("Save-Data skips warming the study chunk; the default build has no AI row",
   page,
 }) => {
   await seed(page);
-  await page.addInitScript(() =>
-    Object.defineProperty(navigator, "connection", {
-      configurable: true,
-      value: { saveData: true, effectiveType: "4g" },
-    }),
-  );
+  await stubConnection(page, { saveData: true, effectiveType: "4g" });
   const requests = studyRequests(page);
   await page.goto("/");
   await ready(page);
   const { x, y } = await textPoint(page, 3);
-  await page.mouse.move(x, y);
-  await page.mouse.down();
-  await page.waitForTimeout(600);
-  await page.mouse.up();
-  await page.waitForTimeout(300);
+  await longPress(page, { x, y });
+  await page.waitForLoadState("networkidle");
   expect(requests).toEqual([]);
 
   await tap(page, 1);
