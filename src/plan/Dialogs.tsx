@@ -18,7 +18,6 @@ type Props = {
   profiles: Reader[];
   currentDate: string;
   start: string;
-  busy: boolean;
   error: string;
   linkText: string;
   join: (event: FormEvent<HTMLFormElement>) => void;
@@ -33,7 +32,6 @@ export default function Dialogs({
   profiles,
   currentDate,
   start,
-  busy,
   error,
   linkText,
   join,
@@ -107,8 +105,8 @@ export default function Dialogs({
               />
             </label>
             <p className="form-hint">يمكنك تعويض أي يوم أو القراءة مسبقًا.</p>
-            <button className="primary full" disabled={busy}>
-              {busy ? "جارٍ البدء…" : "ابدأ القراءة"}
+            <button className="primary full">
+              ابدأ القراءة
               <ArrowLeft size={18} />
             </button>
           </form>
