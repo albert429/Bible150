@@ -13,7 +13,7 @@ const files = readdirSync(root, { recursive: true, encoding: "utf8" })
 test("Source never reads import.meta.env (AI config is inlined at build time)", () => {
   assert.deepEqual(
     files.filter((f) => f.text.includes("import.meta.env")).map((f) => f.name),
-    ["audio/AudioPlayer.tsx"],
+    [],
   );
 });
 

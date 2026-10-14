@@ -28,22 +28,24 @@
 
 ## Commands
 
-| Command                             | Purpose                                                           |
-| ----------------------------------- | ----------------------------------------------------------------- |
-| `npm run dev`                       | Development server, port 5173; generates static readings first    |
-| `npm run build`                     | Generate readings, type-check the app, and build `dist/`          |
-| `npm start`                         | Preview `dist/`, port 4173                                        |
-| `npm test`                          | Progress, dates, loading, and exact static-data fidelity          |
-| `npm run test:e2e`                  | Fixture build, then Chromium and WebKit workflows, layout and axe |
-| `npm run ai:models`                 | Check that the configured AI models still exist and are free      |
-| `npm run format` / `format:check`   | Apply / verify repository formatting                              |
-| `npm run lint`                      | ESLint (TypeScript, React hooks) over the whole repository        |
-| `npm run typecheck`                 | Type-check the app, configs, browser specs and scripts            |
-| `npm run snapshot -- save <dir>`    | Record hashes of generated data and sizes of `dist/assets/`       |
-| `npm run snapshot -- compare <dir>` | Fail on any data change or initial JS/CSS growth over 0.5KB       |
-| `npm run validate`                  | Formatting, lint, type-check, unit/data checks, and build         |
-| `npm run test:visual`               | Save preview screenshots under `artifacts/`                       |
-| `npm run audit:performance`         | Save repeatable mobile Lighthouse reports under `artifacts/`      |
+| Command                             | Purpose                                                            |
+| ----------------------------------- | ------------------------------------------------------------------ |
+| `npm run dev`                       | Development server, port 5173; generates static readings first     |
+| `npm run build`                     | Generate readings, type-check the app, and build `dist/`           |
+| `npm start`                         | Preview `dist/`, port 4173                                         |
+| `npm test`                          | Progress, dates, loading, and exact static-data fidelity           |
+| `npm run test:e2e`                  | Fixture build, then Chromium and WebKit workflows, layout and axe  |
+| `npm run ai:models`                 | Check that the configured AI models still exist and are free       |
+| `npm run format` / `format:check`   | Apply / verify repository formatting                               |
+| `npm run lint`                      | ESLint (TypeScript, React hooks) over the whole repository         |
+| `npm run typecheck`                 | Type-check the app, configs, browser specs and scripts             |
+| `npm run snapshot -- save <dir>`    | Record hashes of generated data and sizes of `dist/assets/`        |
+| `npm run snapshot -- compare <dir>` | Fail on any data change or initial JS/CSS growth over 0.5KB        |
+| `npm run audio:host:prepare`        | Build the Cloudflare Pages audio bundle in `artifacts/pages-audio` |
+| `npm run audio:host:deploy`         | Prepare, then deploy that bundle with wrangler                     |
+| `npm run validate`                  | Formatting, lint, type-check, unit/data checks, and build          |
+| `npm run test:visual`               | Save preview screenshots under `artifacts/`                        |
+| `npm run audit:performance`         | Save repeatable mobile Lighthouse reports under `artifacts/`       |
 
 `tsconfig.json` only references `tsconfig.app.json` (`src/`), `tsconfig.node.json` (`vite.config.ts`, `playwright.config.ts`, the unit tests in `tests/*.test.ts` and `tests/browser/`, strict) and `tsconfig.scripts.json` (`scripts/` and `hosting/` JavaScript, checked but not strict). `build` checks only the app, so tests and scripts cannot block a deploy.
 

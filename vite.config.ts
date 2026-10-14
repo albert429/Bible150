@@ -28,6 +28,7 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     define: {
+      __AUDIO_BASE_URL__: JSON.stringify(VITE_AUDIO_BASE_URL),
       __AUDIO_DAYS__: JSON.stringify(available),
       __AI_ENABLED__: JSON.stringify(ai !== null),
       __AI_DAILY_CAP__: JSON.stringify(ai?.dailyCap ?? 0),
