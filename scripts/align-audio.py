@@ -5,7 +5,6 @@ Pinned environment: torch==2.8.0 torchaudio==2.8.0 uroman==1.3.1 numpy.
 Requires ffmpeg. Resume-safe: each result identifies its audio and transcript.
 """
 import argparse
-import hashlib
 import json
 import re
 import subprocess
@@ -17,11 +16,9 @@ import torch
 import uroman
 from torchaudio.pipelines import MMS_FA
 
+from audio_text import chapter_text_hash, chapter_verses, digest
+
 ROOT = Path(__file__).resolve().parents[1]
-
-
-def digest(data):
-    return hashlib.sha256(data).hexdigest()
 
 
 def main():
@@ -34,12 +31,7 @@ def main():
     args = parser.parse_args()
     books = json.loads((ROOT / "data/books.json").read_text())[39:]
     plan = json.loads((ROOT / "data/plan.json").read_text())
-    chapters = {}
-    for day in plan:
-        for passage in day["passages"]:
-            verses = chapters.setdefault((passage["book"], passage["chapter"]), {})
-            for verse in passage["verses"]:
-                verses[verse["number"]] = verse["text"]
+    chapters = chapter_verses(plan)
     args.output.mkdir(parents=True, exist_ok=True)
     romanizer = uroman.Uroman()
     print("Loading MMS alignment model…", flush=True)
@@ -62,7 +54,7 @@ def main():
             if [n for n, _ in verses] != list(range(1, len(verses) + 1)):
                 raise ValueError(f"Incomplete transcript: {code} {chapter}")
             audio_hash = digest(source.read_bytes())
-            text_hash = digest(json.dumps(verses, ensure_ascii=False).encode())
+            text_hash = chapter_text_hash(verse_map)
             output = args.output / f"{code}-{chapter}.json"
             if output.exists():
                 old = json.loads(output.read_text())

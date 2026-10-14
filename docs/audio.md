@@ -52,7 +52,7 @@ Generated output:
 - `data/audio/manifests/`: compact timing manifests, suitable for Git.
 - `data/audio/catalog.json`: days for which audio has been prepared.
 - `public/audio/days/`: encoded audio, ignored by Git.
-- `public/audio/*.json`: generated copies of timing manifests.
+- `public/audio/*.json`: copies of the timing manifests, written by `npm run build` (`scripts/build-data.js`), not by `build-audio.py`.
 
 ## Delivery and performance
 
