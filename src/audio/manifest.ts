@@ -191,10 +191,13 @@ export function announcementAt(manifest: AudioManifest, time: number) {
     ? manifest.announcements.find((a) => time >= a.start && time < a.end)
     : undefined;
 }
+/**
+ * The verse being read, or -1 with no verse timing or during an explicit
+ * opening or spoken reference. As before references existed, a brief
+ * unannounced lead-in already shows the first verse.
+ */
 export function activeCueIndex(manifest: AudioManifest, time: number) {
-  return !manifest.cues.length ||
-    time < manifest.cues[0].start ||
-    announcementAt(manifest, time)
+  return !manifest.cues.length || announcementAt(manifest, time)
     ? -1
     : cueAt(manifest.cues, time);
 }

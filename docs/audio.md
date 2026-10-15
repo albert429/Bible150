@@ -1,7 +1,8 @@
 # Static audio delivery
 
-The reader plays a single audio file for each day. All source selection, verse
-alignment, trimming, and encoding happen offline. The reader is a static frontend
+The plan reader plays a single audio file for each day; the Bible reader plays one
+file per chapter. All source selection, verse alignment, trimming, and encoding
+happen offline. The reader is a static frontend
 with no audio API, runtime secret, or speech model. The current Cloudflare Pages
 audio host uses a small byte-range handler for native seeking.
 
@@ -54,6 +55,80 @@ Generated output:
 - `public/audio/days/`: encoded audio, ignored by Git.
 - `public/audio/*.json`: copies of the timing manifests, written by `npm run build` (`scripts/build-data.js`), not by `build-audio.py`.
 
+## Canonical chapters (Bible mode)
+
+`scripts/build-canonical-audio.py --ot <OT folder> --nt <NT folder>` encodes each of
+the 1,189 original chapter recordings once, whole, with the same settings. It
+checks the exact 929 + 260 source coverage, reuses the verified NT alignments,
+and never invents verse timing: chapters without an alignment get
+`"alignment": "chapter"` and no cues. Output:
+
+- `data/audio/chapters/<USFM>/<n>.json`: version-2 manifests (`identity`
+  `bible:<USFM>:<n>`, `alignment`, `cues`, `announcements`), published by the build
+  to `/audio/chapters/<USFM>/<n>.json`.
+- `data/audio/chapter-catalog.json` and `canonical-sources.json`: the published
+  chapters and their provenance (source name and SHA-256, size, duration).
+- `/audio/chapters/assets/<USFM>-<n>-<hash>.m4a`: encoded media, outside Git.
+
+Check everything with
+`python3 scripts/verify-canonical-audio.py --media <folder with audio/chapters/assets> --ot <OT> --nt <NT>`.
+Current state and the OT alignment benchmark are in
+[audio provenance](../data/audio/SOURCES.md#canonical-chapter-audio). The
+alignment script takes `--testament OT|NT|all`; a full OT run takes about 2.4 hours
+on an Apple-silicon Mac and still needs listening review before publication.
+
+Keep the 2.2 GB of chapter media outside `public/` (Vite copies `public/` into
+every local build) and point `AUDIO_MEDIA_ROOT` at it when preparing the host.
+
+## Spoken passage references
+
+`data/audio/reference-texts.json` holds a draft spoken reference for each of the
+537 plan passages (`scripts/prepare-reference-texts.py`), for example
+«إنجيل لوقا، الإصحاح الأول، من الآية الأولى إلى الرابعة». All are
+`reviewed: false`. Generating the voice is separate work; nothing is spoken in the
+browser.
+
+`build-audio.py --announcements <catalog.json>` assembles days with a reference
+before every passage. The catalog sits beside its WAV clips:
+
+```json
+{
+  "version": 1,
+  "voice": "who or what produced the clips",
+  "settings": { "...": "generation settings" },
+  "clips": {
+    "LUK-1-1-4": {
+      "file": "LUK-1-1-4.wav",
+      "text": "exact wording from reference-texts.json",
+      "textHash": "sha256 of text",
+      "audioHash": "sha256 of the WAV file",
+      "settingsHash": "sha256 of the compact settings JSON",
+      "reviewed": true
+    }
+  }
+}
+```
+
+Assembly refuses a clip whose wording, text hash, settings hash or audio hash
+differs, and unreviewed wording or clips unless `--draft`. Draft output must stay
+outside `public/` and `data/`. Scripture PCM comes from the original chapter
+recordings and is never scaled; only clips are matched to the day's active
+Scripture loudness, within a peak limit. Each passage is laid out in whole
+samples at 24 kHz: separation (0.2–0.35 s, default 0.25), reference, separation,
+Scripture. Cues are exact sample offsets and each `reference` interval runs from
+the previous Scripture to the passage's first verse, so the player shows the
+reference and highlights no verse in between. Verse skip goes past it. The day is
+encoded once, and its name fingerprints the spans, clip hashes, gains,
+separation, cues and encoding. Version-2 manifests and a sample-level
+`report.json` go to `artifacts/audio-work/announced/` by default; the published
+`data/audio/manifests/` and `catalog.json` are never written in this mode.
+Without `--announcements` the existing daily build is unchanged.
+
+Publishing announced days needs, in order: reviewed wording, an approved voice
+with distribution terms, listening review of the pilot days 1, 32 and 150 (names,
+pacing, music boundaries, volume, seeking, speed, background playback), then
+deploying the media before the manifests that reference it.
+
 ## Delivery and performance
 
 Files use mono AAC at 48 kbps in an M4A container, with metadata at the beginning
@@ -69,8 +144,9 @@ element handles buffering and HTTP range requests; audio is never fetched into a
 JavaScript Blob or processed with Web Audio. Scripture is not rerendered on each
 audio event; only the active verse marker and small player update.
 
-The delivery rules live in `src/audio/contract.ts`: the media path pattern
-`/audio/days/NNN-<hash>.m4a`, the 8 MiB size cap, the content type, the cache
+The delivery rules live in `src/audio/contract.ts`: the media path patterns
+`/audio/days/NNN-<hash>.m4a` and `/audio/chapters/assets/<USFM>-<n>-<hash>.m4a`,
+the 8 MiB size cap, the content type, the cache
 value and the Pages origin. The app validates every manifest `src` against that
 pattern, and the Pages bundle script imports it. `vercel.json` and the Cloudflare
 worker (deployed verbatim, so it cannot import) repeat the values; tests keep
@@ -85,12 +161,14 @@ Cache-Control: public, max-age=31536000, immutable
 
 The host must support byte ranges and return correct `Content-Length` and
 `Content-Range` headers. Never reuse an immutable media URL for changed audio.
-Day JSON remains on Vercel with revalidation, so timing fixes take effect. `vercel.json` sets `Vercel-CDN-Cache-Control: no-store` on `/audio/days/*`, so Vercel never caches proxied media itself; the browser and Cloudflare do.
+Day and chapter JSON remain on Vercel with revalidation, so timing fixes take effect. `vercel.json` sets `Vercel-CDN-Cache-Control: no-store` on `/audio/days/*` and `/audio/chapters/assets/*`, so Vercel never caches proxied media itself; the browser and Cloudflare do.
 
 ## Current deployment: Vercel + Cloudflare Pages
 
-The 150 recordings live in the `bible-reading-audio` Pages project. Vercel proxies
-only `/audio/days/:file` to that host; timing manifests remain in the app build.
+The 150 daily recordings live in the `bible-reading-audio` Pages project; the
+1,189 chapter files are prepared for the same project but not yet deployed.
+Vercel proxies only `/audio/days/:file` and `/audio/chapters/assets/:file` to that
+host; timing manifests remain in the app build.
 Set `VITE_AUDIO_BASE_URL=/` to enable the same-origin media route in a Git-only
 build. The `dev` preview is configured this way. Production/main must be configured
 separately when promoting the audio release. `vite.config.ts` validates the value
@@ -109,7 +187,9 @@ handler in `hosting/cloudflare-audio/worker.js` returns correct `206` responses,
 including Safari's two-byte probe, open-ended ranges, and suffix ranges. Invalid
 offsets return `416`. It reads a cached static asset internally; the app still
 uses native streaming. The preparation script caps recordings at 8 MiB to bound
-handler memory use (current files are under 5 MB).
+handler memory use and refuses, never truncates, a larger file. Daily files are
+under 5 MB; the largest chapter, Psalm 119, is 7,664,871 bytes (723,737 bytes of
+headroom).
 
 To prepare and deploy updated media from the local recordings:
 
@@ -117,6 +197,10 @@ To prepare and deploy updated media from the local recordings:
 npm run audio:host:prepare   # builds artifacts/pages-audio
 npm run audio:host:deploy    # prepares, then runs wrangler pages deploy
 ```
+
+Both read media from `public/` unless `AUDIO_MEDIA_ROOT` names another folder.
+The bundle copies every recording (about 2.7 GB with the chapters; Linux
+copy-on-write file systems clone instead).
 
 `audio:host:deploy` runs `npx wrangler@4 pages deploy artifacts/pages-audio
 --project-name bible-reading-audio --branch main --commit-dirty=true`.
@@ -183,6 +267,20 @@ in About. Opening any dialog pauses audio;
 closing a dialog does not resume it automatically. Changing day, reader, or main
 view stops playback. Listening never completes a day or advances to another day.
 
+In Bible mode, «استماع متواصل للإصحاحات» in reader settings continues to the next
+chapter when one ends naturally, in canonical order, and stops after Revelation 22.
+Only the natural end continues: choosing a chapter (even the same one), changing
+mode, Back/Forward, or the arrows stop playback at once. The same audio element
+carries on while the next chapter's text and manifest load, and keyboard focus
+stays in the player. Replaying or seeking an ended chapter re-arms continuation.
+Old Testament chapters currently play without verse highlighting or verse skip.
+
+The player remembers the position in each recording, keyed by its immutable
+media path, so a rebuilt recording starts from the beginning. Positions are
+saved every 5 seconds of playback and on pause, end, hiding the page and closing
+the player (`bible-reader-audio-position-v1`, at most 20 recordings), separately
+from plan progress. A continuous handoff starts the next chapter at its beginning.
+
 Media Session supplies lock-screen controls where supported. One continuous file
 per day avoids relying on JavaScript chapter switching while a phone is locked.
 Background playback still depends on the browser/OS and needs physical-device
@@ -224,3 +322,21 @@ All three new-build audits made zero audio/player-chunk requests before a tap.
 These are local build comparisons, not production CDN measurements. R2 delivery
 and physical-device background playback still need verification after hosting
 is configured. Machine timing review remains separate from functional tests.
+
+## Local verification — 16 October 2026 (full Bible)
+
+- `verify-canonical-audio.py` passed for all 1,189 chapters, including every
+  original recording's SHA-256 and the exact source coverage: 260 verse-timed NT,
+  929 chapter-timed OT, AAC mono 24 kHz, fast start, durations within 0.05 s.
+- The range handler returned byte-exact `206` responses from the prepared bundle
+  for Psalm 119, 1 Kings 8 and Ezekiel 16 (two-byte probe, middle, suffix,
+  open-ended and over-long ranges) and `416` past the end.
+- Pilot days 1, 32 and 150 were assembled from the original NT recordings with
+  synthetic 440 Hz tones standing in for references (no voice). Encoded durations
+  equalled the sample layout; the tone filled each reference interval and was
+  absent from Scripture; Scripture matched the original recordings at zero
+  sample lag. The client accepted all three manifests. Rebuilding days 1 and 150
+  without references reproduced their published manifests and media names.
+- Browser checks use synthetic media only (`tests/browser/bible-audio.spec.ts`).
+  They do not show that a phone keeps playing across chapters while locked; that
+  needs physical iOS and Android testing.

@@ -173,6 +173,8 @@ test("direct speed, close, study pause and highlights remain accessible on phone
       .toBe(false);
   }
   await expect(page.locator("dialog[open]")).toHaveCount(0);
+  // A verse is highlighted before the study sheet pauses playback.
+  await expect(page.locator("[data-listening]")).toHaveCount(1);
   await page.locator(".verse-number").first().focus();
   await page.keyboard.press("Enter");
   await expect

@@ -2,7 +2,7 @@
 
 # The New Testament in Chronological Order<br /><span lang="ar" dir="rtl">العهد الجديد بالترتيب الزمني</span>
 
-A calm Arabic New Testament reader built for the youth of the **Brethren Church at Kholousy**. Follow a 150-day chronological reading plan, with Scripture given almost the entire screen.
+A calm Arabic New Testament reader built for the youth of the **Brethren Church at Kholousy**. Follow a 150-day chronological reading plan, or read the whole Bible by book and chapter, with Scripture given almost the entire screen.
 
 [Open the app](https://sfk-bible-reading.vercel.app/) · [Development guide](docs/development.md) · [Data sources](data/SOURCES.md)
 
@@ -13,10 +13,11 @@ A calm Arabic New Testament reader built for the youth of the **Brethren Church 
 - One slim, sticky toolbar; the rest of the page is for reading.
 - Clear Arabic text in Amiri, adjustable from 22–38px, with light and dark themes.
 - Original passage order, Scripture section headings, verse numbers, and quick passage jumps.
+- Two reading modes in the menu: «خطة القراءة» (the 150-day plan) and «الكتاب المقدس» (all 66 books, Genesis to Revelation, with source section headings, Psalm titles and paragraphs). Each mode remembers its place; chapters have shareable links and work with Back/Forward.
 - A personal start date, a 150-day calendar, completion with undo, and multiple readers on one device.
 - Local progress, JSON backup/restore, and optional sharing initiated by the reader.
 - Static frontend hosting, daily reading caches, nearby readings prepared in the background, and secondary screens loaded on demand.
-- Optional recorded reading with verse highlighting, and a small audio player; recordings load only when requested.
+- Optional recorded reading with a small audio player; recordings load only when requested. Daily readings and New Testament chapters highlight each verse; Old Testament chapters play without verse tracking for now. Bible mode can continue to the next chapter.
 
 <p align="center">
   <img src="docs/assets/mobile-reader.png" width="300" alt="Actual mobile app: a slim Arabic day toolbar followed immediately by Scripture" />
@@ -60,7 +61,7 @@ The optional AI explanations («اسأل الذكاء الاصطناعي») are 
 
 See the [development guide](docs/development.md) for architecture, deployment troubleshooting, source regeneration, and performance checks. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before making changes.
 
-Recorded readings use separately hosted static audio. See the [audio guide](docs/audio.md) for local preparation, timing review, CDN setup, and free-tier bandwidth estimates. A normal Git-only deployment keeps audio hidden until media is available or an audio host is configured.
+Recorded readings use separately hosted static audio: the New Testament is a dramatised Van Dyck recording and the Old Testament a non-dramatic one, both distributed by Faith Comes By Hearing (credits in the app's About and in [audio provenance](data/audio/SOURCES.md)). See the [audio guide](docs/audio.md) for local preparation, timing review, CDN setup, and free-tier bandwidth estimates. A normal Git-only deployment keeps audio hidden until media is available or an audio host is configured.
 
 ## Scripture attribution and rights
 

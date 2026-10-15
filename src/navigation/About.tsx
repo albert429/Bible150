@@ -82,12 +82,13 @@ export default function About() {
       </p>
       <p className="about-rights">
         العهد القديم: قراءة غير درامية · ترجمة فان دايك
-        <br />© 1999 جمعية الكتاب المقدس بمصر · ℗ جمعية الكتاب المقدس بمصر
         <br />
-        Faith Comes By Hearing
+        تسجيلات العهد القديم بلا تتبع للآيات حاليًا.
+        <br />© 1999 جمعية الكتاب المقدس بمصر · ℗ جمعية الكتاب المقدس بمصر ·
+        Hosanna / Faith Comes By Hearing
         <br />
         <a
-          href={APP_INFO.oldTestamentAudioSource}
+          href="https://www.faithcomesbyhearing.com/"
           target="_blank"
           rel="noreferrer"
         >

@@ -8,9 +8,10 @@ import {
   type AudioManifest,
 } from "./manifest";
 
-const mismatch = "يحتاج التسجيل إلى تحديث ليتطابق مع قراءة هذا اليوم.";
+const mismatch = (reading: ScriptureReading) =>
+  `يحتاج التسجيل إلى تحديث ليتطابق مع ${"day" in reading ? "قراءة هذا اليوم" : "نص هذا الإصحاح"}.`;
 
-/** Load a day's manifest and accept it only if it matches the reading on screen. */
+/** Load a reading's manifest and accept it only if it matches the text on screen. */
 export function useAudioManifest(reading: ScriptureReading) {
   const key = audioReadingKey(reading);
   const { data, error, retry } = useResource(audioManifests, key);
@@ -26,7 +27,11 @@ export function useAudioManifest(reading: ScriptureReading) {
       (matches) => {
         if (!active) return;
         if (!matches) audioManifests.invalidate(key);
-        setChecked({ data, key, error: matches ? undefined : mismatch });
+        setChecked({
+          data,
+          key,
+          error: matches ? undefined : mismatch(reading),
+        });
       },
       (err: Error) => {
         if (active) setChecked({ data, key, error: err.message });

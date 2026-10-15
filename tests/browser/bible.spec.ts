@@ -212,7 +212,7 @@ test("rapid chapter and mode changes ignore stale text; failed chapters retry", 
   await expect(page.getByRole("alert")).toContainText("تعذر تحميل الإصحاح");
   fail = false;
   await page
-    .getByRole("button", { name: "حاول مرة أخرى", exact: true })
+    .getByRole("button", { name: "إعادة المحاولة", exact: true })
     .click();
   await ready(page);
   await expect(page.getByRole("article")).toHaveAttribute(

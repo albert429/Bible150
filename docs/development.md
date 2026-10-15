@@ -2,68 +2,74 @@
 
 ## Structure
 
-| Path                                               | Responsibility                                                                                                             |
-| -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `src/main.tsx`, `src/App.tsx`                      | React bootstrap; app shell wiring reader, plan, navigation, and dialogs                                                    |
-| `src/appInfo.ts`                                   | App credits, contact links, and Scripture source                                                                           |
-| `src/lib/`                                         | Shared helpers: `jsonClient` (cache, deduplication, timeout), `useResource`, `network`, `format`, `useNotice`, `useToday`  |
-| `src/bible/`                                       | Verse and reference parsing shared by reader, study, and audio                                                             |
-| `src/plan/`                                        | Plan state: `readings` loading, `progress` profiles, `useProgress`, `schedule`, `backup`, `labels`, `PlanView`, `Calendar` |
-| `src/plan/dialogs/`                                | Join, Invite, Settings, and restore dialogs, loaded on demand                                                              |
-| `src/reader/`                                      | Reader, Scripture rendering, verse tap handling, completion bar, listen button, adjacent-day prefetch                      |
-| `src/navigation/`                                  | Toolbar, menu, day details, appearance panel and preferences, share, About                                                 |
-| `src/components/`                                  | Shared UI: native-dialog `Sheet` (`useModalDialog`), `Feedback`, `PassageReference`, `ReactIcon`, form styles              |
-| `src/audio/`                                       | Audio player and controls, manifest loading, media element, Media Session, verse highlighting, delivery contract           |
-| `src/study/`                                       | Lazy verse study sheet: translations, Greek key words, and AI explanations panel                                           |
-| `src/ai/`                                          | AI explanation pipeline: config, prompt, provider chain (`providers/openrouter.ts`), SSE parsing, cache, answer formatting |
-| `src/styles/`                                      | Design `tokens.css`, `base.css`, and `global.css`; component CSS sits beside its component                                 |
-| `data/`                                            | Canonical Scripture plan, extracted source table, `books.json` (66 books: USFM, OSIS, STEPBible codes with Arabic names)   |
-| `data/study/`                                      | Imported study data (CC BY / CC BY-SA; see `data/study/LICENSE.md`)                                                        |
-| `data/audio/`                                      | Verse timing alignments and audio sources (see `data/audio/SOURCES.md`)                                                    |
-| `scripts/build-data.js`                            | Runs the three builders below into `public/` (`predev`/`prebuild`)                                                         |
-| `scripts/build-{readings,study,audio-index}.js`    | Split plan, study data, and audio manifests into static JSON, with budgets; `scripts/lib/books.js` is shared               |
-| `scripts/import*.py`, `extract-plan.py`, `usfm.py` | Source extraction and importers, with coverage gates                                                                       |
-| `scripts/{align,build}-audio.py`, `audio_text.py`  | Audio alignment and build; `scripts/tests/` holds Python tests for `audio_text.py`                                         |
-| `scripts/{prepare,verify}-audio-host.*`            | Prepare and verify the static audio host                                                                                   |
-| `scripts/snapshot.mjs`                             | Build-output snapshot and compare tool (`npm run snapshot`)                                                                |
-| `scripts/`                                         | Also: asset regeneration, AI model check, SSE stub, visual and performance checks                                          |
-| `tests/`                                           | Unit/data checks; `tests/browser/` holds mobile browser workflows                                                          |
-| `docs/assets/`                                     | README artwork and actual app screenshot; never shipped in the app                                                         |
+| Path                                                  | Responsibility                                                                                                             |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `src/main.tsx`, `src/App.tsx`                         | React bootstrap; app shell wiring reader, plan, navigation, and dialogs                                                    |
+| `src/appInfo.ts`                                      | App credits, contact links, and Scripture source                                                                           |
+| `src/lib/`                                            | Shared helpers: `jsonClient` (cache, deduplication, timeout), `useResource`, `network`, `format`, `useNotice`, `useToday`  |
+| `src/bible/`                                          | Verse and reference parsing; canonical catalog, chapter client, reading identity (`plan:N`, `bible:USFM:N`), navigation    |
+| `src/plan/`                                           | Plan state: `readings` loading, `progress` profiles, `useProgress`, `schedule`, `backup`, `labels`, `PlanView`, `Calendar` |
+| `src/plan/dialogs/`                                   | Join, Invite, Settings, and restore dialogs, loaded on demand                                                              |
+| `src/reader/`                                         | Reader, Scripture and chapter rendering, remembered places and links, verse taps, completion bar, listen button, prefetch  |
+| `src/navigation/`                                     | Toolbar, menu, day details, appearance panel and preferences, share, About                                                 |
+| `src/components/`                                     | Shared UI: native-dialog `Sheet` (`useModalDialog`), `Feedback`, `PassageReference`, `ReactIcon`, form styles              |
+| `src/audio/`                                          | Player and controls, manifests (v1 days, v2 days/chapters), media element, Media Session, highlighting, contract, flags    |
+| `src/study/`                                          | Lazy verse study sheet: translations, Greek key words, and AI explanations panel                                           |
+| `src/ai/`                                             | AI explanation pipeline: config, prompt, provider chain (`providers/openrouter.ts`), SSE parsing, cache, answer formatting |
+| `src/styles/`                                         | Design `tokens.css`, `base.css`, and `global.css`; component CSS sits beside its component                                 |
+| `data/`                                               | Canonical Scripture plan, extracted source table, `books.json` (66 books: USFM, OSIS, STEPBible codes with Arabic names)   |
+| `data/bible/`                                         | Full Van Dyck source (66 books, structure), catalog and provenance (see `data/bible/SOURCES.md`)                           |
+| `data/study/`                                         | Imported study data (CC BY / CC BY-SA; see `data/study/LICENSE.md`)                                                        |
+| `data/audio/`                                         | Verse timing alignments and audio sources (see `data/audio/SOURCES.md`)                                                    |
+| `scripts/build-data.js`                               | Runs the four builders below into `public/` (`predev`/`prebuild`)                                                          |
+| `scripts/build-{readings,bible,study,audio-index}.js` | Split plan, 1,189 chapters, study data, and audio manifests into static JSON, with budgets; `scripts/lib/books.js` shared  |
+| `scripts/import*.py`, `extract-plan.py`, `usfm.py`    | Source extraction and importers, with coverage gates                                                                       |
+| `scripts/{align,build}-audio.py`, `audio_*.py`        | Alignment (NT/OT), daily build with optional spoken references; `scripts/tests/` holds the Python tests                    |
+| `scripts/{build,verify}-canonical-audio.py`           | Encode and verify the 1,189 chapter recordings; `import-bible.py` imports the full text                                    |
+| `scripts/{prepare,verify}-audio-host.*`               | Prepare and verify the static audio host                                                                                   |
+| `scripts/snapshot.mjs`                                | Build-output snapshot and compare tool (`npm run snapshot`)                                                                |
+| `scripts/`                                            | Also: asset regeneration, AI model check, SSE stub, visual and performance checks                                          |
+| `tests/`                                              | Unit/data checks; `tests/browser/` holds mobile browser workflows                                                          |
+| `docs/assets/`                                        | README artwork and actual app screenshot; never shipped in the app                                                         |
 
 ## Commands
 
-| Command                                            | Purpose                                                                                  |
-| -------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `npm run dev`                                      | Development server, port 5173; generates static data first                               |
-| `npm run build`                                    | Generate static data, type-check the app, and build `dist/`                              |
-| `npm start`                                        | Preview `dist/`, port 4173                                                               |
-| `npm test`                                         | Progress, dates, loading, and exact static-data fidelity                                 |
-| `npm run test:e2e`                                 | Fixture build, then Chromium and WebKit workflows, layout and axe                        |
-| `npm run test:browser`                             | Playwright against the current `dist/` without rebuilding (set the same env as test:e2e) |
-| `npm run ai:models`                                | Check that the configured AI models still exist and are free                             |
-| `npm run format` / `format:check`                  | Apply / verify repository formatting                                                     |
-| `npm run lint`                                     | ESLint (TypeScript, React hooks) over the whole repository                               |
-| `npm run typecheck`                                | Type-check the app, configs, browser specs and scripts                                   |
-| `npm run snapshot -- save <dir>`                   | Record hashes of generated data and sizes of `dist/assets/`                              |
-| `npm run snapshot -- compare <dir>`                | Fail on any data change or initial JS/CSS growth over 0.5KB                              |
-| `npm run audio:host:prepare`                       | Build the Cloudflare Pages audio bundle in `artifacts/pages-audio`                       |
-| `npm run audio:host:deploy`                        | Prepare, then deploy that bundle with wrangler                                           |
-| `npm run validate`                                 | Formatting, lint, type-check, unit/data checks, and build                                |
-| `python3 -I -m unittest discover -s scripts/tests` | Python audio hash tests (standard library only; CI also runs `py_compile`)               |
-| `npm run test:visual`                              | Save preview screenshots under `artifacts/`                                              |
-| `npm run audit:performance`                        | Save repeatable mobile Lighthouse reports under `artifacts/`                             |
+| Command                                            | Purpose                                                                                     |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `npm run dev`                                      | Development server, port 5173; generates static data first                                  |
+| `npm run build`                                    | Generate static data, type-check the app, and build `dist/`                                 |
+| `npm start`                                        | Preview `dist/`, port 4173                                                                  |
+| `npm test`                                         | Progress, dates, loading, and exact static-data fidelity                                    |
+| `npm run test:e2e`                                 | Fixture build, then Chromium and WebKit workflows, layout and axe                           |
+| `npm run test:browser`                             | Playwright against the current `dist/` without rebuilding (set the same env as test:e2e)    |
+| `npm run ai:models`                                | Check that the configured AI models still exist and are free                                |
+| `npm run format` / `format:check`                  | Apply / verify repository formatting                                                        |
+| `npm run lint`                                     | ESLint (TypeScript, React hooks) over the whole repository                                  |
+| `npm run typecheck`                                | Type-check the app, configs, browser specs and scripts                                      |
+| `npm run snapshot -- save <dir>`                   | Record hashes of generated data and sizes of `dist/assets/`                                 |
+| `npm run snapshot -- compare <dir>`                | Fail on any data change or initial JS/CSS growth over 0.5KB                                 |
+| `npm run audio:host:prepare`                       | Build the Cloudflare Pages audio bundle in `artifacts/pages-audio`                          |
+| `npm run audio:host:deploy`                        | Prepare, then deploy that bundle with wrangler                                              |
+| `npm run validate`                                 | Formatting, lint, type-check, unit/data checks, and build                                   |
+| `python3 -I -m unittest discover -s scripts/tests` | Python audio and import tests (standard library only, no ffmpeg; CI also runs `py_compile`) |
+| `npm run test:visual`                              | Save preview screenshots under `artifacts/`                                                 |
+| `npm run audit:performance`                        | Save repeatable mobile Lighthouse reports under `artifacts/`                                |
 
 `tsconfig.json` only references `tsconfig.app.json` (`src/`), `tsconfig.node.json` (`vite.config.ts`, `playwright.config.ts`, the unit tests in `tests/*.test.ts` and `tests/browser/`, strict) and `tsconfig.scripts.json` (`scripts/` and `hosting/` JavaScript, checked but not strict). `build` checks only the app, so tests and scripts cannot block a deploy.
 
 `npm install` sets `core.hooksPath` to `.githooks/`. `pre-commit` runs Prettier and ESLint on the staged files, then `npm run typecheck`; `pre-push` runs `npm test`. Skip them in an emergency with `--no-verify`.
 
-`npm run test:e2e` builds with `AUDIO_TEST_FIXTURES=1` and `VITE_AUDIO_BASE_URL=https://audio.example.test`, then runs Playwright with the same variables; without them the audio specs fail on a fresh clone. Playwright starts the production preview itself, and the build generates `public/readings/` and `public/study/`, which the separate AI test build (`dist-ai/`, see below) reuses. Outside CI it reuses servers already listening on ports 4173, 4174 and the stub's, so stop a stale `npm start` (or any server serving an old `dist/`) first or the specs run against the old build. Install their browsers with `npx playwright install chromium webkit` (`--with-deps` on Linux). `CHROMIUM_PATH` optionally selects an existing Chromium executable; WebKit uses its own installed browser.
+`npm run test:e2e` builds with `AUDIO_TEST_FIXTURES=1` and `VITE_AUDIO_BASE_URL=https://audio.example.test`, then runs Playwright with the same variables; without them the audio specs fail on a fresh clone. Playwright starts the production preview itself, and the build generates `public/readings/` and `public/study/`, which the separate AI test build (`dist-ai/`, see below) reuses. Outside CI it reuses servers already listening on ports 4173, 4174 and the stub's, so stop a stale `npm start` (or any server serving an old `dist/`) first or the specs run against the old build. Install their browsers with `npx playwright install chromium webkit` (`--with-deps` on Linux). `CHROMIUM_PATH` optionally selects an existing Chromium executable; WebKit uses its own installed browser. The Bible audio specs (`tests/browser/bible-audio.spec.ts`) run only in the fixture build: they serve accelerated copies of the committed chapter manifests with synthetic WAV media and abort, then fail on, any request that leaves 127.0.0.1.
 
 Visual and performance scripts expect a running `npm start`. `BASELINE_URL` optionally adds a baseline site. Compare builds using the same server, throttling, and environment. Reports and traces are ignored by Git.
 
 ## State and privacy
 
 `nt-reading-progress-v1` stores profiles, the active reader, personal start dates, and completed days in localStorage. Backup imports create a separate profile. `word-font` and `word-dark` preserve appearance settings. Clearing site data or moving to another browser/domain requires restoring a saved backup to retain progress.
+
+`bible-reader-location-v1` remembers the reading mode, each reader's last plan day (by reader id; a reader without one opens on their scheduled day), the last Bible chapter and the continuous-listening choice. `bible-reader-audio-position-v1` remembers listening positions by immutable media path. Neither is part of backups, which keep their existing format, and neither changes completion records.
+
+Canonical chapters have static links, `/?mode=bible&book=GEN&chapter=1&verse=1`, and every navigation is a history entry, so Back and Forward move between days, chapters and modes. An explicit `?day=N` link opens that day and stays in the address bar until the reader moves; days reached in the app keep the bare URL, because without a web manifest a home-screen shortcut would otherwise always open one day. The chapter arrows stop at Genesis 1 and Revelation 22. The Bible catalog (book names and chapter and verse counts) is bundled for immediate link validation; chapter text loads one chapter at a time, with the same 500ms neighbour prefetch rules as days. Study opens for New Testament verses through the plan's study data; Old Testament verses say that no study is available, with no Hebrew data presented.
 
 Schedules use Cairo dates. Catch-up and advance reading do not move a reader's start date. Daily JSON is cached in memory during the browser session, with concurrent requests deduplicated; failed requests can be retried. This is not a persistent offline/PWA implementation.
 

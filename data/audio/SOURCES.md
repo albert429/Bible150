@@ -15,6 +15,46 @@ The committed timings are in `data/audio/alignments/`: one JSON file per chapter
 contain no audio.
 See [preparation and hosting](../../docs/audio.md).
 
+## Old Testament recordings
+
+Source: user-supplied `ARBVDVO2DA.zip` (929 chapter MP3s, CRC-checked when
+extracted). Despite the archive name, the files are named `…ARZVDVO1DA.mp3` and
+their embedded tags read **Bible - Arabic - Old Testament - Audio Non-Drama**,
+`O1ARB/VDV`, **© 1999 Bible Society of Egypt, ℗ Bible Society of Egypt**, artist
+Faith Comes By Hearing, composer Hosanna - Faith Comes By Hearing, dated 2018.
+This is a non-dramatic reading, not the NT's dramatised recording, and no
+narrator identity is asserted. As with the NT, reuse rights are separate from the
+public-domain text and must be confirmed before public distribution.
+
+## Canonical chapter audio
+
+`chapter-catalog.json` lists all **1,189** chapters; `chapters/<USFM>/<n>.json`
+holds a version-2 manifest per chapter and `canonical-sources.json` records each
+original file name, SHA-256, encoded size and duration. Each original recording
+is encoded once, whole, to mono 48 kbps AAC (2,177,510,754 bytes, 98.18 hours;
+largest Psalm 119 at 7,664,871 bytes). Media names fingerprint the source hash,
+transcript hash, encoding settings and timing.
+
+- **260 NT chapters** reuse the verse timings above unchanged (the transcript
+  hashes match the full-Bible text). The recording's own spoken opening before
+  verse 1 is an explicit `source` interval, so no verse is highlighted during it.
+- **929 OT chapters** have **chapter-level timing only**: no verse cues are
+  inferred, verse skip is unavailable and the player says so. A five-chapter OT
+  alignment benchmark (GEN 1, LEV 11, PSA 23, PSA 119, ISA 53) ran at about 32×
+  real time with no verse under the 0.30 review score; aligning all 929 chapters
+  would take roughly 2.4 hours here and has not been run or reviewed.
+
+`scripts/verify-canonical-audio.py` re-checks manifests, fingerprints, alignments
+and encoded media, and with `--ot`/`--nt` every original hash; on 16 October 2026
+all 1,189 chapters and source hashes passed.
+
+## Spoken passage references
+
+`reference-texts.json` holds 537 deterministic draft references, one per plan
+passage, all `reviewed: false`. No voice is approved: the stock MMS voice was
+rejected for its Arabic pronunciation, and later auditions await review. No
+announced daily audio or manifest has been published.
+
 ## Timing review queue
 
 The initial automated review flagged the following eight verses (alignment score
