@@ -80,14 +80,23 @@ def silma(records):
         setattr(sys.modules[name], attr, None)
     from huggingface_hub import hf_hub_download
     from importlib.resources import files
-    from silma_tts.api import SilmaTTS
+    import silma_tts.api
     cache = WORK / 'models/hf'
     ckpt = hf_hub_download('silma-ai/silma-tts', 'model.pt', revision=SILMA_REVISION, cache_dir=cache)
     vocab = hf_hub_download('silma-ai/silma-tts', 'vocab.txt', revision=SILMA_REVISION, cache_dir=cache)
     vocos = Path(hf_hub_download('charactr/vocos-mel-24khz', 'config.yaml', revision=VOCOS_REVISION, cache_dir=cache)).parent
     hf_hub_download('charactr/vocos-mel-24khz', 'pytorch_model.bin', revision=VOCOS_REVISION, cache_dir=cache)
-    tts = SilmaTTS(ckpt_file=ckpt, vocab_file=vocab, vocoder_local_path=str(vocos), device='cpu',
-                   enable_normalizer=False, force_tashkeel=False)
+    # SilmaTTS.__init__ ignores ckpt_file/vocab_file and re-resolves unpinned hf:// URLs via cached_path,
+    # which would download main a second time. Rebind that name in silma_tts.api only, for those exact URLs.
+    pinned = {'hf://silma-ai/silma-tts/model.pt': ckpt, 'hf://silma-ai/silma-tts/vocab.txt': vocab}
+
+    def pinned_path(url, **_):
+        if url not in pinned:
+            raise RuntimeError(f'Unpinned SILMA download refused: {url}')
+        print(f'Pinned {url} -> {pinned[url]}', flush=True)
+        return Path(pinned[url])
+    silma_tts.api.cached_path = pinned_path
+    tts = silma_tts.api.SilmaTTS(vocoder_local_path=str(vocos), device='cpu', enable_normalizer=False, force_tashkeel=False)
     ref = str(files('silma_tts').joinpath('infer/ref_audio_samples/ar.ref.24k.wav'))
     for record in records:
         # Fully diacritized input makes SILMA speed up by 1.3x internally; speed=0.85 restores a calm pace.

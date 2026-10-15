@@ -35,11 +35,11 @@ cd artifacts/voice-auditions
 uv venv --python 3.11 venv-piper && uv pip install --python venv-piper/bin/python piper-tts==1.8.0
 uv venv --python 3.11 venv-silma && uv pip install --python venv-silma/bin/python --no-deps silma-tts==1.0.5
 uv pip install --python venv-silma/bin/python cached_path click ema_pytorch hydra-core librosa 'numpy<=1.26.4' \
-  pydub safetensors soundfile tomli torch torchaudio torchdiffeq tqdm transformers unidecode vocos x_transformers matplotlib
+  pydub safetensors soundfile tomli torch torchaudio torchcodec torchdiffeq tqdm transformers unidecode vocos x_transformers matplotlib
 cd ../..
 artifacts/voice-auditions/venv-piper/bin/python -I scripts/build-voice-auditions.py piper-kareem-lex
 artifacts/voice-auditions/venv-piper/bin/python -I scripts/build-voice-auditions.py piper-kareem
-artifacts/voice-auditions/venv-silma/bin/python -I scripts/build-voice-auditions.py silma
+HF_HUB_OFFLINE=1 artifacts/voice-auditions/venv-silma/bin/python -I scripts/build-voice-auditions.py silma  # after the first pinned download
 ```
 
 The script writes WAV and MP3 files plus `catalog.json` to `artifacts/voice-auditions/<candidate>/`. That
@@ -51,3 +51,6 @@ Workarounds the script applies:
   directory to `/tmp`.
 - SILMA imports NeMo/pynini and CATT eagerly. Those packages only normalize numbers and add diacritics,
   and this text is already fully diacritized, so the script replaces them with import stubs.
+- `SilmaTTS.__init__` ignores `ckpt_file` and `vocab_file`, and instead resolves unpinned `hf://` URLs through
+  `cached_path`. For those two exact URLs, the script rebinds `silma_tts.api.cached_path` in-process to the pinned
+  snapshot files. It refuses any other URL and leaves the installed package unchanged.
