@@ -89,7 +89,10 @@ export function useMediaElement(
     const current = ++token.current;
     dispatch({ type: "request" });
     if (element.error) element.load();
-    if (element.ended) element.currentTime = 0;
+    if (element.ended) {
+      endedOnce.current = false;
+      element.currentTime = 0;
+    }
     try {
       await element.play();
       if (current !== token.current) return;
@@ -177,6 +180,9 @@ export function useMediaElement(
     src: manifest ? audioUrl(manifest.src, __AUDIO_BASE_URL__) : undefined,
     preload: "none" as const,
     onLoadedMetadata: () => restorePosition(),
+    onSeeking: () => {
+      if (audio.current && !audio.current.ended) endedOnce.current = false;
+    },
     onPlaying: () => dispatch({ type: "playing" }),
     onPause: () => {
       report();
