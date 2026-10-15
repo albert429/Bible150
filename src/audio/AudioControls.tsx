@@ -12,6 +12,7 @@ type AudioControlsProps = {
   ready: boolean;
   cueIndex: number;
   cueCount: number;
+  canPrevious?: boolean;
   active: boolean;
   rate: number;
   time: number;
@@ -34,6 +35,7 @@ export default function AudioControls({
   ready,
   cueIndex,
   cueCount,
+  canPrevious,
   active,
   rate,
   time,
@@ -67,7 +69,7 @@ export default function AudioControls({
         <button
           className="icon-button"
           aria-label="الآية السابقة"
-          disabled={!ready || cueCount === 0 || cueIndex <= 0}
+          disabled={!ready || cueCount === 0 || !(canPrevious ?? cueIndex > 0)}
           onClick={onPrevious}
         >
           <SkipForward size={18} aria-hidden="true" />

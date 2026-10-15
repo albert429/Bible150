@@ -23,14 +23,15 @@ const STALL_TIMEOUT = 20000;
 export function useMediaElement(
   manifest: AudioManifest | undefined,
   options: {
-    initialTime?: number;
+    initialTime?: number | ((source: string) => number);
     onEnded?: () => void;
-    onPosition?: (seconds: number) => void;
+    onPosition?: (seconds: number, source: string) => void;
   } = {},
 ) {
   const audio = useRef<HTMLAudioElement>(null);
   const token = useRef(0);
   const endedOnce = useRef(false);
+  const source = useRef<string | undefined>(undefined);
   const lastReported = useRef(-1);
   const restored = useRef(false);
   const callbacks = useRef(options);
@@ -43,7 +44,12 @@ export function useMediaElement(
     restored.current = true;
     const seconds = Math.max(
       0,
-      Math.min(options.initialTime || 0, Math.max(0, manifest.duration - 0.1)),
+      Math.min(
+        (typeof options.initialTime === "function"
+          ? options.initialTime(manifest.src)
+          : options.initialTime) || 0,
+        Math.max(0, manifest.duration - 0.1),
+      ),
     );
     if (seconds) {
       element.currentTime = seconds;
@@ -63,7 +69,11 @@ export function useMediaElement(
     token.current += 1;
     audio.current?.pause();
     if (audio.current)
-      callbacks.current.onPosition?.(audio.current.currentTime);
+      if (source.current)
+        callbacks.current.onPosition?.(
+          audio.current.currentTime,
+          source.current,
+        );
     dispatch({ type: "paused", message });
   }, []);
   const pause = useCallback(() => halt(), [halt]);
@@ -112,6 +122,7 @@ export function useMediaElement(
     restored.current = false;
     lastReported.current = -1;
     setTime(0);
+    source.current = manifest?.src;
     dispatch({ type: "paused" });
     const element = audio.current;
     element?.pause();
@@ -160,13 +171,18 @@ export function useMediaElement(
       setTime(seconds);
       if (Math.floor(seconds) !== lastReported.current) {
         lastReported.current = Math.floor(seconds);
-        callbacks.current.onPosition?.(seconds);
+        if (source.current)
+          callbacks.current.onPosition?.(seconds, source.current);
       }
     },
     onEnded: () => {
       dispatch({ type: "ended" });
       if (audio.current)
-        callbacks.current.onPosition?.(audio.current.currentTime);
+        if (source.current)
+          callbacks.current.onPosition?.(
+            audio.current.currentTime,
+            source.current,
+          );
       if (!endedOnce.current) {
         endedOnce.current = true;
         callbacks.current.onEnded?.();

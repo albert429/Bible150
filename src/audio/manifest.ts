@@ -78,6 +78,7 @@ export function validManifest(
   const plan = /^plan:([1-9]\d{0,2})$/.exec(identity);
   const chapter = /^bible:([A-Z0-9]{3}):([1-9]\d{0,2})$/.exec(identity);
   if (
+    (plan && Number(plan[1]) > 150) ||
     (!plan && !chapter) ||
     (m.version !== 1 && m.version !== 2) ||
     !/^[a-f0-9]{64}$/.test(m.readingHash) ||

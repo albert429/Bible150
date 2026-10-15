@@ -22,8 +22,8 @@ export default function AudioPlayer({
   onClose: () => void;
   /** Only the parent may opt into an ended handoff; manual navigation unmounts. */
   onEnded?: () => void;
-  initialTime?: number;
-  onPosition?: (seconds: number) => void;
+  initialTime?: number | ((source: string) => number);
+  onPosition?: (seconds: number, source: string) => void;
 }) {
   const { manifest, error: loadError, retry } = useAudioManifest(reading);
   const media = useMediaElement(manifest, { initialTime, onEnded, onPosition });
@@ -67,6 +67,7 @@ export default function AudioPlayer({
       ready={!!manifest}
       cueIndex={index}
       cueCount={manifest?.cues.length ?? 0}
+      canPrevious={!!manifest && stepCueIndex(manifest, time, -1) >= 0}
       active={playing || waiting}
       rate={rate}
       time={time}
