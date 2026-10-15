@@ -32,6 +32,14 @@ export default function AudioPlayer({
   const cue = manifest?.cues[index];
   const announcement = manifest && announcementAt(manifest, time);
   const passage = reading.passages[announcement?.passage ?? cue?.passage ?? 0];
+  // A recording's own opening is labelled by the chapter reference below; only
+  // inserted spoken references have reviewed display text.
+  const detail =
+    announcement?.kind === "reference"
+      ? announcement.reference
+      : manifest?.version === 2 && manifest.alignment === "chapter"
+        ? "تسجيل الإصحاح دون تتبع الآيات"
+        : undefined;
   const label =
     "day" in reading
       ? dayLabel(reading.day)
@@ -55,7 +63,7 @@ export default function AudioPlayer({
   return (
     <AudioControls
       label={media.ended ? "انتهى التسجيل" : label}
-      announcement={announcement?.reference}
+      detail={detail}
       reference={
         passage && {
           book: passage.book,
