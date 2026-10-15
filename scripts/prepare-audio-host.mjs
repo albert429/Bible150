@@ -1,4 +1,5 @@
 import {
+  constants,
   copyFileSync,
   existsSync,
   mkdirSync,
@@ -36,23 +37,31 @@ export function pagesConfig() {
   };
 }
 
-export function copyMedia(manifestPaths, output) {
+/**
+ * Copy each manifest's recording from `root` (default public/) into the
+ * bundle. Linux copy-on-write file systems clone; elsewhere (including
+ * Node on macOS) this is a full copy, so allow about 2.7GB of free space.
+ */
+export function copyMedia(manifestPaths, output, root = "public") {
   for (const manifestPath of manifestPaths) {
     const { src } = JSON.parse(readFileSync(manifestPath, "utf8"));
     if (!AUDIO_MEDIA_PATTERN.test(src))
       throw new Error(`Unexpected media path for ${manifestPath}`);
-    const source = resolve("public", "." + src);
+    const source = resolve(root, "." + src);
     const size = statSync(source).size;
     if (!size || size > AUDIO_MAX_BYTES)
       throw new Error(`Invalid media size for ${manifestPath}`);
     mkdirSync(resolve(output + src, ".."), { recursive: true });
-    copyFileSync(source, output + src);
+    copyFileSync(source, output + src, constants.COPYFILE_FICLONE);
   }
 }
 
 // Kept separate from the Vercel build: recordings never enter Git or its bundle.
+// AUDIO_MEDIA_ROOT may name a folder outside public/, so that local builds do
+// not copy gigabytes of recordings into dist/.
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const output = resolve("artifacts/pages-audio");
+  const root = process.env.AUDIO_MEDIA_ROOT || "public";
   const { days } = JSON.parse(readFileSync("data/audio/catalog.json", "utf8"));
   const { chapters = [] } = existsSync("data/audio/chapter-catalog.json")
     ? JSON.parse(readFileSync("data/audio/chapter-catalog.json", "utf8"))
@@ -65,7 +74,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
     }),
   ];
   mkdirSync(output, { recursive: true });
-  copyMedia(manifestPaths, output);
+  copyMedia(manifestPaths, output, root);
   copyFileSync("hosting/cloudflare-audio/worker.js", `${output}/_worker.js`);
   for (const [name, content] of Object.entries(pagesConfig()))
     writeFileSync(`${output}/${name}`, content);

@@ -3,7 +3,18 @@
 // range worker, which is deployed verbatim and so cannot import the contract.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readdirSync, readFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  truncateSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import worker from "../hosting/cloudflare-audio/worker.js";
 import {
   AUDIO_CACHE_CONTROL,
@@ -16,7 +27,7 @@ import {
   AUDIO_PAGES_ORIGIN,
   AUDIO_PAGES_PROJECT,
 } from "../src/audio/contract.ts";
-import { pagesConfig } from "../scripts/prepare-audio-host.mjs";
+import { copyMedia, pagesConfig } from "../scripts/prepare-audio-host.mjs";
 
 const json = (path: string) =>
   JSON.parse(readFileSync(new URL("../" + path, import.meta.url), "utf8"));
@@ -154,4 +165,38 @@ test("pagesConfig routes only media paths through the worker, with the contract'
   );
   for (const page of ["index.html", "404.html"] as const)
     assert.match(config[page], /^<!doctype html>.*\n$/);
+});
+
+test("copyMedia bundles both namespaces from any media root and refuses unsafe files", () => {
+  const root = mkdtempSync(join(tmpdir(), "audio-bundle-"));
+  try {
+    const media = join(root, "media");
+    const output = join(root, "out");
+    const manifest = (name: string, src: string) => {
+      writeFileSync(join(root, name), JSON.stringify({ src }));
+      return join(root, name);
+    };
+    const day = "/audio/days/001-abc.m4a";
+    const chapter = "/audio/chapters/assets/PSA-119-abc.m4a";
+    for (const src of [day, chapter]) {
+      mkdirSync(join(media, src, ".."), { recursive: true });
+      writeFileSync(join(media, src), src);
+    }
+    copyMedia(
+      [manifest("1.json", day), manifest("psa.json", chapter)],
+      output,
+      media,
+    );
+    for (const src of [day, chapter])
+      assert.equal(readFileSync(output + src, "utf8"), src);
+    // Over the range handler's limit: never truncated, refused instead.
+    truncateSync(join(media, chapter), AUDIO_MAX_BYTES + 1);
+    assert.throws(() => copyMedia([join(root, "psa.json")], output, media));
+    assert.throws(() =>
+      copyMedia([manifest("bad.json", "/audio/../secret.m4a")], output, media),
+    );
+    assert.ok(!existsSync(join(output, "secret.m4a")));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
