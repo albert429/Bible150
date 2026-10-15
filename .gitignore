@@ -23,4 +23,4 @@ dist-ai/
 .claude/worktrees/
 .agents/
 
-.assets/video/
+assets/video/
