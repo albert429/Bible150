@@ -121,8 +121,9 @@ test("Old manifests cannot inject unchecked announcement intervals", () => {
   };
   assert.ok(validManifest(m, "1"));
   assert.equal(announcementAt(m, 2), undefined);
-  assert.equal(activeCueIndex(m, 0), -1);
-  assert.equal(stepCueIndex(m, 0, 1), 0);
+  // The published behaviour: an unannounced lead-in shows the first verse.
+  assert.equal(activeCueIndex(m, 0), 0);
+  assert.equal(stepCueIndex(m, 0, 1), 1);
 });
 test("Manifest URLs retain public day compatibility and isolate chapters", () => {
   assert.equal(audioManifestUrl("1"), "/audio/1.json");
