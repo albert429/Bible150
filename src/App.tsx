@@ -21,10 +21,11 @@ export default function App() {
   const progress = useProgress();
   const { member, error } = progress;
   const locationState = useReadingLocation(
+    member?.id ?? "",
     member ? scheduledDay(member.startDate) : 1,
   );
   const location = locationState.current;
-  const selected = locationState.preferences.plan.day;
+  const selected = locationState.plan.day;
   const [page, setPage] = useState(() => pageFor(selected));
   const [seenSwitches, setSeenSwitches] = useState(progress.switches);
   const [view, setView] = useState<View>("read");
@@ -56,9 +57,12 @@ export default function App() {
   const reading = location.mode === "plan" ? planReading : chapterReading;
 
   if (seenSwitches !== progress.switches) {
-    const day = member ? scheduledDay(member.startDate) : 1;
+    // Another reader: their own last plan place, or their scheduled day.
+    const day = locationState.selectReader(
+      member?.id ?? "",
+      member ? scheduledDay(member.startDate) : 1,
+    );
     setSeenSwitches(progress.switches);
-    locationState.resetPlan(day);
     setPage(pageFor(day));
   }
   function navigate(next: View) {

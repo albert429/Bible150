@@ -4,23 +4,25 @@ import {
   readingSearch,
   validBibleLocation,
 } from "../bible/navigation.ts";
-import type {
-  BibleLocation,
-  PlanLocation,
-  ReadingLocation,
+import {
+  readingKey,
+  type BibleLocation,
+  type PlanLocation,
+  type ReadingLocation,
 } from "../bible/types.ts";
 import { isPlanDay } from "../plan/schedule.ts";
 
 export const LOCATION_KEY = "bible-reader-location-v1";
-/** Reading mode, canonical place and listening preference; never plan progress. */
+/** The last mode and place in each mode on this device; never plan progress. */
 export type ReaderPreferences = {
   version: 1;
   mode: "plan" | "bible";
-  /** Session only: the plan reopens on the reader's scheduled day, as it always has. */
-  plan: PlanLocation;
+  /** Each reader's last plan place, by reader id ("" without a reader). */
+  plans: Record<string, PlanLocation>;
   bible: BibleLocation;
   continuous: boolean;
 };
+const MAX_READERS = 20;
 export function validLocation(value: unknown): value is ReadingLocation {
   if (!value || typeof value !== "object") return false;
   const location = value as ReadingLocation;
@@ -32,15 +34,24 @@ export function validLocation(value: unknown): value is ReadingLocation {
       (Number.isSafeInteger(location.verse) && location.verse > 0))
   );
 }
-/** `day` is the active reader's scheduled day (or 1 without a reader). */
-export function loadPreferences(
-  day: number,
-  raw?: string | null,
-): ReaderPreferences {
+const validPlans = (value: unknown) =>
+  Object.fromEntries(
+    Object.entries(
+      value && typeof value === "object" && !Array.isArray(value) ? value : {},
+    )
+      .filter(
+        ([reader, place]) =>
+          reader.length <= 100 &&
+          validLocation(place) &&
+          (place as ReadingLocation).mode === "plan",
+      )
+      .slice(-MAX_READERS),
+  ) as Record<string, PlanLocation>;
+export function loadPreferences(raw?: string | null): ReaderPreferences {
   const initial: ReaderPreferences = {
     version: 1,
     mode: "plan",
-    plan: { mode: "plan", day },
+    plans: {},
     bible: { mode: "bible", book: "GEN", chapter: 1 },
     continuous: false,
   };
@@ -52,6 +63,7 @@ export function loadPreferences(
     return {
       ...initial,
       mode: value.mode === "bible" ? "bible" : "plan",
+      plans: validPlans(value.plans),
       bible:
         validLocation(value.bible) && value.bible.mode === "bible"
           ? value.bible
@@ -62,30 +74,49 @@ export function loadPreferences(
     return initial;
   }
 }
-/** What is stored: the plan day is profile-specific and comes from the schedule. */
-export function storedPreferences({
-  version,
-  mode,
-  bible,
-  continuous,
-}: ReaderPreferences) {
-  return JSON.stringify({ version, mode, bible, continuous });
+/** A reader's last plan place, or their scheduled day before they have one. */
+export const planLocation = (
+  preferences: ReaderPreferences,
+  reader: string,
+  scheduled: number,
+): PlanLocation =>
+  preferences.plans[reader] ?? { mode: "plan", day: scheduled };
+/** Move to a place; a plan place belongs to the active reader only. */
+export function withLocation(
+  preferences: ReaderPreferences,
+  reader: string,
+  location: ReadingLocation,
+): ReaderPreferences {
+  if (location.mode === "bible")
+    return { ...preferences, mode: "bible", bible: location };
+  const others = Object.entries(preferences.plans).filter(
+    ([id]) => id !== reader,
+  );
+  return {
+    ...preferences,
+    mode: "plan",
+    plans: {
+      ...Object.fromEntries(others.slice(-(MAX_READERS - 1))),
+      [reader]: location,
+    },
+  };
 }
 export function initialPreferences(
-  day: number,
+  reader: string,
   search: string,
   raw?: string | null,
 ) {
-  const saved = loadPreferences(day, raw);
+  const saved = loadPreferences(raw);
   const linked = parseReadingLocation(search, catalog);
-  return linked
-    ? { ...saved, mode: linked.mode, [linked.mode]: linked }
-    : saved;
+  return linked ? withLocation(saved, reader, linked) : saved;
 }
+export const sameLocation = (a?: ReadingLocation, b?: ReadingLocation) =>
+  !!a && !!b && readingKey(a) === readingKey(b) && a.verse === b.verse;
 /**
- * The address bar for a location. Plan reading stays at the bare app URL, so a
- * reload or home-screen shortcut still opens the scheduled day; canonical
- * chapters get a shareable static link. History state carries both.
+ * The address for a place reached inside the app. Canonical chapters get a
+ * shareable static link. Plan days stay at the bare app URL, so a home-screen
+ * shortcut (the app has no web manifest) cannot pin one day; the stored place
+ * reopens it instead. An explicit ?day= link is kept while it is current.
  */
 export const locationSearch = (location: ReadingLocation) =>
   location.mode === "bible" ? readingSearch(location) : "";

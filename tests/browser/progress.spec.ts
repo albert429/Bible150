@@ -91,7 +91,7 @@ test.describe("progress and backup", () => {
     ).toEqual([]);
   });
 
-  test("progress written in another tab updates this one and only a reader change resets the day", async ({
+  test("progress written in another tab updates this one and only a reader change changes the day", async ({
     page,
   }) => {
     await seed(page);
@@ -121,9 +121,11 @@ test.describe("progress and backup", () => {
       page.getByRole("button", { name: "تراجع", exact: true }),
     ).toBeVisible();
     await expect(day(page)).toHaveAttribute("data-day", "3");
+    // Without a reader: that reader's own (scheduled) day.
     await write({ activeId: null });
     await expect(day(page)).toHaveAttribute("data-day", "1");
+    // Back to the reader: the plan place they last left, not today's day.
     await write({ activeId: profile.id });
-    await expect(day(page)).toHaveAttribute("data-day", "10");
+    await expect(day(page)).toHaveAttribute("data-day", "3");
   });
 });

@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { LOCATION_KEY } from "../../src/reader/location.ts";
 import {
   blockFonts,
   chooseFromMenu,
@@ -189,6 +190,12 @@ test.describe("prefetch", () => {
       { effectiveType: "3g" },
     ]) {
       await stubConnection(page, connection);
+      // Each connection is a first visit: forget the day the last one opened.
+      if (page.url().startsWith("http"))
+        await page.evaluate(
+          (key) => localStorage.removeItem(key),
+          LOCATION_KEY,
+        );
       const requests = readingRequests(page);
       await page.goto("/");
       await ready(page);

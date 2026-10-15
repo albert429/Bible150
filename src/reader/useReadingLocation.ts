@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { catalog } from "../bible/catalog";
 import { parseReadingLocation } from "../bible/navigation";
 import type { ReadingLocation } from "../bible/types";
@@ -6,30 +6,54 @@ import {
   initialPreferences,
   LOCATION_KEY,
   locationSearch,
-  storedPreferences,
+  planLocation,
+  sameLocation,
   validLocation,
+  withLocation,
 } from "./location";
 
-export function useReadingLocation(initialDay: number) {
-  const [preferences, setPreferences] = useState(() => {
+/**
+ * The reading mode and the last place in each mode, with history entries and
+ * links. `reader` is the active reader's id ("" without one) and `scheduled`
+ * their scheduled day, used until that reader has a place of their own.
+ */
+export function useReadingLocation(reader: string, scheduled: number) {
+  const [state, setState] = useState(() => {
     let saved: string | null = null;
     try {
       saved = localStorage.getItem(LOCATION_KEY);
     } catch {
       /* session only */
     }
-    return initialPreferences(initialDay, location.search, saved);
+    return {
+      reader,
+      scheduled,
+      preferences: initialPreferences(reader, location.search, saved),
+    };
   });
-  const current = preferences[preferences.mode];
+  const { preferences } = state;
+  const plan = useMemo(
+    () => planLocation(preferences, state.reader, state.scheduled),
+    [preferences, state.reader, state.scheduled],
+  );
+  const current = preferences.mode === "bible" ? preferences.bible : plan;
   const [navigation, setNavigation] = useState(0);
   useEffect(() => {
+    // An address that already names this place, such as an explicit ?day=
+    // link, is kept so that a reload returns to it.
+    const search = sameLocation(
+      parseReadingLocation(location.search, catalog),
+      current,
+    )
+      ? location.search
+      : locationSearch(current);
     history.replaceState(
       { ...history.state, scripture: current },
       "",
-      `${location.pathname}${locationSearch(current)}${location.hash}`,
+      `${location.pathname}${search}${location.hash}`,
     );
     try {
-      localStorage.setItem(LOCATION_KEY, storedPreferences(preferences));
+      localStorage.setItem(LOCATION_KEY, JSON.stringify(preferences));
     } catch {
       /* session only */
     }
@@ -40,10 +64,9 @@ export function useReadingLocation(initialDay: number) {
         ? (event.state.scripture as ReadingLocation)
         : parseReadingLocation(location.search, catalog);
       if (next) {
-        setPreferences((saved) => ({
+        setState((saved) => ({
           ...saved,
-          mode: next.mode,
-          [next.mode]: next,
+          preferences: withLocation(saved.preferences, saved.reader, next),
         }));
         setNavigation((n) => n + 1);
       }
@@ -59,22 +82,33 @@ export function useReadingLocation(initialDay: number) {
       "",
       url,
     );
-    setPreferences((saved) => ({
+    setState((saved) => ({
       ...saved,
-      mode: next.mode,
-      [next.mode]: next,
+      preferences: withLocation(saved.preferences, saved.reader, next),
     }));
     setNavigation((n) => n + 1);
   }
   return {
     current,
     navigation,
+    plan,
     preferences,
     go,
-    chooseMode: (mode: "plan" | "bible") => go(preferences[mode]),
-    resetPlan: (day: number) =>
-      setPreferences((saved) => ({ ...saved, plan: { mode: "plan", day } })),
+    chooseMode: (mode: "plan" | "bible") =>
+      go(mode === "bible" ? preferences.bible : plan),
+    /** Switch to another reader's plan place; returns the day it opens. */
+    selectReader(nextReader: string, nextScheduled: number) {
+      setState((saved) => ({
+        ...saved,
+        reader: nextReader,
+        scheduled: nextScheduled,
+      }));
+      return planLocation(preferences, nextReader, nextScheduled).day;
+    },
     setContinuous: (continuous: boolean) =>
-      setPreferences((saved) => ({ ...saved, continuous })),
+      setState((saved) => ({
+        ...saved,
+        preferences: { ...saved.preferences, continuous },
+      })),
   };
 }

@@ -4,74 +4,123 @@ import {
   initialPreferences,
   loadPreferences,
   locationSearch,
-  storedPreferences,
+  planLocation,
+  sameLocation,
   validLocation,
+  withLocation,
 } from "../src/reader/location.ts";
 import { chapterSegments } from "../src/reader/chapterSegments.ts";
 
-test("reader preferences remember the mode and Bible place; the plan opens on the scheduled day", () => {
+test("each reader's last plan place, the Bible place and the mode are remembered", () => {
   const saved = {
     version: 1,
     mode: "bible",
-    plan: { mode: "plan", day: 83 },
+    plans: {
+      "reader-a": { mode: "plan", day: 83 },
+      "": { mode: "plan", day: 5, verse: 2 },
+    },
     bible: { mode: "bible", book: "JHN", chapter: 3, verse: 16 },
     continuous: true,
   };
-  // A stored plan day (from an earlier format or another profile) never wins.
-  assert.deepEqual(loadPreferences(10, JSON.stringify(saved)), {
-    ...saved,
-    plan: { mode: "plan", day: 10 },
-  });
-  assert.deepEqual(
-    JSON.parse(storedPreferences(loadPreferences(10, JSON.stringify(saved)))),
-    {
-      version: 1,
-      mode: "bible",
-      bible: saved.bible,
-      continuous: true,
-    },
-  );
-  assert.deepEqual(initialPreferences(10, "?day=7", JSON.stringify(saved)), {
-    ...saved,
+  const loaded = loadPreferences(JSON.stringify(saved));
+  assert.deepEqual(loaded, saved);
+  assert.deepEqual(planLocation(loaded, "reader-a", 10), {
     mode: "plan",
-    plan: { mode: "plan", day: 7 },
+    day: 83,
   });
-  assert.deepEqual(
-    initialPreferences(
-      10,
-      "?mode=bible&book=REV&chapter=22&verse=21",
-      JSON.stringify(saved),
-    ).bible,
-    { mode: "bible", book: "REV", chapter: 22, verse: 21 },
+  assert.deepEqual(planLocation(loaded, "", 1), {
+    mode: "plan",
+    day: 5,
+    verse: 2,
+  });
+  // A reader without a place of their own starts on their scheduled day.
+  assert.deepEqual(planLocation(loaded, "reader-b", 12), {
+    mode: "plan",
+    day: 12,
+  });
+  // Moving in the plan updates only the active reader; the Bible place stays.
+  const moved = withLocation(loaded, "reader-b", { mode: "plan", day: 13 });
+  assert.equal(moved.mode, "plan");
+  assert.deepEqual(moved.plans["reader-a"], saved.plans["reader-a"]);
+  assert.deepEqual(moved.plans["reader-b"], { mode: "plan", day: 13 });
+  assert.deepEqual(moved.bible, saved.bible);
+  const read = withLocation(moved, "reader-b", {
+    mode: "bible",
+    book: "PSA",
+    chapter: 119,
+  });
+  assert.equal(read.mode, "bible");
+  assert.deepEqual(read.plans, moved.plans);
+  // Places are bounded, keeping the most recently used readers.
+  let many = loadPreferences(null);
+  for (let i = 0; i < 25; i++)
+    many = withLocation(many, `r${i}`, { mode: "plan", day: i + 1 });
+  assert.equal(Object.keys(many.plans).length, 20);
+  assert.ok(many.plans.r24 && !many.plans.r4);
+});
+
+test("explicit links choose the place and update the active reader's plan place", () => {
+  const saved = JSON.stringify({
+    version: 1,
+    mode: "bible",
+    plans: { "reader-a": { mode: "plan", day: 83 } },
+    bible: { mode: "bible", book: "JHN", chapter: 3 },
+    continuous: false,
+  });
+  const linked = initialPreferences("reader-a", "?day=7", saved);
+  assert.equal(linked.mode, "plan");
+  assert.deepEqual(linked.plans["reader-a"], { mode: "plan", day: 7 });
+  const chapter = initialPreferences(
+    "reader-a",
+    "?mode=bible&book=REV&chapter=22&verse=21",
+    saved,
   );
+  assert.equal(chapter.mode, "bible");
+  assert.deepEqual(chapter.bible, {
+    mode: "bible",
+    book: "REV",
+    chapter: 22,
+    verse: 21,
+  });
+  assert.deepEqual(chapter.plans, JSON.parse(saved).plans);
+  // An invalid link is ignored rather than replacing a remembered place.
   assert.deepEqual(
-    initialPreferences(
-      10,
-      "?mode=bible&book=XYZ&chapter=1",
-      JSON.stringify(saved),
-    ).bible,
-    saved.bible,
+    initialPreferences("reader-a", "?mode=bible&book=XYZ&chapter=1", saved),
+    loadPreferences(saved),
   );
 });
 
-test("plan reading keeps the bare app URL; chapters get a static link", () => {
+test("plan days reached in the app keep the bare URL; chapters get a static link", () => {
   assert.equal(locationSearch({ mode: "plan", day: 7, verse: 3 }), "");
   assert.equal(
     locationSearch({ mode: "bible", book: "GEN", chapter: 1, verse: 1 }),
     "?mode=bible&book=GEN&chapter=1&verse=1",
   );
+  // An address that already names the place (an explicit link) is kept.
+  assert.ok(sameLocation({ mode: "plan", day: 7 }, { mode: "plan", day: 7 }));
+  assert.ok(
+    !sameLocation({ mode: "plan", day: 7 }, { mode: "plan", day: 7, verse: 1 }),
+  );
+  assert.ok(
+    !sameLocation(
+      { mode: "plan", day: 1 },
+      { mode: "bible", book: "GEN", chapter: 1 },
+    ),
+  );
+  assert.ok(!sameLocation(undefined, { mode: "plan", day: 1 }));
 });
 
 test("invalid saved locations and malformed storage fall back safely", () => {
-  const initial = loadPreferences(10);
+  const initial = loadPreferences();
   for (const value of [
     "bad",
     "null",
     "[]",
     '{"version":9}',
-    '{"version":1,"plan":{"mode":"plan","day":0},"bible":{"mode":"bible","book":"GEN","chapter":51},"continuous":"true"}',
+    '{"version":1,"plans":{"a":{"mode":"plan","day":0},"b":{"mode":"bible","book":"GEN","chapter":1}},"bible":{"mode":"bible","book":"GEN","chapter":51},"continuous":"true"}',
+    '{"version":1,"plans":[{"mode":"plan","day":3}]}',
   ]) {
-    assert.deepEqual(loadPreferences(10, value), initial);
+    assert.deepEqual(loadPreferences(value), initial);
   }
   for (const location of [
     null,
