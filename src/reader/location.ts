@@ -1,6 +1,7 @@
 import { catalog } from "../bible/catalog.ts";
 import {
   parseReadingLocation,
+  readingSearch,
   validBibleLocation,
 } from "../bible/navigation.ts";
 import type {
@@ -11,9 +12,11 @@ import type {
 import { isPlanDay } from "../plan/schedule.ts";
 
 export const LOCATION_KEY = "bible-reader-location-v1";
+/** Reading mode, canonical place and listening preference; never plan progress. */
 export type ReaderPreferences = {
   version: 1;
   mode: "plan" | "bible";
+  /** Session only: the plan reopens on the reader's scheduled day, as it always has. */
   plan: PlanLocation;
   bible: BibleLocation;
   continuous: boolean;
@@ -29,6 +32,7 @@ export function validLocation(value: unknown): value is ReadingLocation {
       (Number.isSafeInteger(location.verse) && location.verse > 0))
   );
 }
+/** `day` is the active reader's scheduled day (or 1 without a reader). */
 export function loadPreferences(
   day: number,
   raw?: string | null,
@@ -48,10 +52,6 @@ export function loadPreferences(
     return {
       ...initial,
       mode: value.mode === "bible" ? "bible" : "plan",
-      plan:
-        validLocation(value.plan) && value.plan.mode === "plan"
-          ? value.plan
-          : initial.plan,
       bible:
         validLocation(value.bible) && value.bible.mode === "bible"
           ? value.bible
@@ -61,6 +61,15 @@ export function loadPreferences(
   } catch {
     return initial;
   }
+}
+/** What is stored: the plan day is profile-specific and comes from the schedule. */
+export function storedPreferences({
+  version,
+  mode,
+  bible,
+  continuous,
+}: ReaderPreferences) {
+  return JSON.stringify({ version, mode, bible, continuous });
 }
 export function initialPreferences(
   day: number,
@@ -73,6 +82,13 @@ export function initialPreferences(
     ? { ...saved, mode: linked.mode, [linked.mode]: linked }
     : saved;
 }
+/**
+ * The address bar for a location. Plan reading stays at the bare app URL, so a
+ * reload or home-screen shortcut still opens the scheduled day; canonical
+ * chapters get a shareable static link. History state carries both.
+ */
+export const locationSearch = (location: ReadingLocation) =>
+  location.mode === "bible" ? readingSearch(location) : "";
 
 const POSITION_KEY = "bible-reader-audio-position-v1";
 export function playbackPosition(identity: string): number {

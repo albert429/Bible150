@@ -1,8 +1,14 @@
 import { useEffect, useState } from "react";
 import { catalog } from "../bible/catalog";
-import { parseReadingLocation, readingSearch } from "../bible/navigation";
+import { parseReadingLocation } from "../bible/navigation";
 import type { ReadingLocation } from "../bible/types";
-import { initialPreferences, LOCATION_KEY, validLocation } from "./location";
+import {
+  initialPreferences,
+  LOCATION_KEY,
+  locationSearch,
+  storedPreferences,
+  validLocation,
+} from "./location";
 
 export function useReadingLocation(initialDay: number) {
   const [preferences, setPreferences] = useState(() => {
@@ -20,10 +26,10 @@ export function useReadingLocation(initialDay: number) {
     history.replaceState(
       { ...history.state, scripture: current },
       "",
-      `${location.pathname}${readingSearch(current)}${location.hash}`,
+      `${location.pathname}${locationSearch(current)}${location.hash}`,
     );
     try {
-      localStorage.setItem(LOCATION_KEY, JSON.stringify(preferences));
+      localStorage.setItem(LOCATION_KEY, storedPreferences(preferences));
     } catch {
       /* session only */
     }
@@ -47,7 +53,7 @@ export function useReadingLocation(initialDay: number) {
   }, []);
   function go(next: ReadingLocation, replace = false) {
     if (!validLocation(next)) return;
-    const url = `${location.pathname}${readingSearch(next)}${location.hash}`;
+    const url = `${location.pathname}${locationSearch(next)}${location.hash}`;
     history[replace ? "replaceState" : "pushState"](
       { ...history.state, scripture: next },
       "",

@@ -3,11 +3,13 @@ import { test } from "node:test";
 import {
   initialPreferences,
   loadPreferences,
+  locationSearch,
+  storedPreferences,
   validLocation,
 } from "../src/reader/location.ts";
 import { chapterSegments } from "../src/reader/chapterSegments.ts";
 
-test("reader preferences remember each mode without modifying plan progress", () => {
+test("reader preferences remember the mode and Bible place; the plan opens on the scheduled day", () => {
   const saved = {
     version: 1,
     mode: "bible",
@@ -15,7 +17,20 @@ test("reader preferences remember each mode without modifying plan progress", ()
     bible: { mode: "bible", book: "JHN", chapter: 3, verse: 16 },
     continuous: true,
   };
-  assert.deepEqual(loadPreferences(10, JSON.stringify(saved)), saved);
+  // A stored plan day (from an earlier format or another profile) never wins.
+  assert.deepEqual(loadPreferences(10, JSON.stringify(saved)), {
+    ...saved,
+    plan: { mode: "plan", day: 10 },
+  });
+  assert.deepEqual(
+    JSON.parse(storedPreferences(loadPreferences(10, JSON.stringify(saved)))),
+    {
+      version: 1,
+      mode: "bible",
+      bible: saved.bible,
+      continuous: true,
+    },
+  );
   assert.deepEqual(initialPreferences(10, "?day=7", JSON.stringify(saved)), {
     ...saved,
     mode: "plan",
@@ -28,6 +43,22 @@ test("reader preferences remember each mode without modifying plan progress", ()
       JSON.stringify(saved),
     ).bible,
     { mode: "bible", book: "REV", chapter: 22, verse: 21 },
+  );
+  assert.deepEqual(
+    initialPreferences(
+      10,
+      "?mode=bible&book=XYZ&chapter=1",
+      JSON.stringify(saved),
+    ).bible,
+    saved.bible,
+  );
+});
+
+test("plan reading keeps the bare app URL; chapters get a static link", () => {
+  assert.equal(locationSearch({ mode: "plan", day: 7, verse: 3 }), "");
+  assert.equal(
+    locationSearch({ mode: "bible", book: "GEN", chapter: 1, verse: 1 }),
+    "?mode=bible&book=GEN&chapter=1&verse=1",
   );
 });
 
