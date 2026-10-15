@@ -142,3 +142,26 @@ test("source structure splits by Unicode codepoint without altering Arabic text"
   assert.equal(segments[0].text, Array.from(text).slice(0, 14).join(""));
   assert.equal(segments[1].blocks[0].marker, "q2");
 });
+
+test("reader ids that name Object.prototype members still get their own plan place", () => {
+  for (const id of ["constructor", "toString", "__proto__", "hasOwnProperty"]) {
+    // No saved place: the scheduled day, never an inherited member.
+    assert.deepEqual(planLocation(loadPreferences(), id, 7), {
+      mode: "plan",
+      day: 7,
+    });
+    // A stored place survives saving and loading as an own entry.
+    const moved = withLocation(loadPreferences(), id, {
+      mode: "plan",
+      day: 42,
+    });
+    assert.deepEqual(planLocation(moved, id, 7), { mode: "plan", day: 42 });
+    const reloaded = loadPreferences(JSON.stringify(moved));
+    assert.ok(Object.hasOwn(reloaded.plans, id));
+    assert.deepEqual(planLocation(reloaded, id, 7), { mode: "plan", day: 42 });
+    assert.deepEqual(planLocation(reloaded, "other", 3), {
+      mode: "plan",
+      day: 3,
+    });
+  }
+});

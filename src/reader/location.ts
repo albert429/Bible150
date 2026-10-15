@@ -80,7 +80,10 @@ export const planLocation = (
   reader: string,
   scheduled: number,
 ): PlanLocation =>
-  preferences.plans[reader] ?? { mode: "plan", day: scheduled };
+  // Own properties only: ids such as "constructor" or "__proto__" are valid.
+  (Object.prototype.hasOwnProperty.call(preferences.plans, reader)
+    ? preferences.plans[reader]
+    : undefined) ?? { mode: "plan", day: scheduled };
 /** Move to a place; a plan place belongs to the active reader only. */
 export function withLocation(
   preferences: ReaderPreferences,
