@@ -73,44 +73,33 @@
   color: var(--muted);
   font-size: 13px;
 }
-.chapter-text .scripture-paragraph {
+/* Paragraph and poetry starts: a new line with a little space, inside the
+   flowing verses rather than a block per verse. */
+.scripture-break {
   display: block;
+  height: 0.4em;
 }
-.chapter-text .scripture-poetry {
+.chapter-text .scripture-qc {
   display: block;
-  padding-inline-start: 1em;
+  text-align: center;
 }
-.chapter-text .scripture-q2 {
-  padding-inline-start: 2em;
-}
-.chapter-text .scripture-q3,
-.chapter-text .scripture-q4 {
-  padding-inline-start: 3em;
-}
-.scripture-superscription {
+.scripture-superscription,
+.scripture-source-note {
   font-size: 0.85em;
   color: var(--muted);
-  margin-block: 8px 16px;
+  margin-block: 8px 12px;
 }
 .scripture-acrostic {
   color: var(--olive);
   font-size: 0.85em;
   margin-block: 12px 0;
 }
-.scripture-inline-heading,
-.scripture-inline-superscription,
-.scripture-inline-acrostic {
+.scripture-inline-note {
   display: block;
-  font-size: 16px;
+  font-family: Noto, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.9;
   color: var(--olive);
-  margin-block: 12px 4px;
-}
-
-.chapter-text .scripture-qc {
-  text-align: center;
-  padding-inline-start: 0;
-}
-.scripture-source-note {
-  font-size: 0.85em;
-  color: var(--muted);
+  margin-block: 16px 4px;
 }
