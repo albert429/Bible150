@@ -45,9 +45,9 @@ def main():
     parser.add_argument("--output", type=Path, default=ROOT / "artifacts/audio-host-verification.json")
     args = parser.parse_args()
     base = args.base_url.rstrip("/")
-    files = sorted((args.root / "audio/days").glob("*.m4a"))
+    files = sorted((args.root / "audio").rglob("*.m4a"))
     if not files:
-        parser.error(f"no recordings under {args.root / 'audio/days'}")
+        parser.error(f"no recordings under {args.root / 'audio'}")
     for path in (files[0], files[len(files) // 2], files[-1]):
         check(path, args.root, base, args.cookie)
         check(path, args.root, base, args.cookie, path.stat().st_size // 2)

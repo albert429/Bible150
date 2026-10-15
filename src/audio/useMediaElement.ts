@@ -84,7 +84,7 @@ export function useMediaElement(
     const current = ++token.current;
     dispatch({ type: "request" });
     if (element.error) element.load();
-    if (element.ended) element.currentTime = 0;
+    if (element.ended) { endedOnce.current = false; element.currentTime = 0; }
     try {
       await element.play();
       if (current !== token.current) return;
@@ -106,6 +106,7 @@ export function useMediaElement(
       if (!element || !manifest || !manifest.cues.length) return;
       const target =
         manifest.cues[Math.max(0, Math.min(next, manifest.cues.length - 1))];
+      endedOnce.current = false;
       element.currentTime = target.start;
       setTime(target.start);
       dispatch({ type: "seeked" });
@@ -161,6 +162,7 @@ export function useMediaElement(
     src: manifest ? audioUrl(manifest.src, __AUDIO_BASE_URL__) : undefined,
     preload: "none" as const,
     onLoadedMetadata: () => restorePosition(),
+    onSeeking: () => { if (audio.current && !audio.current.ended) endedOnce.current = false; },
     onPlaying: () => dispatch({ type: "playing" }),
     onPause: () => dispatch({ type: "paused" }),
     onWaiting: () => {

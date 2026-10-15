@@ -7,6 +7,10 @@
     {
       "source": "/audio/days/:file",
       "destination": "https://bible-reading-audio.pages.dev/audio/days/:file"
+    },
+    {
+      "source": "/audio/chapters/assets/:file",
+      "destination": "https://bible-reading-audio.pages.dev/audio/chapters/assets/:file"
     }
   ],
   "headers": [
@@ -24,7 +28,29 @@
       ]
     },
     {
+      "source": "/audio/chapters/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        },
+        {
+          "key": "Vercel-CDN-Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    },
+    {
       "source": "/audio/:day.json",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/audio/chapters/:book/:chapter.json",
       "headers": [
         {
           "key": "Cache-Control",
