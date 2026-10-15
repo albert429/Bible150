@@ -22,3 +22,5 @@ public/audio/
 dist-ai/
 .claude/worktrees/
 .agents/
+
+.assets/video/
