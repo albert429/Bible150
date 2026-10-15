@@ -36,11 +36,15 @@ export default function GreekWords({
               <bdi lang="grc" dir="ltr" className="greek-word">
                 {group.tokens.map((t) => greekWord(t[0])).join(" ")}
               </bdi>
+              <span className="greek-arrow" aria-hidden="true">
+                ←
+              </span>
+              <bdi lang="en" dir="ltr" className="greek-en">
+                {group.tokens.map((t) => gloss(t[4])).join(" · ")}
+              </bdi>
             </div>
             <bdi dir="ltr" className="greek-meta">
-              {group.tokens
-                .map((t) => `${t[1]} · ${gloss(t[4])}`)
-                .join("  |  ")}
+              {group.tokens.map((t) => t[1]).join(" ")}
             </bdi>
           </li>
         ))}
