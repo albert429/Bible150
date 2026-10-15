@@ -138,3 +138,58 @@ export async function routeChapterAudio(
   );
   return { external, served };
 }
+
+/**
+ * A committed daily manifest rebuilt as scripts/build-audio.py --announcements
+ * would lay it out: a spoken reference before every passage, then its verses.
+ * The draft reference wording is display data only here.
+ */
+export function announcedDay(day: number, reference = 2, verse = 2) {
+  const legacy = JSON.parse(
+    readFileSync(`data/audio/manifests/${day}.json`, "utf8"),
+  );
+  const plan = JSON.parse(readFileSync("data/plan.json", "utf8"));
+  const books = new Map<string, string>(
+    JSON.parse(readFileSync("data/books.json", "utf8")).map((row: string[]) => [
+      row[3],
+      row[0],
+    ]),
+  );
+  const texts = new Map<string, string>(
+    JSON.parse(
+      readFileSync("data/audio/reference-texts.json", "utf8"),
+    ).references.map((r: { id: string; text: string }) => [r.id, r.text]),
+  );
+  type Passage = { book: string; chapter: number; start: number; end: number };
+  const passages: Passage[] = plan[day - 1].passages;
+  let time = 0;
+  const cues: { passage: number; verse: number; start: number; end: number }[] =
+    [];
+  const announcements = passages.map((passage, index) => {
+    const id = `${books.get(passage.book)}-${passage.chapter}-${passage.start}-${passage.end}`;
+    const announcement = {
+      passage: index,
+      start: time,
+      end: time + reference,
+      reference: texts.get(id)!.replace(/\.$/, ""),
+      kind: "reference" as const,
+    };
+    time += reference;
+    for (const cue of legacy.cues.filter(
+      (cue: { passage: number }) => cue.passage === index,
+    )) {
+      cues.push({ ...cue, start: time, end: time + verse * 0.8 });
+      time += verse;
+    }
+    return announcement;
+  });
+  return {
+    ...legacy,
+    version: 2,
+    identity: `plan:${day}`,
+    duration: time + 0.1,
+    alignment: "verse",
+    cues,
+    announcements,
+  };
+}

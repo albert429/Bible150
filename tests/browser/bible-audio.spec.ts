@@ -13,7 +13,9 @@ import {
 } from "./helpers";
 import {
   POSITION_KEY,
+  announcedDay,
   committedChapter,
+  fulfillWav,
   routeChapterAudio,
 } from "./chapterAudio";
 
@@ -422,5 +424,52 @@ test("canonical reading with the player fits phones, dark maximum text and 200% 
     path: test.info().outputPath("bible-player-dark.png"),
     scale: "css",
   });
+  expect(external).toEqual([]);
+});
+
+test("an announced plan day shows each spoken reference, highlights no verse during it and skips past it", async ({
+  page,
+}) => {
+  const { external } = await routeChapterAudio(page);
+  const manifest = announcedDay(1);
+  await page.route("**/audio/1.json", (route) =>
+    route.fulfill({ json: manifest }),
+  );
+  await page.route("https://audio.example.test/audio/days/*.m4a", (route) =>
+    fulfillWav(route, manifest.duration),
+  );
+  await page.goto("/");
+  await ready(page);
+  await page.getByRole("button", { name: "استمع إلى قراءة اليوم" }).click();
+  await expect.poll(() => currentTime(page)).toBeGreaterThan(0);
+  await button(page, "إيقاف مؤقت").click();
+  // Seek deterministically rather than racing accelerated playback.
+  const at = (seconds: number) =>
+    audio(page).evaluate((el: HTMLAudioElement, seconds) => {
+      el.currentTime = seconds;
+    }, seconds);
+  const highlighted = page.locator("[data-listening]");
+  const [first, second] = manifest.announcements;
+  await at(1);
+  await expect(player(page)).toContainText(first.reference);
+  await expect(highlighted).toHaveCount(0);
+  await expect(button(page, "الآية السابقة")).toBeDisabled();
+  await button(page, "الآية التالية").click();
+  await expect(
+    page.locator('#passage-0 .verse[data-v="1"][data-listening]'),
+  ).toHaveCount(1);
+  await expect(player(page)).not.toContainText(first.reference);
+  await at((second.start + second.end) / 2);
+  await expect(highlighted).toHaveCount(0);
+  await expect(player(page)).toContainText(second.reference);
+  await button(page, "الآية التالية").click();
+  await expect(
+    page.locator('#passage-1 .verse[data-v="1"][data-listening]'),
+  ).toHaveCount(1);
+  await at((second.start + second.end) / 2);
+  await button(page, "الآية السابقة").click();
+  await expect(
+    page.locator('#passage-0 .verse[data-v="1"][data-listening]'),
+  ).toHaveCount(1);
   expect(external).toEqual([]);
 });
