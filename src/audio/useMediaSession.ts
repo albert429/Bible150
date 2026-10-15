@@ -1,11 +1,10 @@
 import { useEffect, useEffectEvent, type RefObject } from "react";
-import { readingLabel } from "../plan/labels";
-import { cueAt, type AudioManifest } from "./manifest";
+import { stepCueIndex, type AudioManifest } from "./manifest";
 import appIcon from "../assets/favicon.svg";
 
 type MediaSessionOptions = {
   manifest: AudioManifest | undefined;
-  day: number;
+  title: string;
   audio: RefObject<HTMLAudioElement | null>;
   playing: boolean;
   time: number;
@@ -19,7 +18,7 @@ type MediaSessionOptions = {
 /** Lock-screen metadata, transport controls and position for the audio. */
 export function useMediaSession({
   manifest,
-  day,
+  title,
   audio,
   playing,
   time,
@@ -30,7 +29,7 @@ export function useMediaSession({
   onClose,
 }: MediaSessionOptions) {
   const stepCue = useEffectEvent((manifest: AudioManifest, step: number) =>
-    seek(cueAt(manifest.cues, audio.current?.currentTime || 0) + step),
+    seek(stepCueIndex(manifest, audio.current?.currentTime || 0, step)),
   );
   const seekTo = useEffectEvent((manifest: AudioManifest, seconds: number) => {
     if (audio.current)
@@ -50,9 +49,9 @@ export function useMediaSession({
     if (!("mediaSession" in navigator) || !manifest) return;
     const session = navigator.mediaSession;
     session.metadata = new MediaMetadata({
-      title: readingLabel(day),
+      title,
       artist: "ترجمة فان دايك · Faith Comes By Hearing",
-      album: "العهد الجديد بالترتيب الزمني",
+      album: "الكتاب المقدس · ترجمة فان دايك",
       artwork: [{ src: appIcon, sizes: "any", type: "image/svg+xml" }],
     });
     const handlers: Partial<
@@ -85,7 +84,7 @@ export function useMediaSession({
       session.metadata = null;
       session.playbackState = "none";
     };
-  }, [manifest, day]);
+  }, [manifest, title]);
 
   useEffect(() => {
     if (!("mediaSession" in navigator) || !manifest) return;

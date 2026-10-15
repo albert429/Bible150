@@ -24,12 +24,25 @@ export default defineConfig(({ mode }) => {
   });
   // Optional AI explanations: off unless VITE_AI_PROVIDERS is set. Values are
   // inlined as constants so a disabled build drops every AI module.
+  const canonicalCatalog = "data/audio/chapter-catalog.json";
+  const chapters: string[] = existsSync(canonicalCatalog)
+    ? JSON.parse(readFileSync(canonicalCatalog, "utf8")).chapters
+    : [];
+  const availableChapters = chapters.filter((key) => {
+    if (VITE_AUDIO_BASE_URL) return true;
+    const [, book, chapter] = key.split(":");
+    const manifest = JSON.parse(
+      readFileSync(`data/audio/chapters/${book}/${chapter}.json`, "utf8"),
+    );
+    return existsSync(resolve("public", "." + manifest.src));
+  });
   const ai = aiBuildConfig(env);
   return {
     plugins: [react()],
     define: {
       __AUDIO_BASE_URL__: JSON.stringify(VITE_AUDIO_BASE_URL),
       __AUDIO_DAYS__: JSON.stringify(available),
+      __AUDIO_CHAPTERS__: JSON.stringify(availableChapters),
       __AI_ENABLED__: JSON.stringify(ai !== null),
       __AI_DAILY_CAP__: JSON.stringify(ai?.dailyCap ?? 0),
       __AI_ATTEMPT_CAP__: JSON.stringify(ai?.attemptCap ?? 0),

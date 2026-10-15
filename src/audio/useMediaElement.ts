@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useReducer, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
 import { audioUrl } from "./url";
 import type { AudioManifest } from "./manifest";
 import {
@@ -13,9 +20,36 @@ const STALL_ERROR = "تأخر تحميل التسجيل. تحقق من الات�
 const STALL_TIMEOUT = 20000;
 
 /** Own the <audio> element: playback state, errors, seeking and teardown. */
-export function useMediaElement(manifest: AudioManifest | undefined) {
+export function useMediaElement(
+  manifest: AudioManifest | undefined,
+  options: {
+    initialTime?: number;
+    onEnded?: () => void;
+    onPosition?: (seconds: number) => void;
+  } = {},
+) {
   const audio = useRef<HTMLAudioElement>(null);
   const token = useRef(0);
+  const endedOnce = useRef(false);
+  const lastReported = useRef(-1);
+  const restored = useRef(false);
+  const callbacks = useRef(options);
+  useLayoutEffect(() => {
+    callbacks.current = options;
+  });
+  const restorePosition = () => {
+    const element = audio.current;
+    if (!element || !manifest || restored.current) return;
+    restored.current = true;
+    const seconds = Math.max(
+      0,
+      Math.min(options.initialTime || 0, Math.max(0, manifest.duration - 0.1)),
+    );
+    if (seconds) {
+      element.currentTime = seconds;
+      setTime(seconds);
+    }
+  };
   const [{ status, error }, dispatch] = useReducer(
     mediaReducer,
     initialMediaState,
@@ -28,6 +62,8 @@ export function useMediaElement(manifest: AudioManifest | undefined) {
   const halt = useCallback((message?: string) => {
     token.current += 1;
     audio.current?.pause();
+    if (audio.current)
+      callbacks.current.onPosition?.(audio.current.currentTime);
     dispatch({ type: "paused", message });
   }, []);
   const pause = useCallback(() => halt(), [halt]);
@@ -57,7 +93,7 @@ export function useMediaElement(manifest: AudioManifest | undefined) {
   const seek = useCallback(
     (next: number) => {
       const element = audio.current;
-      if (!element || !manifest) return;
+      if (!element || !manifest || !manifest.cues.length) return;
       const target =
         manifest.cues[Math.max(0, Math.min(next, manifest.cues.length - 1))];
       element.currentTime = target.start;
@@ -68,6 +104,22 @@ export function useMediaElement(manifest: AudioManifest | undefined) {
   );
 
   const clearError = useCallback(() => dispatch({ type: "clearError" }), []);
+
+  // Clear a previous source synchronously while the next identity is loading.
+  useLayoutEffect(() => {
+    token.current += 1;
+    endedOnce.current = false;
+    restored.current = false;
+    lastReported.current = -1;
+    setTime(0);
+    dispatch({ type: "paused" });
+    const element = audio.current;
+    element?.pause();
+    if (!manifest) {
+      element?.removeAttribute("src");
+      element?.load();
+    }
+  }, [manifest]);
 
   useEffect(() => {
     if (manifest) void play();
@@ -97,13 +149,29 @@ export function useMediaElement(manifest: AudioManifest | undefined) {
     ref: audio,
     src: manifest ? audioUrl(manifest.src, __AUDIO_BASE_URL__) : undefined,
     preload: "none" as const,
+    onLoadedMetadata: () => restorePosition(),
     onPlaying: () => dispatch({ type: "playing" }),
     onPause: () => dispatch({ type: "paused" }),
     onWaiting: () => {
       if (!audio.current?.paused) dispatch({ type: "waiting" });
     },
-    onTimeUpdate: () => setTime(audio.current?.currentTime || 0),
-    onEnded: () => dispatch({ type: "ended" }),
+    onTimeUpdate: () => {
+      const seconds = audio.current?.currentTime || 0;
+      setTime(seconds);
+      if (Math.floor(seconds) !== lastReported.current) {
+        lastReported.current = Math.floor(seconds);
+        callbacks.current.onPosition?.(seconds);
+      }
+    },
+    onEnded: () => {
+      dispatch({ type: "ended" });
+      if (audio.current)
+        callbacks.current.onPosition?.(audio.current.currentTime);
+      if (!endedOnce.current) {
+        endedOnce.current = true;
+        callbacks.current.onEnded?.();
+      }
+    },
     onError: () => {
       if (!audio.current?.getAttribute("src")) return;
       halt(PLAY_ERROR);

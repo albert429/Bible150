@@ -1,8 +1,9 @@
-import type { Day } from "../plan/readings";
+import type { ScriptureReading } from "../bible/types";
 import { chapterVerse } from "../bible/reference";
 import { dayLabel } from "../plan/labels";
+import { ar } from "../lib/format";
 import AudioControls from "./AudioControls";
-import { cueAt } from "./manifest";
+import { activeCueIndex, announcementAt, stepCueIndex } from "./manifest";
 import { nextRate } from "./speed.ts";
 import { useAudioManifest } from "./useAudioManifest";
 import { useMediaElement } from "./useMediaElement";
@@ -13,22 +14,34 @@ import { useVerseHighlight } from "./useVerseHighlight";
 export default function AudioPlayer({
   reading,
   onClose,
+  onEnded,
+  initialTime = 0,
+  onPosition,
 }: {
-  reading: Day;
+  reading: ScriptureReading;
   onClose: () => void;
+  /** Only the parent may opt into an ended handoff; manual navigation unmounts. */
+  onEnded?: () => void;
+  initialTime?: number;
+  onPosition?: (seconds: number) => void;
 }) {
   const { manifest, error: loadError, retry } = useAudioManifest(reading);
-  const media = useMediaElement(manifest);
+  const media = useMediaElement(manifest, { initialTime, onEnded, onPosition });
   const { playing, waiting, time, rate, play, pause, seek } = media;
-  const index = manifest ? cueAt(manifest.cues, time) : 0;
+  const index = manifest ? activeCueIndex(manifest, time) : -1;
   const cue = manifest?.cues[index];
-  const passage = cue ? reading.passages[cue.passage] : undefined;
+  const announcement = manifest && announcementAt(manifest, time);
+  const passage = reading.passages[announcement?.passage ?? cue?.passage ?? 0];
+  const label =
+    "day" in reading
+      ? dayLabel(reading.day)
+      : `${reading.book} ${ar(reading.chapter)}`;
 
   usePauseOnDialog(pause);
   useVerseHighlight(cue, playing);
   useMediaSession({
     manifest,
-    day: reading.day,
+    title: label,
     audio: media.audio,
     playing,
     time,
@@ -41,12 +54,14 @@ export default function AudioPlayer({
 
   return (
     <AudioControls
-      label={media.ended ? "انتهى التسجيل" : dayLabel(reading.day)}
+      label={media.ended ? "انتهى التسجيل" : label}
+      announcement={announcement?.reference}
       reference={
-        passage &&
-        cue && {
+        passage && {
           book: passage.book,
-          location: chapterVerse(passage.chapter, cue.verse),
+          location: cue
+            ? chapterVerse(passage.chapter, cue.verse)
+            : ar(passage.chapter),
         }
       }
       ready={!!manifest}
@@ -58,9 +73,9 @@ export default function AudioPlayer({
       duration={manifest?.duration ?? 0}
       error={media.error || loadError || ""}
       waiting={waiting}
-      onPrevious={() => seek(index - 1)}
+      onPrevious={() => manifest && seek(stepCueIndex(manifest, time, -1))}
       onToggle={() => (playing || waiting ? pause() : void play())}
-      onNext={() => seek(index + 1)}
+      onNext={() => manifest && seek(stepCueIndex(manifest, time, 1))}
       onRate={() => media.setRate(nextRate(rate))}
       onRetry={() => {
         if (manifest) void play();

@@ -7,6 +7,7 @@ type AudioControlsProps = {
   children: ReactNode;
   label: string;
   reference?: { book: string; location: string };
+  announcement?: string;
   /** False until the manifest has loaded. */
   ready: boolean;
   cueIndex: number;
@@ -29,6 +30,7 @@ export default function AudioControls({
   children,
   label,
   reference,
+  announcement,
   ready,
   cueIndex,
   cueCount,
@@ -51,17 +53,21 @@ export default function AudioControls({
       <div className="audio-player-inner">
         <div className="audio-current">
           <span>{label}</span>
-          {reference && (
-            <span className="audio-reference">
-              {reference.book} <bdi dir="ltr">{reference.location}</bdi>
-            </span>
+          {announcement ? (
+            <span className="audio-reference">{announcement}</span>
+          ) : (
+            reference && (
+              <span className="audio-reference">
+                {reference.book} <bdi dir="ltr">{reference.location}</bdi>
+              </span>
+            )
           )}
         </div>
         {/* The skip icons are mirrored on purpose: the player reads right to left. */}
         <button
           className="icon-button"
           aria-label="الآية السابقة"
-          disabled={!ready || cueIndex === 0}
+          disabled={!ready || cueCount === 0 || cueIndex <= 0}
           onClick={onPrevious}
         >
           <SkipForward size={18} aria-hidden="true" />
@@ -81,7 +87,7 @@ export default function AudioControls({
         <button
           className="icon-button"
           aria-label="الآية التالية"
-          disabled={!ready || cueIndex === cueCount - 1}
+          disabled={!ready || cueCount === 0 || cueIndex === cueCount - 1}
           onClick={onNext}
         >
           <SkipBack size={18} aria-hidden="true" />
