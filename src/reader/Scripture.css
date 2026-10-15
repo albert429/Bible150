@@ -67,3 +67,50 @@
   outline-offset: 2px;
   border-radius: 2px;
 }
+
+.audio-unavailable {
+  margin-block: 0 16px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.chapter-text .scripture-paragraph {
+  display: block;
+}
+.chapter-text .scripture-poetry {
+  display: block;
+  padding-inline-start: 1em;
+}
+.chapter-text .scripture-q2 {
+  padding-inline-start: 2em;
+}
+.chapter-text .scripture-q3,
+.chapter-text .scripture-q4 {
+  padding-inline-start: 3em;
+}
+.scripture-superscription {
+  font-size: 0.85em;
+  color: var(--muted);
+  margin-block: 8px 16px;
+}
+.scripture-acrostic {
+  color: var(--olive);
+  font-size: 0.85em;
+  margin-block: 12px 0;
+}
+.scripture-inline-heading,
+.scripture-inline-superscription,
+.scripture-inline-acrostic {
+  display: block;
+  font-size: 16px;
+  color: var(--olive);
+  margin-block: 12px 4px;
+}
+
+.chapter-text .scripture-qc {
+  text-align: center;
+  padding-inline-start: 0;
+}
+.scripture-source-note {
+  font-size: 0.85em;
+  color: var(--muted);
+}

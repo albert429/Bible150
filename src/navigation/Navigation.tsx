@@ -7,6 +7,11 @@ import {
   Settings,
   Share2,
 } from "lucide-react";
+import { catalog } from "../bible/catalog";
+import { adjacentChapter, findBibleBook } from "../bible/navigation";
+import type { BibleLocation, ReadingLocation } from "../bible/types";
+import { ar } from "../lib/format";
+import BiblePanel from "./BiblePanel";
 import type { Day } from "../plan/readings";
 import { shareApp } from "./share";
 import { PLAN_DAYS } from "../plan/schedule";
@@ -22,8 +27,13 @@ import "./Navigation.css";
 const About = lazy(() => import("./About"));
 
 export type View = "read" | "calendar";
-type Panel = "menu" | "day" | "appearance" | "about";
+type Panel = "menu" | "day" | "appearance" | "about" | "bible";
 type Props = {
+  location: ReadingLocation;
+  chooseMode: (mode: "plan" | "bible") => void;
+  goChapter: (location: BibleLocation) => void;
+  continuous: boolean;
+  setContinuous: (enabled: boolean) => void;
   view: View;
   navigate: (view: View) => void;
   menuToggle: RefObject<HTMLButtonElement | null>;
@@ -36,6 +46,11 @@ type Props = {
   go: (day: number) => void;
 };
 export default function Navigation({
+  location,
+  chooseMode,
+  goChapter,
+  continuous,
+  setContinuous,
   view,
   navigate,
   menuToggle,
@@ -47,6 +62,12 @@ export default function Navigation({
   retryReading,
   go,
 }: Props) {
+  const bible = location.mode === "bible" ? location : undefined;
+  const previous = bible && adjacentChapter(catalog, bible, -1);
+  const next = bible && adjacentChapter(catalog, bible, 1);
+  const chapterLabel = bible
+    ? `${findBibleBook(catalog, bible.book)!.name} ${ar(bible.chapter)}`
+    : "";
   const [panel, setPanel] = useState<Panel>("menu");
   const [open, setOpen] = useState(false);
   const [sharing, setSharing] = useState(false);
@@ -103,29 +124,39 @@ export default function Navigation({
             <>
               <button
                 className="icon-button previous-day"
-                disabled={selected === 1}
-                onClick={() => go(selected - 1)}
-                aria-label="اليوم السابق"
+                disabled={bible ? !previous : selected === 1}
+                onClick={() =>
+                  bible ? previous && goChapter(previous) : go(selected - 1)
+                }
+                aria-label={bible ? "الإصحاح السابق" : "اليوم السابق"}
               >
                 <ChevronRight size={20} />
               </button>
               <h1 className="toolbar-day">
                 <button
                   className="day-trigger"
-                  aria-label={`تفاصيل ${dayLabel(selected)}`}
+                  aria-label={
+                    bible
+                      ? `اختيار السفر والإصحاح: ${chapterLabel}`
+                      : `تفاصيل ${dayLabel(selected)}`
+                  }
                   aria-haspopup="dialog"
-                  aria-expanded={open && panel === "day"}
-                  onClick={(event) => show("day", event.currentTarget)}
+                  aria-expanded={open && panel === (bible ? "bible" : "day")}
+                  onClick={(event) =>
+                    show(bible ? "bible" : "day", event.currentTarget)
+                  }
                 >
-                  <span>{dayLabel(selected)}</span>
+                  <span>{bible ? chapterLabel : dayLabel(selected)}</span>
                   <ChevronDown size={14} aria-hidden="true" />
                 </button>
               </h1>
               <button
                 className="icon-button next-day"
-                disabled={selected === PLAN_DAYS}
-                onClick={() => go(selected + 1)}
-                aria-label="اليوم التالي"
+                disabled={bible ? !next : selected === PLAN_DAYS}
+                onClick={() =>
+                  bible ? next && goChapter(next) : go(selected + 1)
+                }
+                aria-label={bible ? "الإصحاح التالي" : "اليوم التالي"}
               >
                 <ChevronLeft size={20} />
               </button>
@@ -150,11 +181,13 @@ export default function Navigation({
         title={
           panel === "menu"
             ? "القائمة"
-            : panel === "day"
-              ? readingLabel(selected)
-              : panel === "about"
-                ? "About the app"
-                : "إعدادات القراءة"
+            : panel === "bible"
+              ? "الكتاب المقدس"
+              : panel === "day"
+                ? readingLabel(selected)
+                : panel === "about"
+                  ? "About the app"
+                  : "إعدادات القراءة"
         }
         headerActions={
           panel === "menu" ? (
@@ -178,6 +211,8 @@ export default function Navigation({
       >
         {panel === "menu" ? (
           <MenuPanel
+            mode={location.mode}
+            chooseMode={chooseMode}
             view={view}
             navigate={navigate}
             settings={settings}
@@ -189,6 +224,8 @@ export default function Navigation({
               });
             }}
           />
+        ) : panel === "bible" && bible ? (
+          <BiblePanel location={bible} go={goChapter} close={close} />
         ) : panel === "day" ? (
           <DayPanel
             selected={selected}
@@ -201,7 +238,10 @@ export default function Navigation({
             jump={jump}
           />
         ) : panel === "appearance" ? (
-          <AppearancePanel />
+          <AppearancePanel
+            continuous={continuous}
+            setContinuous={setContinuous}
+          />
         ) : (
           <ChunkBoundary>
             <Suspense fallback={<Loading label="جارٍ فتح معلومات التطبيق…" />}>

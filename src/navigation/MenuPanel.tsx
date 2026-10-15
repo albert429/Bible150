@@ -13,7 +13,6 @@ import logo from "../assets/favicon.svg";
 import "./MenuPanel.css";
 
 const links = [
-  { view: "read" as const, label: "القراءة اليومية", icon: BookOpen },
   {
     view: "calendar" as const,
     label: "رحلتي في ١٥٠ يومًا",
@@ -21,6 +20,8 @@ const links = [
   },
 ];
 type Props = {
+  mode: "plan" | "bible";
+  chooseMode: (mode: "plan" | "bible") => void;
   view: View;
   navigate: (view: View) => void;
   settings: () => void;
@@ -28,6 +29,8 @@ type Props = {
   close: (action?: () => void) => void;
 };
 export default function MenuPanel({
+  mode,
+  chooseMode,
   view,
   navigate,
   settings,
@@ -43,6 +46,33 @@ export default function MenuPanel({
         <span>{APP_INFO.title}</span>
       </div>
       <nav className="menu-links" aria-label="قائمة التنقل">
+        <div className="reading-modes" role="group" aria-label="طريقة القراءة">
+          {(
+            [
+              ["plan", "خطة القراءة"],
+              ["bible", "الكتاب المقدس"],
+            ] as const
+          ).map(([target, label]) => (
+            <button
+              className="nav-item"
+              key={target}
+              aria-label={label}
+              aria-current={
+                view === "read" && mode === target ? "page" : undefined
+              }
+              onClick={() =>
+                close(() => {
+                  chooseMode(target);
+                  navigate("read");
+                })
+              }
+            >
+              <BookOpen size={20} aria-hidden="true" />
+              <span className="menu-link-label">{label}</span>
+              <ChevronLeft size={16} aria-hidden="true" />
+            </button>
+          ))}
+        </div>
         {links.map(({ view: target, label, icon: Icon }) => (
           <button
             className="nav-item"

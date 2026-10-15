@@ -99,7 +99,7 @@ test.describe("compact menu", () => {
       const dialog = menuDialog(page);
       await expect(
         dialog.getByRole("navigation").getByRole("button"),
-      ).toHaveCount(2);
+      ).toHaveCount(3);
       await expect(
         dialog.getByRole("button", {
           name: "رحلتي في ١٥٠ يومًا",

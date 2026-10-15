@@ -53,7 +53,8 @@
   min-height: 44px;
   padding: 0 2px;
   border-radius: 8px;
-  white-space: nowrap;
+  white-space: normal;
+  line-height: 1.5;
 }
 .day-trigger:hover {
   background: var(--soft);

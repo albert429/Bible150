@@ -9,7 +9,8 @@ export default function About() {
       <div className="about-intro">
         <p className="about-purpose">
           طُوّر هذا التطبيق لشباب {APP_INFO.church}، لقراءة العهد الجديد
-          بالترتيب الزمني خلال ١٥٠ يومًا.
+          بالترتيب الزمني خلال ١٥٠ يومًا، مع قراءة الكتاب المقدس كاملًا حسب
+          السفر والإصحاح.
         </p>
         <div className="about-church-logo">
           <img
@@ -65,7 +66,7 @@ export default function About() {
         </a>
       </p>
       <p className="about-rights">
-        القراءة الدرامية · ترجمة فان دايك
+        العهد الجديد: القراءة الدرامية · ترجمة فان دايك
         <br />
         توقيت تظليل الآيات تقريبي.
         <br />© 1996 جمعية الكتاب المقدس بمصر · ℗ 2008 Hosanna / Faith Comes By
@@ -77,6 +78,20 @@ export default function About() {
           rel="noreferrer"
         >
           مصدر التسجيل
+        </a>
+      </p>
+      <p className="about-rights">
+        العهد القديم: قراءة غير درامية · ترجمة فان دايك
+        <br />© 1999 جمعية الكتاب المقدس بمصر · ℗ جمعية الكتاب المقدس بمصر
+        <br />
+        Faith Comes By Hearing
+        <br />
+        <a
+          href={APP_INFO.oldTestamentAudioSource}
+          target="_blank"
+          rel="noreferrer"
+        >
+          مصدر تسجيل العهد القديم
         </a>
       </p>
       {__AI_ENABLED__ && (

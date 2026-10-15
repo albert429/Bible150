@@ -1,54 +1,129 @@
-import { useCallback, useRef, useState, lazy, Suspense } from "react";
-import type { Day } from "../plan/readings";
+import {
+  useCallback,
+  useLayoutEffect,
+  useRef,
+  useState,
+  lazy,
+  Suspense,
+} from "react";
+import { catalog } from "../bible/catalog";
+import { adjacentChapter, findBibleBook } from "../bible/navigation";
+import {
+  isBibleChapter,
+  readingKey,
+  type BibleLocation,
+  type ReadingLocation,
+  type ScriptureReading,
+} from "../bible/types";
+import { ar } from "../lib/format";
 import { readingLabel } from "../plan/labels";
 import { Loading, LoadError, ChunkBoundary } from "../components/Feedback";
 import VerseStudy from "../study/VerseStudy";
 import CompletionBar from "./CompletionBar";
 import Scripture from "./Scripture";
-import { useAdjacentPrefetch } from "./useAdjacentPrefetch";
+import { useAdjacentPrefetch, useChapterPrefetch } from "./useAdjacentPrefetch";
 import { useVerseTap } from "./useVerseTap";
+import { verseElement, verseNumberButton } from "./scriptureDom";
+import { playbackPosition, savePlaybackPosition } from "./location";
 import "./Reader.css";
 const AudioPlayer = lazy(() => import("../audio/AudioPlayer"));
 
 type Props = {
-  selected: number;
-  reading?: Day;
+  location: ReadingLocation;
+  navigation: number;
+  reading?: ScriptureReading;
   error?: string;
   retry: () => void;
   done: boolean;
   complete: () => void;
+  continuous: boolean;
+  onChapterEnd: (location: BibleLocation) => void;
 };
-
+type Listening = {
+  continuing?: boolean;
+  identity: string;
+  navigation: number;
+  reading: ScriptureReading;
+};
 export default function Reader({
-  selected,
+  location,
+  navigation,
   reading,
   error,
   retry,
   done,
   complete,
+  continuous,
+  onChapterEnd,
 }: Props) {
-  useAdjacentPrefetch(selected, reading, error, true);
-  const [listening, setListening] = useState(false);
+  const identity = readingKey(location);
+  const plan = location.mode === "plan";
+  useAdjacentPrefetch(
+    plan ? location.day : 0,
+    reading && !isBibleChapter(reading) ? reading : undefined,
+    error,
+    plan,
+  );
+  useChapterPrefetch(location, reading, error);
+  const [listening, setListening] = useState<Listening | null>(null);
+  const playerSource = useRef<string | null>(null);
   const listenButton = useRef<HTMLButtonElement>(null);
-  const toggleListen = useCallback(() => setListening((on) => !on), []);
+  const toggleListen = useCallback(() => {
+    setListening((active) =>
+      active || !reading ? null : { identity, navigation, reading },
+    );
+  }, [reading, identity, navigation]);
   const tap = useVerseTap(reading);
-
-  // The sheet and player belong to one day's verse elements. Resetting during
-  // render means no render pairs a new day with the previous day's state.
-  const day = reading?.day;
-  const [seenDay, setSeenDay] = useState(day);
-  if (seenDay !== day) {
-    setSeenDay(day);
-    setListening(false);
+  const [seenNavigation, setSeenNavigation] = useState(navigation);
+  const [seenIdentity, setSeenIdentity] = useState(identity);
+  // Reset against requested navigation, even while the new text is still cold.
+  // Only native ended creates a listening intent for the next navigation.
+  if (seenNavigation !== navigation || seenIdentity !== identity) {
+    setSeenNavigation(navigation);
+    setSeenIdentity(identity);
+    if (listening?.navigation !== navigation || listening.identity !== identity)
+      setListening(null);
     tap.reset();
   }
-
+  useLayoutEffect(() => {
+    if (!location.verse) {
+      window.scrollTo({ top: 0, behavior: "instant" });
+      return;
+    }
+    if (!reading) return;
+    const target = verseElement(0, location.verse);
+    if (!target) return;
+    verseNumberButton(target)?.focus({ preventScroll: true });
+    const top = target.getBoundingClientRect().top + window.scrollY - 84;
+    window.scrollTo({ top: Math.max(0, top), behavior: "instant" });
+  }, [reading, location.verse, navigation]);
+  const audio = plan
+    ? __AUDIO_DAYS__.includes(location.day)
+    : __AUDIO_CHAPTERS__.includes(identity);
+  const playerReading = listening && (reading || listening.reading);
+  function ended() {
+    if (playerSource.current) savePlaybackPosition(playerSource.current, 0);
+    if (!continuous || location.mode !== "bible" || !playerReading) return;
+    const next = adjacentChapter(catalog, location, 1);
+    if (!next) return;
+    setListening({
+      continuing: true,
+      identity: readingKey(next),
+      navigation: navigation + 1,
+      reading: playerReading,
+    });
+    onChapterEnd(next);
+  }
+  const label = plan
+    ? readingLabel(location.day)
+    : `${findBibleBook(catalog, location.book)!.name} ${ar(location.chapter)}`;
   return (
     <div className="reading-layout">
       <article
         className="reader"
-        aria-label={readingLabel(selected)}
-        data-day={selected}
+        aria-label={label}
+        data-day={plan ? location.day : undefined}
+        data-reading={identity}
         aria-busy={!reading && !error}
         onPointerDown={tap.onPointerDown}
         onClick={tap.onClick}
@@ -58,8 +133,8 @@ export default function Reader({
         ) : reading ? (
           <Scripture
             reading={reading}
-            audio={__AUDIO_DAYS__.includes(selected)}
-            listening={listening}
+            audio={audio}
+            listening={!!listening}
             onToggleListen={toggleListen}
             listenButton={listenButton}
           />
@@ -67,15 +142,23 @@ export default function Reader({
           <Loading />
         )}
       </article>
-      {listening && reading && (
+      {listening && playerReading && (
         <div className="audio-launch">
           <ChunkBoundary>
             <Suspense fallback={<Loading label="جارٍ فتح المشغل…" />}>
               <AudioPlayer
-                reading={reading}
+                reading={playerReading}
+                initialTime={(source) =>
+                  listening.continuing ? 0 : playbackPosition(source)
+                }
+                onPosition={(seconds, source) => {
+                  playerSource.current = source;
+                  savePlaybackPosition(source, seconds);
+                }}
+                onEnded={ended}
                 onClose={() => {
                   const trigger = listenButton.current;
-                  setListening(false);
+                  setListening(null);
                   requestAnimationFrame(() => {
                     if (trigger?.isConnected)
                       trigger.focus({ preventScroll: true });
@@ -95,7 +178,9 @@ export default function Reader({
           onAfterClose={tap.afterClose}
         />
       )}
-      <CompletionBar done={done} disabled={!reading} onComplete={complete} />
+      {plan && (
+        <CompletionBar done={done} disabled={!reading} onComplete={complete} />
+      )}
     </div>
   );
 }

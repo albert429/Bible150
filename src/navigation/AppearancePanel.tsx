@@ -3,7 +3,13 @@ import { ar } from "../lib/format";
 import { FONT_MIN, FONT_MAX, useAppearance } from "./appearance";
 import "./AppearancePanel.css";
 
-export default function AppearancePanel() {
+export default function AppearancePanel({
+  continuous,
+  setContinuous,
+}: {
+  continuous: boolean;
+  setContinuous: (enabled: boolean) => void;
+}) {
   const { font, setFont, dark, setDark } = useAppearance();
   return (
     <>
@@ -31,6 +37,14 @@ export default function AppearancePanel() {
           </button>
         </div>
       </div>
+      <label className="appearance-row continuous-option">
+        <span>استماع متواصل للإصحاحات</span>
+        <input
+          type="checkbox"
+          checked={continuous}
+          onChange={(event) => setContinuous(event.target.checked)}
+        />
+      </label>
       <div className="theme-options" role="group" aria-label="مظهر القراءة">
         <button
           className="theme-option"

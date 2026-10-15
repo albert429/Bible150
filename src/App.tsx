@@ -11,18 +11,30 @@ import { useResource } from "./lib/useResource";
 import { useToday } from "./lib/useToday";
 import { useNotice } from "./lib/useNotice";
 import { useModalDialog } from "./components/useModalDialog";
+import { chapters } from "./bible/client";
+import { readingKey, type BibleLocation } from "./bible/types";
+import { useReadingLocation } from "./reader/useReadingLocation";
 import { days } from "./plan/readings";
 const Dialogs = lazy(() => import("./plan/dialogs"));
 
 export default function App() {
   const progress = useProgress();
   const { member, error } = progress;
-  const [selected, setSelected] = useState(() =>
+  const locationState = useReadingLocation(
     member ? scheduledDay(member.startDate) : 1,
   );
+  const location = locationState.current;
+  const selected = locationState.preferences.plan.day;
   const [page, setPage] = useState(() => pageFor(selected));
   const [seenSwitches, setSeenSwitches] = useState(progress.switches);
   const [view, setView] = useState<View>("read");
+  const [seenNavigation, setSeenNavigation] = useState(
+    locationState.navigation,
+  );
+  if (seenNavigation !== locationState.navigation) {
+    setSeenNavigation(locationState.navigation);
+    setView("read");
+  }
   const [modal, setModal] = useState<Modal | null>(null);
   const [notice, setNotice] = useNotice();
   const currentDate = useToday();
@@ -31,12 +43,22 @@ export default function App() {
   const start = member?.startDate || currentDate;
   const current = dayIndex(start, currentDate);
   const done = member?.completed.includes(selected) || false;
-  const reading = useResource(days, String(selected));
+  const planReading = useResource(
+    days,
+    String(selected),
+    location.mode === "plan",
+  );
+  const chapterReading = useResource(
+    chapters,
+    readingKey(location),
+    location.mode === "bible",
+  );
+  const reading = location.mode === "plan" ? planReading : chapterReading;
 
   if (seenSwitches !== progress.switches) {
     const day = member ? scheduledDay(member.startDate) : 1;
     setSeenSwitches(progress.switches);
-    setSelected(day);
+    locationState.resetPlan(day);
     setPage(pageFor(day));
   }
   function navigate(next: View) {
@@ -45,7 +67,11 @@ export default function App() {
     window.scrollTo({ top: 0 });
   }
   function go(day: number) {
-    setSelected(day);
+    locationState.go({ mode: "plan", day });
+    navigate("read");
+  }
+  function goChapter(next: BibleLocation) {
+    locationState.go(next);
     navigate("read");
   }
   function openModal(next: Modal) {
@@ -83,13 +109,18 @@ export default function App() {
   return (
     <div className="app">
       <Navigation
+        location={location}
+        chooseMode={locationState.chooseMode}
+        goChapter={goChapter}
+        continuous={locationState.preferences.continuous}
+        setContinuous={locationState.setContinuous}
         view={view}
         navigate={navigate}
         settings={() => openModal({ kind: member ? "settings" : "join" })}
         invite={(text) => openModal({ kind: "invite", text })}
         menuToggle={menuToggle}
         selected={selected}
-        reading={reading.data}
+        reading={planReading.data}
         readingError={reading.error}
         retryReading={reading.retry}
         go={go}
@@ -115,7 +146,10 @@ export default function App() {
         {view === "read" ? (
           <Reader
             key={member?.id || "guest"}
-            selected={selected}
+            location={location}
+            navigation={locationState.navigation}
+            continuous={locationState.preferences.continuous}
+            onChapterEnd={goChapter}
             reading={reading.data}
             error={reading.error}
             retry={reading.retry}

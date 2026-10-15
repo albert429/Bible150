@@ -37,7 +37,7 @@ test.describe("loading and caching", () => {
     );
     await chooseFromMenu(page, "رحلتي في ١٥٠ يومًا");
     await expect(page.locator(".calendar-day")).toHaveCount(30);
-    await chooseFromMenu(page, "القراءة اليومية");
+    await chooseFromMenu(page, "خطة القراءة");
     await ready(page);
     await chooseFromMenu(page, "رحلتي في ١٥٠ يومًا");
     await expect(page.locator(".calendar-day")).toHaveCount(30);
