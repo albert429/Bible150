@@ -6,11 +6,11 @@ not use macOS system voices, browser speech, paid APIs, or voice cloning of the 
 
 ## Candidates
 
-| ID | Voice | Source (pinned) | License status |
-| --- | --- | --- | --- |
-| `piper-kareem-lex` | Piper `ar_JO-kareem-medium`, male, read from hand-reviewed phonemes | `rhasspy/piper-voices@c10ece1a` | Repo MIT. The MODEL_CARD gives the dataset license as "See URL", and that URL (`github.com/AliMokhammad/arabicttstrain`) has no license file, so **production reuse is unverified** |
-| `piper-kareem` | The same voice, phonemized straight from the text by espeak-ng | same | same |
-| `silma` | `silma-ai/silma-tts` v1 (F5-TTS, 150M) conditioned on SILMA's bundled stock `ar.ref.24k.wav` | `silma-ai/silma-tts@226dd7a6`, `charactr/vocos-mel-24khz@0feb3fdd` (MIT) | Weights Apache-2.0, code MIT. The model is a voice cloner, and SILMA does not document the identity or consent of the speaker in its stock reference, so **production reuse is unverified** |
+| ID                 | Voice                                                                                        | Source (pinned)                                                          | License status                                                                                                                                                                              |
+| ------------------ | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `piper-kareem-lex` | Piper `ar_JO-kareem-medium`, male, read from hand-reviewed phonemes                          | `rhasspy/piper-voices@c10ece1a`                                          | Repo MIT. The MODEL_CARD gives the dataset license as "See URL", and that URL (`github.com/AliMokhammad/arabicttstrain`) has no license file, so **production reuse is unverified**         |
+| `piper-kareem`     | The same voice, phonemized straight from the text by espeak-ng                               | same                                                                     | same                                                                                                                                                                                        |
+| `silma`            | `silma-ai/silma-tts` v1 (F5-TTS, 150M) conditioned on SILMA's bundled stock `ar.ref.24k.wav` | `silma-ai/silma-tts@226dd7a6`, `charactr/vocos-mel-24khz@0feb3fdd` (MIT) | Weights Apache-2.0, code MIT. The model is a voice cloner, and SILMA does not document the identity or consent of the speaker in its stock reference, so **production reuse is unverified** |
 
 ## Wording
 
@@ -20,11 +20,11 @@ not use macOS system voices, browser speech, paid APIs, or voice cloning of the 
 - Compound ordinals from 11 to 19 take a joining fatha: `السَّادِسَ عَشَرَ` and `الرَّابِعَةَ عَشْرَةَ`.
   The current drafts leave it out.
 - Words followed by a hamzat-wasl article carry their case vowel, so the article elides: `الْإِصْحَاحُ السَّادِسَ`
-  is read *al-iṣḥāḥu s-sādisa*. Phrase-final words stay pausal.
+  is read _al-iṣḥāḥu s-sādisa_. Phrase-final words stay pausal.
 - The book names `لُوقَا`, `مَرْقُسْ` and `مَتَّى` match Van Dyck usage. `الإصحاح` matches the reader UI.
 
-Piper/espeak-ng reads Arabic wrongly in ways that matter here. It turns `الأوّل` into *alʔauːl*, `الآية`
-into *alʔaːiːat*, and pronounces every article as *ʔa-*. The `-lex` variant feeds the model hand-written
+Piper/espeak-ng reads Arabic wrongly in ways that matter here. It turns `الأوّل` into _alʔauːl_, `الآية`
+into _alʔaːiːat_, and pronounces every article as _ʔa-_. The `-lex` variant feeds the model hand-written
 phonemes instead. The reference vocabulary is closed (book names, ordinals and a few fixed words), so a
 reviewed lexicon could cover all 537 references.
 
