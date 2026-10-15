@@ -192,7 +192,7 @@ test("direct speed, close, study pause and highlights remain accessible on phone
       .locator("[data-listening]")
       .evaluate((el) => getComputedStyle(el).backgroundColor);
     expect(highlight).toBe(
-      theme === "الوضع النهاري" ? "rgb(240, 217, 130)" : "rgb(103, 87, 43)",
+      theme === "الوضع النهاري" ? "rgb(225, 233, 212)" : "rgb(53, 69, 49)",
     );
   }
   await page.setViewportSize({ width: 195, height: 422 });

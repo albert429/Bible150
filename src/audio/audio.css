@@ -81,6 +81,11 @@
 .verse[data-listening] {
   background: var(--listening-bg);
   border-radius: 4px;
+  text-decoration: underline;
+  text-decoration-color: var(--olive);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 0.35em;
+  text-decoration-skip-ink: none;
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
 }

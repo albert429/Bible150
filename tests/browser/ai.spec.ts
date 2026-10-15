@@ -136,8 +136,8 @@ test("the AI card is last, asks for consent and sends nothing until a chip is ta
   await expect(section(page, "الكلمات اليونانية")).toBeVisible();
   await expect(study(page).locator(".study-section-title")).toHaveText([
     "ترجمات أخرى",
-    "الكلمات اليونانية",
     CARD,
+    "الكلمات اليونانية",
   ]);
   await expect(section(page, CARD)).toHaveAttribute("aria-expanded", "false");
   await expect(section(page, CARD)).toHaveAccessibleDescription(
