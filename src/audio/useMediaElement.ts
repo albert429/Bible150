@@ -18,6 +18,8 @@ import {
 const PLAY_ERROR = "تعذر تشغيل التسجيل. تحقق من الاتصال وحاول مرة أخرى.";
 const STALL_ERROR = "تأخر تحميل التسجيل. تحقق من الاتصال وحاول مرة أخرى.";
 const STALL_TIMEOUT = 20000;
+/** Seconds of playback between saved resume positions while playing. */
+const POSITION_INTERVAL = 5;
 
 /** Own the <audio> element: playback state, errors, seeking and teardown. */
 export function useMediaElement(
@@ -30,24 +32,32 @@ export function useMediaElement(
 ) {
   const audio = useRef<HTMLAudioElement>(null);
   const token = useRef(0);
+  // One natural end per playthrough: replaying or seeking re-arms it.
   const endedOnce = useRef(false);
   const source = useRef<string | undefined>(undefined);
   const lastReported = useRef(-1);
+  // Until the saved position is applied, the element's 0 must not be reported.
   const restored = useRef(false);
   const callbacks = useRef(options);
   useLayoutEffect(() => {
     callbacks.current = options;
   });
+  const report = useCallback((element = audio.current) => {
+    if (!element || !source.current || !restored.current) return;
+    lastReported.current = element.currentTime;
+    callbacks.current.onPosition?.(element.currentTime, source.current);
+  }, []);
   const restorePosition = () => {
     const element = audio.current;
     if (!element || !manifest || restored.current) return;
     restored.current = true;
+    const { initialTime } = callbacks.current;
     const seconds = Math.max(
       0,
       Math.min(
-        (typeof options.initialTime === "function"
-          ? options.initialTime(manifest.src)
-          : options.initialTime) || 0,
+        (typeof initialTime === "function"
+          ? initialTime(manifest.src)
+          : initialTime) || 0,
         Math.max(0, manifest.duration - 0.1),
       ),
     );
@@ -65,17 +75,15 @@ export function useMediaElement(
   const playing = isPlaying(status);
   const waiting = isWaiting(status);
 
-  const halt = useCallback((message?: string) => {
-    token.current += 1;
-    audio.current?.pause();
-    if (audio.current)
-      if (source.current)
-        callbacks.current.onPosition?.(
-          audio.current.currentTime,
-          source.current,
-        );
-    dispatch({ type: "paused", message });
-  }, []);
+  const halt = useCallback(
+    (message?: string) => {
+      token.current += 1;
+      audio.current?.pause();
+      report();
+      dispatch({ type: "paused", message });
+    },
+    [report],
+  );
   const pause = useCallback(() => halt(), [halt]);
 
   const play = useCallback(async () => {
@@ -84,7 +92,10 @@ export function useMediaElement(
     const current = ++token.current;
     dispatch({ type: "request" });
     if (element.error) element.load();
-    if (element.ended) { endedOnce.current = false; element.currentTime = 0; }
+    if (element.ended) {
+      endedOnce.current = false;
+      element.currentTime = 0;
+    }
     try {
       await element.play();
       if (current !== token.current) return;
@@ -107,6 +118,8 @@ export function useMediaElement(
       const target =
         manifest.cues[Math.max(0, Math.min(next, manifest.cues.length - 1))];
       endedOnce.current = false;
+      // A chosen verse wins over a saved position that has not loaded yet.
+      restored.current = true;
       element.currentTime = target.start;
       setTime(target.start);
       dispatch({ type: "seeked" });
@@ -139,13 +152,21 @@ export function useMediaElement(
 
   useEffect(() => {
     const element = audio.current;
+    // A phone may discard a hidden page without another event.
+    const hidden = () => {
+      if (document.visibilityState === "hidden") report(element);
+    };
+    document.addEventListener("visibilitychange", hidden);
     return () => {
+      document.removeEventListener("visibilitychange", hidden);
+      // The ref is already detached here; the element keeps its position.
+      report(element);
       token.current += 1;
       element?.pause();
       element?.removeAttribute("src");
       element?.load();
     };
-  }, []);
+  }, [report]);
 
   useEffect(() => {
     if (audio.current) audio.current.playbackRate = rate;
@@ -162,29 +183,26 @@ export function useMediaElement(
     src: manifest ? audioUrl(manifest.src, __AUDIO_BASE_URL__) : undefined,
     preload: "none" as const,
     onLoadedMetadata: () => restorePosition(),
-    onSeeking: () => { if (audio.current && !audio.current.ended) endedOnce.current = false; },
+    onSeeking: () => {
+      if (audio.current && !audio.current.ended) endedOnce.current = false;
+    },
     onPlaying: () => dispatch({ type: "playing" }),
-    onPause: () => dispatch({ type: "paused" }),
+    onPause: () => {
+      report();
+      dispatch({ type: "paused" });
+    },
     onWaiting: () => {
       if (!audio.current?.paused) dispatch({ type: "waiting" });
     },
     onTimeUpdate: () => {
       const seconds = audio.current?.currentTime || 0;
       setTime(seconds);
-      if (Math.floor(seconds) !== lastReported.current) {
-        lastReported.current = Math.floor(seconds);
-        if (source.current)
-          callbacks.current.onPosition?.(seconds, source.current);
-      }
+      if (Math.abs(seconds - lastReported.current) >= POSITION_INTERVAL)
+        report();
     },
     onEnded: () => {
       dispatch({ type: "ended" });
-      if (audio.current)
-        if (source.current)
-          callbacks.current.onPosition?.(
-            audio.current.currentTime,
-            source.current,
-          );
+      report();
       if (!endedOnce.current) {
         endedOnce.current = true;
         callbacks.current.onEnded?.();

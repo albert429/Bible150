@@ -173,6 +173,8 @@ test("direct speed, close, study pause and highlights remain accessible on phone
       .toBe(false);
   }
   await expect(page.locator("dialog[open]")).toHaveCount(0);
+  // No verse is highlighted during the synthetic 0.1s lead-in before verse 1.
+  await expect(page.locator("[data-listening]")).toHaveCount(1);
   await page.locator(".verse-number").first().focus();
   await page.keyboard.press("Enter");
   await expect
