@@ -6,6 +6,7 @@ import {
   lazy,
   Suspense,
 } from "react";
+import { chapterHasAudio } from "../audio/availability";
 import { catalog } from "../bible/catalog";
 import { adjacentChapter, findBibleBook } from "../bible/navigation";
 import {
@@ -94,12 +95,18 @@ export default function Reader({
     const target = verseElement(0, location.verse);
     if (!target) return;
     verseNumberButton(target)?.focus({ preventScroll: true });
-    const top = target.getBoundingClientRect().top + window.scrollY - 84;
+    // Below the sticky toolbar, which grows with large text and zoom.
+    const toolbar = document.querySelector(".topbar")?.getBoundingClientRect();
+    const top =
+      target.getBoundingClientRect().top +
+      window.scrollY -
+      (toolbar?.bottom ?? 0) -
+      16;
     window.scrollTo({ top: Math.max(0, top), behavior: "instant" });
   }, [reading, location.verse, navigation]);
   const audio = plan
     ? __AUDIO_DAYS__.includes(location.day)
-    : __AUDIO_CHAPTERS__.includes(identity);
+    : chapterHasAudio(catalog, __AUDIO_CHAPTERS__, location);
   const playerReading = listening && (reading || listening.reading);
   function ended() {
     if (playerSource.current) savePlaybackPosition(playerSource.current, 0);

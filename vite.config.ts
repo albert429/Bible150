@@ -4,6 +4,8 @@ import { resolve } from "node:path";
 import react from "@vitejs/plugin-react";
 import { audioUrl } from "./src/audio/url.ts";
 import { aiBuildConfig } from "./src/ai/config.ts";
+import { chapterAvailability } from "./src/audio/availability.ts";
+import { catalog } from "./src/bible/catalog.ts";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "VITE_");
@@ -22,8 +24,6 @@ export default defineConfig(({ mode }) => {
     );
     return existsSync(resolve("public", "." + manifest.src));
   });
-  // Optional AI explanations: off unless VITE_AI_PROVIDERS is set. Values are
-  // inlined as constants so a disabled build drops every AI module.
   const canonicalCatalog = "data/audio/chapter-catalog.json";
   const chapters: string[] = existsSync(canonicalCatalog)
     ? JSON.parse(readFileSync(canonicalCatalog, "utf8")).chapters
@@ -36,13 +36,17 @@ export default defineConfig(({ mode }) => {
     );
     return existsSync(resolve("public", "." + manifest.src));
   });
+  // Optional AI explanations: off unless VITE_AI_PROVIDERS is set. Values are
+  // inlined as constants so a disabled build drops every AI module.
   const ai = aiBuildConfig(env);
   return {
     plugins: [react()],
     define: {
       __AUDIO_BASE_URL__: JSON.stringify(VITE_AUDIO_BASE_URL),
       __AUDIO_DAYS__: JSON.stringify(available),
-      __AUDIO_CHAPTERS__: JSON.stringify(availableChapters),
+      __AUDIO_CHAPTERS__: JSON.stringify(
+        chapterAvailability(catalog, availableChapters),
+      ),
       __AI_ENABLED__: JSON.stringify(ai !== null),
       __AI_DAILY_CAP__: JSON.stringify(ai?.dailyCap ?? 0),
       __AI_ATTEMPT_CAP__: JSON.stringify(ai?.attemptCap ?? 0),

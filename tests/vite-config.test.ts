@@ -34,6 +34,25 @@ for (const day of [1, 2, 3])
 // Only days 1 and 3 have their recording in this checkout.
 for (const file of ["001-abc.m4a", "003-abc.m4a"])
   writeFileSync(join(root, "public/audio/days", file), "");
+// Two catalogued chapters; only Genesis 1 has its recording here.
+mkdirSync(join(root, "data/audio/chapters/GEN"), { recursive: true });
+mkdirSync(join(root, "data/audio/chapters/REV"), { recursive: true });
+mkdirSync(join(root, "public/audio/chapters/assets"), { recursive: true });
+writeFileSync(
+  join(root, "data/audio/chapter-catalog.json"),
+  JSON.stringify({ chapters: ["bible:GEN:1", "bible:REV:22"] }),
+);
+for (const [book, chapter] of [
+  ["GEN", 1],
+  ["REV", 22],
+])
+  writeFileSync(
+    join(root, `data/audio/chapters/${book}/${chapter}.json`),
+    JSON.stringify({
+      src: `/audio/chapters/assets/${book}-${chapter}-abc.m4a`,
+    }),
+  );
+writeFileSync(join(root, "public/audio/chapters/assets/GEN-1-abc.m4a"), "");
 process.chdir(root);
 for (const name of Object.keys(process.env))
   if (name.startsWith("VITE_")) delete process.env[name];
@@ -57,6 +76,21 @@ test("Without an audio host, only days whose recording is bundled are advertised
 test('A same-origin "/" base or an https host advertises every cataloged day', async () => {
   assert.deepEqual(await audioDays("/"), [1, 2, 3]);
   assert.deepEqual(await audioDays("https://audio.example.test"), [1, 2, 3]);
+});
+
+test("Chapter recordings are advertised compactly, and only when published", async () => {
+  async function chapters(base?: string) {
+    if (base === undefined) delete process.env.VITE_AUDIO_BASE_URL;
+    else process.env.VITE_AUDIO_BASE_URL = base;
+    const flags: string = JSON.parse(
+      String((await makeConfig(env)).define?.__AUDIO_CHAPTERS__),
+    );
+    assert.equal(flags.length, 1189);
+    return [...flags].flatMap((flag, index) => (flag === "1" ? [index] : []));
+  }
+  assert.deepEqual(await chapters(), [0]);
+  assert.deepEqual(await chapters("/"), [0, 1188]);
+  assert.deepEqual(await chapters("https://audio.example.test"), [0, 1188]);
 });
 
 test("An unsafe audio host fails the build", async () => {

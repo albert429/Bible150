@@ -149,7 +149,8 @@ export default function App() {
             location={location}
             navigation={locationState.navigation}
             continuous={locationState.preferences.continuous}
-            onChapterEnd={goChapter}
+            // Continuous listening moves on without taking keyboard focus.
+            onChapterEnd={locationState.go}
             reading={reading.data}
             error={reading.error}
             retry={reading.retry}
