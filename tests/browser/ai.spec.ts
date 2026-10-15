@@ -25,7 +25,7 @@ const GEMMA = "google/gemma-4-31b-it:free";
 const CARD = "اسأل الذكاء الاصطناعي";
 const CACHE = "nt-ai-cache-v1";
 const USAGE = "nt-ai-usage-v1";
-const CONSENT = "nt-ai-consent-v1";
+const OFF = "nt-ai-off-v1";
 
 type Event = Record<string, unknown>;
 type Script = { status?: number; json?: unknown; events?: Event[] };
@@ -70,23 +70,23 @@ async function open(request: APIRequestContext, gate: string) {
   await request.post(`${STUB_URL}/__stub/open?gate=${gate}`);
 }
 
-/** The seeded reader on day 10; with consent unless told otherwise. */
+/** The seeded reader on day 10; the feature is on unless told otherwise. */
 async function seedAi(
   page: Page,
-  options: { consent?: boolean; usage?: object; time?: string } = {},
+  options: { off?: boolean; usage?: object; time?: string } = {},
 ) {
   await seed(page, true, options.time);
   await page.addInitScript(
-    ({ consent, usage, keys }) => {
+    ({ off, usage, keys }) => {
       if (sessionStorage.getItem("ai-seeded")) return;
       sessionStorage.setItem("ai-seeded", "1");
-      if (consent) localStorage.setItem(keys.consent, "1");
+      if (off) localStorage.setItem(keys.off, "1");
       if (usage) localStorage.setItem(keys.usage, JSON.stringify(usage));
     },
     {
-      consent: options.consent ?? true,
+      off: options.off ?? false,
       usage: options.usage,
-      keys: { consent: CONSENT, usage: USAGE },
+      keys: { off: OFF, usage: USAGE },
     },
   );
 }
@@ -106,6 +106,8 @@ const chip = (page: Page, label: string) =>
 const answerArea = (page: Page) => study(page).locator(".ai-answer");
 const alert = (page: Page) => study(page).getByRole("alert");
 const live = (page: Page) => study(page).locator(".ai [role=status]");
+const details = (page: Page) =>
+  study(page).getByRole("button", { name: "التفاصيل والإعدادات" });
 const remaining = (page: Page) =>
   study(page).getByText(/المتبقي على هذا الجهاز اليوم/);
 const stored = (page: Page, key: string) =>
@@ -120,11 +122,11 @@ test.beforeEach(async ({ request, context }) => {
   );
 });
 
-test("the AI card is last, asks for consent and sends nothing until a chip is tapped", async ({
+test("the AI card opens on its chips, keeps details in one link and sends nothing until a chip is tapped", async ({
   page,
   request,
 }) => {
-  await seedAi(page, { consent: false });
+  await seedAi(page);
   const chunks: string[] = [];
   page.on("request", (r) => {
     const path = new URL(r.url()).pathname;
@@ -146,26 +148,27 @@ test("the AI card is last, asks for consent and sends nothing until a chip is ta
   expect(chunks).toEqual([]);
 
   await section(page, CARD).click();
-  await expect(study(page).locator(".ai-consent")).toContainText("OpenRouter");
-  await expect(study(page).locator(".ai-consent")).toContainText(
-    "لا يُرسَل اسمك أو تقدّمك",
-  );
-  await expect(chip(page, "اشرح الآية")).toHaveCount(0);
-  await study(page).getByRole("button", { name: "متابعة" }).click();
-  await expect(chip(page, "اشرح الآية")).toBeFocused();
   await expect(chip(page, "اشرح الآية")).toHaveAttribute(
     "aria-pressed",
     "false",
   );
-  expect(await page.evaluate((k) => localStorage.getItem(k), CONSENT)).toBe(
-    "1",
-  );
+  // The notes, warnings and the off switch sit behind one small link.
+  await expect(details(page)).toHaveAttribute("aria-expanded", "false");
+  await expect(study(page).getByText("لا تكتب معلومات شخصية.")).toBeHidden();
+  await details(page).click();
+  await expect(details(page)).toHaveAttribute("aria-expanded", "true");
+  const notes = study(page).locator(".ai-details");
+  await expect(notes).toContainText("لا تكتب معلومات شخصية.");
+  await expect(notes).toContainText("OpenRouter");
+  await expect(notes).toContainText("دون اسمك أو تقدّمك");
   await expect(remaining(page)).toContainText("١٠ من ١٠");
+  await expect(
+    notes.getByRole("button", { name: "إيقاف الميزة ومسح بياناتها" }),
+  ).toBeVisible();
   await page.waitForLoadState("networkidle");
   expect(chunks.every((c) => c.startsWith("AiPanel-"))).toBe(true);
   expect(await sent(request)).toEqual([]);
 
-  // Consent is remembered.
   await closeSheet(page);
   await openCard(page);
   await expect(chip(page, "اشرح الآية")).toBeVisible();
@@ -201,6 +204,11 @@ test("an answer streams in, then the card reports it once and counts it", async 
     "النموذج يفكّر…",
   );
   await expect(live(page)).toHaveText("جارٍ إعداد الإجابة…");
+  // The answer area sits between the chips and the question box.
+  const order = await study(page)
+    .locator(".ai > .ai-chips, .ai > .ai-answer, .ai > .ai-ask")
+    .evaluateAll((els) => els.map((el) => el.className));
+  expect(order).toEqual(["ai-chips", "ai-answer", "ai-ask"]);
   await expect(
     study(page).getByRole("button", { name: "إيقاف", exact: true }),
   ).toBeVisible();
@@ -644,7 +652,7 @@ test("a reader's own question is sent as content, never cached, and can be repor
   expect(await stored(page, CACHE)).toBeNull();
 });
 
-test("turning the feature off clears its data and asks for consent again", async ({
+test("turning the feature off clears its data until it is turned on again", async ({
   page,
   request,
 }) => {
@@ -658,15 +666,16 @@ test("turning the feature off clears its data and asks for consent again", async
     PROGRESS_KEY,
   );
 
+  await details(page).click();
   await study(page)
     .getByRole("button", { name: "إيقاف الميزة ومسح بياناتها" })
     .click();
   await expect(
-    study(page).getByRole("button", { name: "متابعة" }),
+    study(page).getByRole("button", { name: "تشغيل الميزة" }),
   ).toBeFocused();
   await expect(chip(page, "اشرح الآية")).toHaveCount(0);
   expect(await stored(page, CACHE)).toBeNull();
-  expect(await stored(page, CONSENT)).toBeNull();
+  expect(await stored(page, OFF)).toBe(1);
   expect(await stored(page, USAGE)).toMatchObject({ n: 1, a: 1 });
   expect(
     await page.evaluate((k) => localStorage.getItem(k), PROGRESS_KEY),
@@ -674,9 +683,9 @@ test("turning the feature off clears its data and asks for consent again", async
   await page.reload();
   await ready(page);
   await openCard(page);
-  await expect(
-    study(page).getByRole("button", { name: "متابعة" }),
-  ).toBeVisible();
+  await study(page).getByRole("button", { name: "تشغيل الميزة" }).click();
+  await expect(chip(page, "اشرح الآية")).toBeFocused();
+  expect(await stored(page, OFF)).toBeNull();
   expect(await sent(request)).toHaveLength(1);
 });
 
@@ -684,7 +693,7 @@ test("every AI state is accessible in both themes and fits 320px at 38px text", 
   page,
   request,
 }) => {
-  await seedAi(page, { consent: false });
+  await seedAi(page);
   await page.addInitScript(() => localStorage.setItem("word-font", "38"));
   await page.setViewportSize({ width: 320, height: 700 });
   const check = async () => {
@@ -699,7 +708,7 @@ test("every AI state is accessible in both themes and fits 320px at 38px text", 
         document.documentElement.dataset.theme = dark ? "dark" : "light";
         for (const key of keys) localStorage.removeItem(key);
       },
-      { dark, keys: [CACHE, USAGE, CONSENT] },
+      { dark, keys: [CACHE, USAGE, OFF] },
     );
     await queue(
       request,
@@ -716,8 +725,9 @@ test("every AI state is accessible in both themes and fits 320px at 38px text", 
       { status: 503, json: { error: { code: 503, message: "down" } } },
     );
     await openCard(page);
-    await check(); // consent
-    await study(page).getByRole("button", { name: "متابعة" }).click();
+    await details(page).click();
+    await check(); // details
+    await details(page).click();
     await chip(page, "اشرح الآية").click();
     await expect(answerArea(page).locator(".ai-progress")).toBeVisible();
     await check(); // loading

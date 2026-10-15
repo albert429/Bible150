@@ -3,10 +3,10 @@ import assert from "node:assert/strict";
 import {
   answerKey,
   CACHE_KEY,
-  clearAiData,
-  consentKey,
-  giveConsent,
-  hasConsent,
+  isTurnedOff,
+  OFF_KEY,
+  turnOff,
+  turnOn,
   MAX_ENTRIES,
   readAnswer,
   recordAnswer,
@@ -102,7 +102,7 @@ test("Malformed, tampered, blocked or full storage never throws", () => {
     n: 0,
     a: 0,
   });
-  assert.equal(hasConsent(null), false);
+  assert.equal(isTurnedOff(null), false);
   const throwing = {
     getItem() {
       throw new Error("blocked");
@@ -115,9 +115,9 @@ test("Malformed, tampered, blocked or full storage never throws", () => {
     },
   };
   assert.equal(readAnswer(throwing, "k"), undefined);
-  assert.equal(hasConsent(throwing), false);
-  giveConsent(throwing);
-  clearAiData(throwing);
+  assert.equal(isTurnedOff(throwing), false);
+  turnOff(throwing);
+  turnOn(throwing);
   assert.deepEqual(recordAttempt(throwing, "2026-10-10"), {
     date: "2026-10-10",
     n: 0,
@@ -141,12 +141,12 @@ test("Usage counts answers and attempts per Cairo date and resets on a new date"
   );
 });
 
-test("Consent is versioned; clearing removes answers and consent but never progress", () => {
-  const s = memory({ "nt-reading-progress-v1": "{}" });
-  assert.equal(hasConsent(s), false);
-  giveConsent(s);
-  assert.equal(s.map.get(consentKey()), "1");
-  assert.equal(hasConsent(s), true);
+test("The feature starts on; turning it off removes answers but never progress", () => {
+  const s = memory({
+    "nt-reading-progress-v1": "{}",
+    "nt-ai-consent-v1": "1",
+  });
+  assert.equal(isTurnedOff(s), false);
   saveAnswer(
     s,
     answerKey("MAT.1.1", "explain", 1),
@@ -154,15 +154,20 @@ test("Consent is versioned; clearing removes answers and consent but never progr
     1,
   );
   recordAnswer(s, "2026-10-10");
-  clearAiData(s);
-  assert.equal(hasConsent(s), false);
+  turnOff(s);
+  assert.equal(s.map.get(OFF_KEY), "1");
+  assert.equal(isTurnedOff(s), true);
   assert.equal(s.map.has(CACHE_KEY), false);
+  assert.equal(s.map.has("nt-ai-consent-v1"), false);
   assert.equal(s.map.has(USAGE_KEY), true);
   assert.equal(s.map.get("nt-reading-progress-v1"), "{}");
   assert.equal(s.touched.has("nt-reading-progress-v1"), false);
+  turnOn(s);
+  assert.equal(isTurnedOff(s), false);
+  assert.equal(s.map.has(OFF_KEY), false);
 });
 
-test("Without working storage, counts and consent still hold for the session", () => {
+test("Without working storage, counts and the off switch still hold for the session", () => {
   const date = "2026-10-12";
   const full = {
     getItem: () => null,
@@ -181,17 +186,17 @@ test("Without working storage, counts and consent still hold for the session", (
       n: 0,
       a: 0,
     });
-    assert.equal(hasConsent(storage), false);
-    giveConsent(storage);
-    assert.equal(hasConsent(storage), true);
-    clearAiData(storage);
-    assert.equal(hasConsent(storage), false);
+    assert.equal(isTurnedOff(storage), false);
+    turnOff(storage);
+    assert.equal(isTurnedOff(storage), true);
+    turnOn(storage);
+    assert.equal(isTurnedOff(storage), false);
   }
-  // Each storage is separate; a working one keeps consent only in storage, so
-  // revoking it elsewhere (another tab) takes effect.
+  // Each storage is separate; a working one keeps the switch only in storage,
+  // so turning it back on elsewhere (another tab) takes effect.
   assert.deepEqual(usage(memory(), date), { date, n: 0, a: 0 });
   const s = memory();
-  giveConsent(s);
-  s.map.delete(consentKey());
-  assert.equal(hasConsent(s), false);
+  turnOff(s);
+  s.map.delete(OFF_KEY);
+  assert.equal(isTurnedOff(s), false);
 });
