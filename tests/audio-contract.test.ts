@@ -21,6 +21,7 @@ import {
   AUDIO_CONTENT_TYPE,
   AUDIO_MAX_BYTES,
   AUDIO_CHAPTER_MEDIA_PREFIX,
+  AUDIO_CLIP_MEDIA_PREFIX,
   AUDIO_MEDIA_PATTERN,
   AUDIO_MEDIA_PREFIX,
   AUDIO_MEDIA_PREFIXES,
@@ -39,6 +40,8 @@ test("The media pattern accepts day-numbered fingerprinted M4A paths only", () =
     "/audio/chapters/assets/GEN-1-c4e1aeecbd85496dd30e.m4a",
     "/audio/chapters/assets/PSA-119-134d8f1f38a42ad54fb1.m4a",
     "/audio/chapters/assets/1CO-16-0.m4a",
+    "/audio/clips/GEN-2-4-25-0a1b.m4a",
+    "/audio/clips/PSA-119-1-176-0.m4a",
   ])
     assert.match(ok, AUDIO_MEDIA_PATTERN, ok);
   for (const bad of [
@@ -57,12 +60,18 @@ test("The media pattern accepts day-numbered fingerprinted M4A paths only", () =
     "/audio/chapters/assets/GEN-1.m4a",
     "/audio/chapters/GEN-1-abc.m4a",
     "/audio/chapters/assets/../GEN-1-abc.m4a",
+    "/audio/clips/GEN-2-abc.m4a",
+    "/audio/clips/GEN-2-4-abc.m4a",
+    "/audio/clips/GEN-2-0-25-abc.m4a",
+    "/audio/clips/gen-2-4-25-abc.m4a",
+    "/audio/clips/GEN-2-4-25.m4a",
   ])
     assert.doesNotMatch(bad, AUDIO_MEDIA_PATTERN, bad);
   assert.ok("/audio/days/001-abc.m4a".startsWith(AUDIO_MEDIA_PREFIX));
   assert.deepEqual(AUDIO_MEDIA_PREFIXES, [
     AUDIO_MEDIA_PREFIX,
     AUDIO_CHAPTER_MEDIA_PREFIX,
+    AUDIO_CLIP_MEDIA_PREFIX,
   ]);
   assert.equal(AUDIO_MAX_BYTES, 8 * 1024 * 1024);
 });
@@ -141,6 +150,27 @@ test("The range worker's 206 headers equal the contract", async () => {
   assert.equal(response.headers.get("Cache-Control"), AUDIO_CACHE_CONTROL);
 });
 
+test("The worker restates the contract's pattern, cap, type and cache value", () => {
+  const source = readFileSync(
+    new URL("../hosting/cloudflare-audio/worker.js", import.meta.url),
+    "utf8",
+  );
+  const constant = (name: string) =>
+    new RegExp(`const ${name} =\\s*([^;]+);`).exec(source)?.[1].trim();
+  assert.equal(constant("AUDIO_MEDIA_PATTERN"), String(AUDIO_MEDIA_PATTERN));
+  assert.equal(constant("AUDIO_MAX_BYTES"), "8 * 1024 * 1024");
+  assert.equal(
+    constant("AUDIO_CONTENT_TYPE"),
+    JSON.stringify(AUDIO_CONTENT_TYPE),
+  );
+  assert.equal(
+    constant("AUDIO_CACHE_CONTROL"),
+    JSON.stringify(AUDIO_CACHE_CONTROL),
+  );
+  // Pages treats every module export as an entrypoint: default only.
+  assert.deepEqual(source.match(/^export .*/gm), ["export default {"]);
+});
+
 test("pagesConfig routes only media paths through the worker, with the contract's headers", () => {
   const config = pagesConfig();
   assert.deepEqual(Object.keys(config).sort(), [
@@ -151,17 +181,15 @@ test("pagesConfig routes only media paths through the worker, with the contract'
   ]);
   assert.deepEqual(JSON.parse(config["_routes.json"]), {
     version: 1,
-    include: [`${AUDIO_MEDIA_PREFIX}*`, `${AUDIO_CHAPTER_MEDIA_PREFIX}*`],
+    include: AUDIO_MEDIA_PREFIXES.map((prefix) => `${prefix}*`),
     exclude: [],
   });
   assert.equal(
     config._headers,
-    [AUDIO_MEDIA_PREFIX, AUDIO_CHAPTER_MEDIA_PREFIX]
-      .map(
-        (prefix) =>
-          `${prefix}*\n  Content-Type: ${AUDIO_CONTENT_TYPE}\n  Cache-Control: ${AUDIO_CACHE_CONTROL}\n`,
-      )
-      .join(""),
+    AUDIO_MEDIA_PREFIXES.map(
+      (prefix) =>
+        `${prefix}*\n  Content-Type: ${AUDIO_CONTENT_TYPE}\n  Cache-Control: ${AUDIO_CACHE_CONTROL}\n`,
+    ).join(""),
   );
   for (const page of ["index.html", "404.html"] as const)
     assert.match(config[page], /^<!doctype html>.*\n$/);

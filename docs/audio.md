@@ -161,33 +161,82 @@ Cache-Control: public, max-age=31536000, immutable
 
 The host must support byte ranges and return correct `Content-Length` and
 `Content-Range` headers. Never reuse an immutable media URL for changed audio.
-Day and chapter JSON remain on Vercel with revalidation, so timing fixes take effect. `vercel.json` sets `Vercel-CDN-Cache-Control: no-store` on `/audio/days/*` and `/audio/chapters/assets/*`, so Vercel never caches proxied media itself; the browser and Cloudflare do.
+Day, chapter and chronological playlist JSON remain on Vercel with revalidation,
+so timing fixes take effect. `vercel.json` sets `Vercel-CDN-Cache-Control: no-store`
+on `/audio/days/*`, `/audio/chapters/assets/*` and `/audio/clips/*`, so Vercel
+never caches proxied media itself; the browser and Cloudflare do.
 
 ## Current deployment: Vercel + Cloudflare Pages
 
 The 150 daily recordings live in the `bible-reading-audio` Pages project; the
 1,189 chapter files are prepared for the same project but not yet deployed.
-Vercel proxies only `/audio/days/:file` and `/audio/chapters/assets/:file` to that
-host; timing manifests remain in the app build.
+Vercel proxies only `/audio/days/:file`, `/audio/chapters/assets/:file` and
+`/audio/clips/:file` (partial-chapter clips, none published yet) to that host;
+timing manifests remain in the app build.
 Set `VITE_AUDIO_BASE_URL=/` to enable the same-origin media route in a Git-only
 build. The `dev` preview is configured this way. Production/main must be configured
 separately when promoting the audio release. `vite.config.ts` validates the value
 and inlines it as `__AUDIO_BASE_URL__`, so the app never reads `import.meta.env`.
+Direct `pages.dev` URLs are not promoted automatically: they time out on some
+local DNS answers, so the same-origin route stays the default.
 
-A configured host advertises every prepared day but no hosted chapter. Chapter
-recordings need a second public variable, `VITE_AUDIO_CHAPTERS_ENABLED=true`
-(default `false`; any value other than `true`, `false` or empty fails the build).
-Chapters whose media is present in the build's own `public/` folder are
-advertised regardless, so local development with prepared media still works.
-To publish the canonical chapters:
+### Prepared is not published
 
-1. Prepare and deploy the bundle with `npm run audio:host:deploy`, with
-   `AUDIO_MEDIA_ROOT` pointing at the folder holding `audio/chapters/assets/`.
-2. Run `python3 scripts/verify-audio-host.py https://<app origin>` against the
-   deployment that will carry the flag. It range-checks every recording in
-   `artifacts/pages-audio`, chapters included, through the app's media route.
-3. Only then set `VITE_AUDIO_CHAPTERS_ENABLED=true` for the Vercel environment and
-   rebuild. Until then the Bible reader hides «استمع» and remains a text reader.
+Two inventories are kept apart:
+
+- **Prepared** — `artifacts/pages-audio-inventory.json`, written by
+  `npm run audio:host:prepare`: every file in the local bundle with its size and
+  SHA-256. Ignored by Git; it proves nothing about the host.
+- **Verified** — `data/audio/publication.json`, written only by
+  `scripts/verify-audio-host.py --publish` after **every** file of a prepared
+  release passed byte-exact range checks on the deployed host. It lists each
+  media path with size, SHA-256 and the release that first verified it, plus
+  each release's host, date and method. Committed, because builds read it.
+
+A configured host advertises every prepared day (these were deployed and
+verified before the inventory existed) but no hosted chapter. Chapter
+recordings need `VITE_AUDIO_CHAPTERS_ENABLED=true` (default `false`; any value
+other than `true`, `false` or empty fails the build) **and** every catalogued
+chapter in the verified inventory; otherwise the build fails and names a
+missing chapter. A chronological playlist is advertised only when every file it
+references, full chapters and clips alike, is verified. Chapters whose media is
+present in the build's own `public/` folder are advertised regardless, so local
+development with prepared media still works. Synthetic fixture hosts on the
+reserved `.test` domain (CI) bypass the inventory; real hosts never do. The
+build also deletes from `dist/` every manifest it does not advertise, so an
+unpublished manifest is never uploaded.
+
+### Publishing a release
+
+The bundle holds what the catalogs need **plus every file already in the
+verified inventory**, so an older app build (rollback) keeps its media after a
+new Pages deployment replaces the previous one. A missing file stops
+preparation; nothing is dropped silently. `--retain <inventory.json>` keeps
+extra files (for example an older prepared inventory). Media roots are a
+`:`-separated `AUDIO_MEDIA_ROOT` or repeated `--media`; recordings are
+hard-linked into the bundle when on the same disk (no 2.7 GB copy; `--copy`
+forces copies). Limits are checked: at most 8 MiB per file and 20,000 files per
+deployment. The current release is 1,339 files (150 days + 1,189 chapters).
+
+1. `AUDIO_MEDIA_ROOT=<daily root>:<chapter root> npm run audio:host:prepare`
+2. Deploy `artifacts/pages-audio` with
+   `wrangler pages deploy artifacts/pages-audio --project-name bible-reading-audio --branch main --commit-dirty=true`.
+3. `python3 scripts/verify-audio-host.py https://<app origin>` checks every file
+   in the prepared inventory through the app's media route: three ranges per
+   file (start, middle, suffix) against the local bytes, exact `Content-Range`
+   and `Content-Length`, `audio/mp4`, immutable caching, and one `416` past the
+   end. `--full` also downloads each file and compares its SHA-256. Network
+   failures and `5xx` are retried; any failure publishes nothing.
+4. Re-run with `--publish` to merge the release into `data/audio/publication.json`.
+   A path whose bytes differ from an earlier verified entry is refused.
+5. Commit the inventory, then set `VITE_AUDIO_CHAPTERS_ENABLED=true` for the
+   Vercel environment and rebuild.
+
+Here `--branch main` selects the **audio host's** production deployment; it does
+not push or modify the application's Git branch. The bundle includes the range
+handler and `_routes.json`, so only media paths invoke it. Unchanged uploads are
+deduplicated. Do not deploy the raw media folder without the handler.
+`npm run audio:host:deploy` still prepares and deploys in one step.
 
 This route avoids a connection timeout observed with the local DNS answers for
 the Pages domain. Downloads through it count toward Vercel's transfer allowance.
@@ -196,39 +245,45 @@ Browser caching stays immutable, while `Vercel-CDN-Cache-Control: no-store`
 prevents the proxy from caching a partial response and reusing it for a different
 range. Cloudflare still caches the underlying complete static asset.
 
-Pages currently returns complete `200` responses to range requests. That caused
-seeking to jump back to the beginning on a cold Vercel cache. The narrow Pages
-handler in `hosting/cloudflare-audio/worker.js` returns correct `206` responses,
-including Safari's two-byte probe, open-ended ranges, and suffix ranges. Invalid
-offsets return `416`. It reads a cached static asset internally; the app still
-uses native streaming. The preparation script caps recordings at 8 MiB to bound
-handler memory use and refuses, never truncates, a larger file. Daily files are
-under 5 MB; the largest chapter, Psalm 119, is 7,664,871 bytes (723,737 bytes of
-headroom).
+### The range handler
 
-To prepare and deploy updated media from the local recordings:
+Pages returns complete `200` responses to range requests. That caused seeking to
+jump back to the beginning on a cold Vercel cache. The narrow Pages handler in
+`hosting/cloudflare-audio/worker.js` returns correct `206` responses, including
+Safari's two-byte probe, open-ended ranges and suffix ranges; invalid offsets
+return `416`, malformed or multipart ranges the whole file. Only paths matching
+the media pattern are handled; anything else passes through untouched.
 
-```sh
-npm run audio:host:prepare   # builds artifacts/pages-audio
-npm run audio:host:deploy    # prepares, then runs wrangler pages deploy
-```
+- **Warm ranges** come from the colo's Cache API:
+  `caches.default.match(new Request(url, { headers: { Range } }))` answers a
+  `206`/`416` from a cached complete file without the handler reading it.
+- **A cold miss** fetches the Pages asset once without `Range` or conditional
+  headers, refuses to buffer more than 8 MiB (a larger file streams through
+  whole), checks the body against `Content-Length`, slices the range, and stores
+  the complete `200` (with `Content-Length`, immutable caching, ETag) in the
+  background. A `206`, a response carrying `Content-Range`, an error or a
+  truncated body is never stored. The cache key is the path without its query
+  string, so cache-busting parameters cannot multiply entries.
+- `If-Range` keeps the range only for the same strong ETag or exact
+  `Last-Modified`; anything else, including a weak ETag, gets the whole file.
+- `HEAD` and whole-file answers keep Pages' `Content-Length` and add
+  `Accept-Ranges: bytes`. Every media answer carries the immutable
+  `Cache-Control` and `Vercel-CDN-Cache-Control: no-store`; `X-Audio-Cache:
+HIT|MISS` on ranges shows which path answered.
 
-Both read media from `public/` unless `AUDIO_MEDIA_ROOT` names another folder.
-The bundle copies every recording (about 2.7 GB with the chapters; Linux
-copy-on-write file systems clone instead).
+Whether the Cache API persists entries on the `pages.dev` hostname must be
+confirmed after deployment (repeat a range and look for `X-Audio-Cache: HIT`);
+if it does not, every range behaves as a cold miss, which is still correct. Daily
+files are under 5 MB; the largest chapter, Psalm 119, is 7,664,871 bytes
+(723,737 bytes of headroom).
 
-`audio:host:deploy` runs `npx wrangler@4 pages deploy artifacts/pages-audio
---project-name bible-reading-audio --branch main --commit-dirty=true`.
-
-Here `--branch main` selects the **audio host's** production deployment; it does
-not push or modify the application's Git branch. The bundle includes the range
-handler and `_routes.json`, so only media paths invoke it. Unchanged uploads are
-deduplicated. Do not deploy the raw media folder without the handler.
-
-Pages Functions share the Workers Free daily request allowance; this setup is
-not unlimited hosting. Check the account's usage as listening grows. See
+Pages Functions share the Workers Free daily allowance of 100,000 requests; every
+media range request counts, cached or not. Verification costs about three
+requests per file (about 4,000 for the current release). This setup is not
+unlimited hosting. Check the account's usage as listening grows. See
 [Pages serving behavior](https://developers.cloudflare.com/pages/configuration/serving-pages/),
 [Pages Functions pricing](https://developers.cloudflare.com/pages/functions/pricing/),
+[Cache API](https://developers.cloudflare.com/workers/runtime-apis/cache/)
 and [Vercel external rewrites](https://vercel.com/docs/routing/rewrites).
 
 ## Alternative: Vercel + Cloudflare R2

@@ -53,6 +53,29 @@ for (const [book, chapter] of [
     }),
   );
 writeFileSync(join(root, "public/audio/chapters/assets/GEN-1-abc.m4a"), "");
+// Revelation 22 was uploaded and verified (src/audio/publication.ts).
+writeFileSync(
+  join(root, "data/audio/publication.json"),
+  JSON.stringify({
+    version: 1,
+    releases: [
+      {
+        id: "r1",
+        verified: "2026-10-16T00:00:00Z",
+        host: "https://app.example",
+        method: "ranges",
+        files: 1,
+      },
+    ],
+    files: {
+      "/audio/chapters/assets/REV-22-abc.m4a": {
+        bytes: 1,
+        sha256: "0".repeat(64),
+        release: "r1",
+      },
+    },
+  }),
+);
 process.chdir(root);
 for (const name of Object.keys(process.env))
   if (name.startsWith("VITE_")) delete process.env[name];
