@@ -78,19 +78,59 @@ test('A same-origin "/" base or an https host advertises every cataloged day', a
   assert.deepEqual(await audioDays("https://audio.example.test"), [1, 2, 3]);
 });
 
-test("Chapter recordings are advertised compactly, and only when published", async () => {
-  async function chapters(base?: string) {
-    if (base === undefined) delete process.env.VITE_AUDIO_BASE_URL;
-    else process.env.VITE_AUDIO_BASE_URL = base;
+async function audioChapters(base?: string, enabled?: string) {
+  if (base === undefined) delete process.env.VITE_AUDIO_BASE_URL;
+  else process.env.VITE_AUDIO_BASE_URL = base;
+  if (enabled === undefined) delete process.env.VITE_AUDIO_CHAPTERS_ENABLED;
+  else process.env.VITE_AUDIO_CHAPTERS_ENABLED = enabled;
+  try {
     const flags: string = JSON.parse(
       String((await makeConfig(env)).define?.__AUDIO_CHAPTERS__),
     );
     assert.equal(flags.length, 1189);
     return [...flags].flatMap((flag, index) => (flag === "1" ? [index] : []));
+  } finally {
+    delete process.env.VITE_AUDIO_CHAPTERS_ENABLED;
   }
-  assert.deepEqual(await chapters(), [0]);
-  assert.deepEqual(await chapters("/"), [0, 1188]);
-  assert.deepEqual(await chapters("https://audio.example.test"), [0, 1188]);
+}
+
+test("Bundled chapter recordings are advertised compactly", async () => {
+  assert.deepEqual(await audioChapters(), [0]);
+  assert.deepEqual(await audioChapters(undefined, "true"), [0]);
+});
+
+test("An audio host alone never advertises chapters absent from the build", async () => {
+  for (const base of ["/", "https://audio.example.test"]) {
+    assert.deepEqual(await audioChapters(base), [0]);
+    assert.deepEqual(await audioChapters(base, ""), [0]);
+    assert.deepEqual(await audioChapters(base, "false"), [0]);
+  }
+});
+
+test("VITE_AUDIO_CHAPTERS_ENABLED=true advertises every hosted chapter", async () => {
+  assert.deepEqual(await audioChapters("/", "true"), [0, 1188]);
+  assert.deepEqual(
+    await audioChapters("https://audio.example.test", "true"),
+    [0, 1188],
+  );
+});
+
+test("The chapter flag leaves the advertised days unchanged", async () => {
+  process.env.VITE_AUDIO_CHAPTERS_ENABLED = "true";
+  try {
+    assert.deepEqual(await audioDays(), [1, 3]);
+    assert.deepEqual(await audioDays("/"), [1, 2, 3]);
+  } finally {
+    delete process.env.VITE_AUDIO_CHAPTERS_ENABLED;
+  }
+});
+
+test("An unrecognised chapter flag fails the build", async () => {
+  for (const enabled of ["1", "yes", "TRUE"])
+    await assert.rejects(
+      audioChapters("/", enabled),
+      /VITE_AUDIO_CHAPTERS_ENABLED/,
+    );
 });
 
 test("An unsafe audio host fails the build", async () => {

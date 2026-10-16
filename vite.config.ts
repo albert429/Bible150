@@ -9,9 +9,15 @@ import { catalog } from "./src/bible/catalog.ts";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "VITE_");
-  const { VITE_AUDIO_BASE_URL = "" } = env;
+  const { VITE_AUDIO_BASE_URL = "", VITE_AUDIO_CHAPTERS_ENABLED = "" } = env;
   if (VITE_AUDIO_BASE_URL)
     audioUrl("/audio/days/check.m4a", VITE_AUDIO_BASE_URL);
+  if (!["", "true", "false"].includes(VITE_AUDIO_CHAPTERS_ENABLED))
+    throw new Error('VITE_AUDIO_CHAPTERS_ENABLED must be "true" or "false".');
+  // The audio host can serve the daily files before the chapter recordings are
+  // uploaded, so hosted chapters need their own explicit opt-in.
+  const hostedChapters =
+    VITE_AUDIO_BASE_URL !== "" && VITE_AUDIO_CHAPTERS_ENABLED === "true";
   const { days } = JSON.parse(
     readFileSync("data/audio/catalog.json", "utf8"),
   ) as { days: number[] };
@@ -29,7 +35,7 @@ export default defineConfig(({ mode }) => {
     ? JSON.parse(readFileSync(canonicalCatalog, "utf8")).chapters
     : [];
   const availableChapters = chapters.filter((key) => {
-    if (VITE_AUDIO_BASE_URL) return true;
+    if (hostedChapters) return true;
     const [, book, chapter] = key.split(":");
     const manifest = JSON.parse(
       readFileSync(`data/audio/chapters/${book}/${chapter}.json`, "utf8"),

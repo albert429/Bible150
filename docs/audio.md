@@ -174,6 +174,21 @@ build. The `dev` preview is configured this way. Production/main must be configu
 separately when promoting the audio release. `vite.config.ts` validates the value
 and inlines it as `__AUDIO_BASE_URL__`, so the app never reads `import.meta.env`.
 
+A configured host advertises every prepared day but no hosted chapter. Chapter
+recordings need a second public variable, `VITE_AUDIO_CHAPTERS_ENABLED=true`
+(default `false`; any value other than `true`, `false` or empty fails the build).
+Chapters whose media is present in the build's own `public/` folder are
+advertised regardless, so local development with prepared media still works.
+To publish the canonical chapters:
+
+1. Prepare and deploy the bundle with `npm run audio:host:deploy`, with
+   `AUDIO_MEDIA_ROOT` pointing at the folder holding `audio/chapters/assets/`.
+2. Run `python3 scripts/verify-audio-host.py https://<app origin>` against the
+   deployment that will carry the flag. It range-checks every recording in
+   `artifacts/pages-audio`, chapters included, through the app's media route.
+3. Only then set `VITE_AUDIO_CHAPTERS_ENABLED=true` for the Vercel environment and
+   rebuild. Until then the Bible reader hides «استمع» and remains a text reader.
+
 This route avoids a connection timeout observed with the local DNS answers for
 the Pages domain. Downloads through it count toward Vercel's transfer allowance.
 It uses an external rewrite, without a Vercel server function.
@@ -295,7 +310,8 @@ every machine-generated timestamp matches the narration or that lock-screen
 behavior works on every phone.
 
 CI uses `AUDIO_TEST_FIXTURES=1` and a build-time
-`VITE_AUDIO_BASE_URL=https://audio.example.test`. Browser routes substitute
+`VITE_AUDIO_BASE_URL=https://audio.example.test`; `npm run test:e2e` also sets
+`VITE_AUDIO_CHAPTERS_ENABLED=true` so the fixture build advertises chapters. Browser routes substitute
 short synthetic WAV audio and accelerated cues; no copyrighted recordings or
 external audio service are needed. These are test settings, not production
 configuration. Local tests without this flag use the actual prepared media.
