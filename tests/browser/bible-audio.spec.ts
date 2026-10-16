@@ -427,6 +427,43 @@ test("canonical reading with the player fits phones, dark maximum text and 200% 
   expect(external).toEqual([]);
 });
 
+test("a heading inside the listening verse is not marked as read text", async ({
+  page,
+}) => {
+  const { external } = await routeChapterAudio(page, {
+    "JHN:19": { verse: 2 },
+  });
+  await open(page, "JHN", 19);
+  // «الصلب» falls inside verse 16, before the words that close it.
+  const heading = page.locator('.verse[data-v="16"] .scripture-inline-note');
+  await expect(heading).toHaveText("الصلب");
+  await heading.scrollIntoViewIfNeeded();
+  const unread = await heading.screenshot();
+  await listen(page).click();
+  await expect.poll(() => currentTime(page)).toBeGreaterThan(0);
+  await button(page, "إيقاف مؤقت").click();
+  await expect(button(page, "تشغيل التسجيل")).toBeVisible();
+  // Paused in the recording's opening (no verse) or on an early verse.
+  const listening = page.locator(".verse[data-listening]");
+  const current = async () =>
+    (await listening.count())
+      ? Number(await listening.getAttribute("data-v"))
+      : 0;
+  for (let n = await current(); n < 16; n = await current()) {
+    await button(page, "الآية التالية").click();
+    await expect.poll(current).toBeGreaterThan(n);
+  }
+  const verse = page.locator('.verse[data-listening][data-v="16"]');
+  await expect(verse).toHaveCount(1);
+  expect(
+    await verse.evaluate((el) => getComputedStyle(el).textDecorationLine),
+  ).toBe("underline");
+  // The verse is underlined, but the heading looks exactly as before.
+  await heading.scrollIntoViewIfNeeded();
+  expect(await heading.screenshot()).toEqual(unread);
+  expect(external).toEqual([]);
+});
+
 test("an announced plan day shows each spoken reference, highlights no verse during it and skips past it", async ({
   page,
 }) => {

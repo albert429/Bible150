@@ -26,7 +26,7 @@ function InlineNote({ block }: { block: BibleBlock }) {
       role={heading ? "heading" : undefined}
       aria-level={heading ? 3 : undefined}
     >
-      {block.text}
+      <span>{block.text}</span>
     </span>
   );
 }

@@ -103,3 +103,8 @@
   color: var(--olive);
   margin-block: 16px 4px;
 }
+/* The listening verse's underline reaches block children but not inline
+   blocks, so a heading inside that verse is not underlined as read text. */
+.scripture-inline-note > span {
+  display: inline-block;
+}
