@@ -10,19 +10,26 @@ import { chapterHasAudio } from "../audio/availability";
 import { catalog } from "../bible/catalog";
 import { adjacentChapter, findBibleBook } from "../bible/navigation";
 import {
-  isBibleChapter,
+  isChronologicalReading,
   readingKey,
-  type BibleLocation,
-  type ReadingLocation,
+  type AnyReadingLocation,
+  type AnyScriptureReading,
+  type BibleChapter,
   type ScriptureReading,
 } from "../bible/types";
+import { adjacentChronologicalLocation } from "../chronology/client";
+import type { ChronologyCatalog } from "../chronology/types";
 import { ar } from "../lib/format";
 import { readingLabel } from "../plan/labels";
 import { Loading, LoadError, ChunkBoundary } from "../components/Feedback";
-import VerseStudy from "../study/VerseStudy";
+import VerseStudy, { type StudyTarget } from "../study/VerseStudy";
 import CompletionBar from "./CompletionBar";
 import Scripture from "./Scripture";
-import { useAdjacentPrefetch, useChapterPrefetch } from "./useAdjacentPrefetch";
+import {
+  useAdjacentPrefetch,
+  useChapterPrefetch,
+  useChronologyPrefetch,
+} from "./useAdjacentPrefetch";
 import { useVerseTap } from "./useVerseTap";
 import { verseElement, verseNumberButton } from "./scriptureDom";
 import { playbackPosition, savePlaybackPosition } from "./location";
@@ -30,51 +37,115 @@ import "./Reader.css";
 const AudioPlayer = lazy(() => import("../audio/AudioPlayer"));
 
 type Props = {
-  location: ReadingLocation;
+  location: AnyReadingLocation;
   navigation: number;
-  reading?: ScriptureReading;
+  reading?: AnyScriptureReading;
+  /** The open chronology's summaries, for labels and continuous listening. */
+  chronology?: ChronologyCatalog;
   error?: string;
   retry: () => void;
   done: boolean;
   complete: () => void;
   continuous: boolean;
-  onChapterEnd: (location: BibleLocation) => void;
+  onContinue: (location: AnyReadingLocation) => void;
 };
 type Listening = {
   continuing?: boolean;
   identity: string;
   navigation: number;
-  reading: ScriptureReading;
+  reading: AnyScriptureReading;
 };
+
+/**
+ * Whether a published recording exists. Chronological readings stay silent
+ * until the audio agent's playlist availability lands (readingHasAudio).
+ */
+function hasAudio(location: AnyReadingLocation) {
+  if (location.mode === "plan") return __AUDIO_DAYS__.includes(location.day);
+  if (location.mode === "bible")
+    return chapterHasAudio(catalog, __AUDIO_CHAPTERS__, location);
+  return false;
+}
+
+/**
+ * Verse study works per canonical chapter: a chronological passage is
+ * studied as its own chapter's verses.
+ */
+function studyView(
+  reading: AnyScriptureReading,
+  target: StudyTarget,
+): { reading: ScriptureReading; target: StudyTarget } | undefined {
+  if (!isChronologicalReading(reading)) return { reading, target };
+  const passage = reading.passages[target.passage];
+  const book = passage && catalog.find((item) => item.name === passage.book);
+  if (!book) return;
+  const chapter: BibleChapter = {
+    mode: "bible",
+    usfm: book.usfm,
+    book: book.name,
+    chapter: passage.chapter,
+    verseCount: passage.verses.length,
+    passages: [passage],
+    structure: [],
+  };
+  return { reading: chapter, target: { ...target, passage: 0 } };
+}
+
+export function readingTitle(
+  location: AnyReadingLocation,
+  chronology?: ChronologyCatalog,
+  reading?: AnyScriptureReading,
+) {
+  if (location.mode === "plan") return readingLabel(location.day);
+  if (location.mode === "bible")
+    return `${findBibleBook(catalog, location.book)!.name} ${ar(location.chapter)}`;
+  return (
+    chronology?.readings.find((item) => item.id === location.readingId)
+      ?.title ??
+    (reading && isChronologicalReading(reading) ? reading.title : "")
+  );
+}
+
+const DONE_LABELS = {
+  plan: "تمت قراءة هذا اليوم",
+  bible: "تمت قراءة هذا الإصحاح",
+  chronological: "تمت هذه القراءة",
+};
+
 export default function Reader({
   location,
   navigation,
   reading,
+  chronology,
   error,
   retry,
   done,
   complete,
   continuous,
-  onChapterEnd,
+  onContinue,
 }: Props) {
   const identity = readingKey(location);
+  // Never render a previous reading under the new place's controls.
+  const current =
+    reading && readingKey(reading) === identity ? reading : undefined;
   const plan = location.mode === "plan";
   useAdjacentPrefetch(
     plan ? location.day : 0,
-    reading && !isBibleChapter(reading) ? reading : undefined,
+    current && "day" in current ? current : undefined,
     error,
     plan,
   );
-  useChapterPrefetch(location, reading, error);
+  useChapterPrefetch(location, current, error);
+  useChronologyPrefetch(location, current, error, chronology);
   const [listening, setListening] = useState<Listening | null>(null);
   const playerSource = useRef<string | null>(null);
   const listenButton = useRef<HTMLButtonElement>(null);
   const toggleListen = useCallback(() => {
     setListening((active) =>
-      active || !reading ? null : { identity, navigation, reading },
+      active || !current ? null : { identity, navigation, reading: current },
     );
-  }, [reading, identity, navigation]);
-  const tap = useVerseTap(reading);
+  }, [current, identity, navigation]);
+  const tap = useVerseTap(current);
   const [seenNavigation, setSeenNavigation] = useState(navigation);
   const [seenIdentity, setSeenIdentity] = useState(identity);
   // Reset against requested navigation, even while the new text is still cold.
@@ -91,7 +162,7 @@ export default function Reader({
       window.scrollTo({ top: 0, behavior: "instant" });
       return;
     }
-    if (!reading) return;
+    if (!current) return;
     const target = verseElement(0, location.verse);
     if (!target) return;
     verseNumberButton(target)?.focus({ preventScroll: true });
@@ -103,15 +174,18 @@ export default function Reader({
       (toolbar?.bottom ?? 0) -
       16;
     window.scrollTo({ top: Math.max(0, top), behavior: "instant" });
-  }, [reading, location.verse, navigation]);
-  const audio = plan
-    ? __AUDIO_DAYS__.includes(location.day)
-    : chapterHasAudio(catalog, __AUDIO_CHAPTERS__, location);
-  const playerReading = listening && (reading || listening.reading);
+  }, [current, location.verse, navigation]);
+  const audio = hasAudio(location);
+  const playerReading = listening && (current || listening.reading);
   function ended() {
     if (playerSource.current) savePlaybackPosition(playerSource.current, 0);
-    if (!continuous || location.mode !== "bible" || !playerReading) return;
-    const next = adjacentChapter(catalog, location, 1);
+    if (!continuous || !playerReading) return;
+    const next =
+      location.mode === "bible"
+        ? adjacentChapter(catalog, location, 1)
+        : location.mode === "chronological" && chronology
+          ? adjacentChronologicalLocation(chronology, location, 1)
+          : undefined;
     if (!next) return;
     setListening({
       continuing: true,
@@ -119,27 +193,26 @@ export default function Reader({
       navigation: navigation + 1,
       reading: playerReading,
     });
-    onChapterEnd(next);
+    onContinue(next);
   }
-  const label = plan
-    ? readingLabel(location.day)
-    : `${findBibleBook(catalog, location.book)!.name} ${ar(location.chapter)}`;
+  const label = readingTitle(location, chronology, current);
+  const study = tap.target && current && studyView(current, tap.target);
   return (
     <div className="reading-layout">
       <article
         className="reader"
-        aria-label={label}
+        aria-label={label || undefined}
         data-day={plan ? location.day : undefined}
         data-reading={identity}
-        aria-busy={!reading && !error}
+        aria-busy={!current && !error}
         onPointerDown={tap.onPointerDown}
         onClick={tap.onClick}
       >
         {error ? (
           <LoadError message={error} retry={retry} />
-        ) : reading ? (
+        ) : current ? (
           <Scripture
-            reading={reading}
+            reading={current}
             audio={audio}
             listening={!!listening}
             onToggleListen={toggleListen}
@@ -154,7 +227,9 @@ export default function Reader({
           <ChunkBoundary>
             <Suspense fallback={<Loading label="جارٍ فتح المشغل…" />}>
               <AudioPlayer
-                reading={playerReading}
+                // Widened to AnyScriptureReading by the audio agent; only plan
+                // days and chapters reach the player until then (hasAudio).
+                reading={playerReading as ScriptureReading}
                 initialTime={(source) =>
                   listening.continuing ? 0 : playbackPosition(source)
                 }
@@ -176,18 +251,21 @@ export default function Reader({
           </ChunkBoundary>
         </div>
       )}
-      {tap.target && reading && (
+      {study && (
         <VerseStudy
           open={tap.open}
-          reading={reading}
-          target={tap.target}
+          reading={study.reading}
+          target={study.target}
           onClose={tap.close}
           onAfterClose={tap.afterClose}
         />
       )}
-      {plan && (
-        <CompletionBar done={done} disabled={!reading} onComplete={complete} />
-      )}
+      <CompletionBar
+        done={done}
+        doneLabel={DONE_LABELS[location.mode]}
+        disabled={!current}
+        onComplete={complete}
+      />
     </div>
   );
 }

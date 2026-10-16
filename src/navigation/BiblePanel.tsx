@@ -3,6 +3,7 @@ import { catalog } from "../bible/catalog";
 import { findBibleBook } from "../bible/navigation";
 import type { BibleLocation } from "../bible/types";
 import { ar } from "../lib/format";
+import { useProgress } from "../plan/useProgress";
 import "./BiblePanel.css";
 
 type Props = {
@@ -14,6 +15,7 @@ export default function BiblePanel({ location, go, close }: Props) {
   const id = useId();
   const [code, setCode] = useState(location.book);
   const book = findBibleBook(catalog, code)!;
+  const read = new Set(useProgress().completion.bible);
   function testament(next: "OT" | "NT") {
     if (book.testament !== next)
       setCode(catalog.find((item) => item.testament === next)!.usfm);
@@ -62,6 +64,10 @@ export default function BiblePanel({ location, go, close }: Props) {
               type="button"
               key={chapter}
               aria-label={`${book.name} ${ar(chapter)}`}
+              aria-description={
+                read.has(`${code}:${chapter}`) ? "مكتمل" : undefined
+              }
+              data-complete={read.has(`${code}:${chapter}`) || undefined}
               aria-current={
                 code === location.book && chapter === location.chapter
                   ? "page"

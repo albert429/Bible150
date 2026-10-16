@@ -1,5 +1,6 @@
 import { Fragment } from "react";
-import type { BibleChapter, BibleBlock } from "../bible/types";
+import type { BibleBlock } from "../bible/types";
+import type { Verse } from "../plan/readings";
 import { ar } from "../lib/format";
 import { chapterSegments } from "./chapterSegments";
 
@@ -33,12 +34,19 @@ function InlineNote({ block }: { block: BibleBlock }) {
 
 // Verses flow as one text, as in the plan reader; structure only adds line
 // starts and notes, so each verse keeps one `.verse` element for highlighting.
-export default function ChapterText({ reading }: { reading: BibleChapter }) {
+// A chronological passage passes its own in-range verses and blocks.
+export default function ChapterText({
+  verses,
+  structure,
+}: {
+  verses: readonly Verse[];
+  structure: readonly BibleBlock[];
+}) {
   return (
     <div className="verse-text chapter-text">
-      {reading.passages[0].verses.map((verse) => {
+      {verses.map((verse, verseIndex) => {
         const length = Array.from(verse.text).length;
-        const blocks = reading.structure.filter(
+        const blocks = structure.filter(
           (block) => block.verse === verse.number,
         );
         const before = blocks.filter((block) => block.offset === 0);
@@ -55,7 +63,7 @@ export default function ChapterText({ reading }: { reading: BibleChapter }) {
             {before.map((block, index) => (
               <Note key={index} block={block} />
             ))}
-            {verse.number > 1 && !titled && before.some(startsLine) && (
+            {verseIndex > 0 && !titled && before.some(startsLine) && (
               <span className="scripture-break" />
             )}
             <span

@@ -3,10 +3,13 @@ import "./CompletionBar.css";
 
 export default function CompletionBar({
   done,
+  doneLabel,
   disabled,
   onComplete,
 }: {
   done: boolean;
+  /** What was read, e.g. «تمت قراءة هذا اليوم». */
+  doneLabel: string;
   disabled: boolean;
   onComplete: () => void;
 }) {
@@ -14,7 +17,7 @@ export default function CompletionBar({
     <div className={`reading-completion ${done ? "is-complete" : ""}`}>
       {done && (
         <p className="completion-state">
-          <Check size={18} aria-hidden="true" /> تمت قراءة هذا اليوم
+          <Check size={18} aria-hidden="true" /> {doneLabel}
         </p>
       )}
       <button

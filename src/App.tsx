@@ -1,8 +1,9 @@
-import { Suspense, lazy, useRef, useState } from "react";
+import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { Check, X } from "lucide-react";
 import { useProgress } from "./plan/useProgress";
 import { dayIndex, pageFor, scheduledDay } from "./plan/schedule";
-import Reader from "./reader/Reader";
+import { isReadingComplete } from "./plan/progress";
+import Reader, { readingTitle } from "./reader/Reader";
 import Navigation, { type View } from "./navigation/Navigation";
 import PlanView from "./plan/PlanView";
 import { ChunkBoundary, Loading } from "./components/Feedback";
@@ -12,19 +13,30 @@ import { useToday } from "./lib/useToday";
 import { useNotice } from "./lib/useNotice";
 import { useModalDialog } from "./components/useModalDialog";
 import { chapters } from "./bible/client";
-import { readingKey, type BibleLocation } from "./bible/types";
+import {
+  readingKey,
+  type AnyReadingLocation,
+  type ReadingTrack,
+} from "./bible/types";
+import {
+  chronologicalLocationExists,
+  chronologicalReadings,
+  chronologyCatalogs,
+  firstChronologicalLocation,
+} from "./chronology/client";
 import { useReadingLocation } from "./reader/useReadingLocation";
 import { days } from "./plan/readings";
 const Dialogs = lazy(() => import("./plan/dialogs"));
 
 export default function App() {
   const progress = useProgress();
-  const { member, error } = progress;
+  const { member, error, completion } = progress;
   const locationState = useReadingLocation(
     member?.id ?? "",
     member ? scheduledDay(member.startDate) : 1,
+    { chronological: true },
   );
-  const location = locationState.current;
+  const location = locationState.location;
   const selected = locationState.plan.day;
   const [page, setPage] = useState(() => pageFor(selected));
   const [seenSwitches, setSeenSwitches] = useState(progress.switches);
@@ -38,12 +50,14 @@ export default function App() {
   }
   const [modal, setModal] = useState<Modal | null>(null);
   const [notice, setNotice] = useNotice();
+  const [modeError, setModeError] = useState("");
   const currentDate = useToday();
   const menuToggle = useRef<HTMLButtonElement>(null);
   const main = useRef<HTMLElement>(null);
   const start = member?.startDate || currentDate;
   const current = dayIndex(start, currentDate);
-  const done = member?.completed.includes(selected) || false;
+  const done = isReadingComplete({ completion }, location);
+  const chronological = location.mode === "chronological";
   const planReading = useResource(
     days,
     String(selected),
@@ -54,10 +68,38 @@ export default function App() {
     readingKey(location),
     location.mode === "bible",
   );
-  const reading = location.mode === "plan" ? planReading : chapterReading;
+  const chronoReading = useResource(
+    chronologicalReadings,
+    readingKey(location),
+    chronological,
+  );
+  // Summaries only: titles, stages and order. Text loads per reading.
+  const chronology = useResource(
+    chronologyCatalogs,
+    chronological ? location.testament : "",
+    chronological,
+  );
+  const reading =
+    location.mode === "plan"
+      ? planReading
+      : location.mode === "bible"
+        ? chapterReading
+        : chronoReading;
+
+  // A remembered or linked reading the current catalog no longer has: start
+  // that chronology from its first reading instead of a dead end.
+  const stale =
+    chronological &&
+    !!chronology.data &&
+    !chronologicalLocationExists(chronology.data, location);
+  useEffect(() => {
+    if (stale && chronology.data)
+      locationState.go(firstChronologicalLocation(chronology.data), true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stale, chronology.data]);
 
   if (seenSwitches !== progress.switches) {
-    // Another reader: their own last plan place, or their scheduled day.
+    // Another reader: their own last places, or their scheduled day.
     const day = locationState.selectReader(
       member?.id ?? "",
       member ? scheduledDay(member.startDate) : 1,
@@ -70,13 +112,26 @@ export default function App() {
     requestAnimationFrame(() => main.current?.focus({ preventScroll: true }));
     window.scrollTo({ top: 0 });
   }
-  function go(day: number) {
-    locationState.go({ mode: "plan", day });
-    navigate("read");
-  }
-  function goChapter(next: BibleLocation) {
+  function go(next: AnyReadingLocation) {
+    setModeError("");
     locationState.go(next);
     navigate("read");
+  }
+  async function chooseTrack(track: ReadingTrack) {
+    setModeError("");
+    if (locationState.chooseMode(track)) {
+      navigate("read");
+      return;
+    }
+    // A chronology opens on its first reading the first time.
+    const testament = track === "chrono:OT" ? "OT" : "NT";
+    try {
+      const catalog = await chronologyCatalogs.load(testament);
+      if (locationState.chooseMode(track, firstChronologicalLocation(catalog)))
+        navigate("read");
+    } catch (err) {
+      setModeError((err as Error).message);
+    }
   }
   function openModal(next: Modal) {
     progress.clearError();
@@ -92,15 +147,15 @@ export default function App() {
     setView("read");
   }
   function complete() {
-    if (!member) {
-      openModal({ kind: "join" });
-      return;
-    }
-    if (progress.complete(member.id, selected, !done))
+    // Explicit only, for a named reader or the guest; opening or listening
+    // never completes a reading.
+    if (progress.completeReading(member?.id ?? "", location, !done))
       setNotice(
         done
           ? "تم التراجع عن إتمام القراءة"
-          : "تم حفظ قراءتك. خطوة جديدة في الرحلة!",
+          : location.mode === "plan"
+            ? "تم حفظ قراءتك. خطوة جديدة في الرحلة!"
+            : "تم حفظ قراءتك.",
       );
   }
   const { dialog, dialogProps } = useModalDialog({
@@ -110,24 +165,31 @@ export default function App() {
     syncNativeClose: false,
     fallbackFocus: menuToggle,
   });
+  const alert = error || modeError;
   return (
     <div className="app">
       <Navigation
         location={location}
-        chooseMode={locationState.chooseMode}
-        goChapter={goChapter}
+        go={go}
+        chooseTrack={chooseTrack}
+        chronology={chronology.data}
+        chronologyError={chronology.error}
+        retryChronology={chronology.retry}
+        readingTitle={readingTitle(location, chronology.data, reading.data)}
+        completion={completion}
         continuous={locationState.preferences.continuous}
         setContinuous={locationState.setContinuous}
         view={view}
         navigate={navigate}
-        settings={() => openModal({ kind: member ? "settings" : "join" })}
+        readers={() => openModal({ kind: member ? "settings" : "join" })}
         invite={(text) => openModal({ kind: "invite", text })}
+        notify={setNotice}
         menuToggle={menuToggle}
         selected={selected}
         reading={planReading.data}
-        readingError={reading.error}
-        retryReading={reading.retry}
-        go={go}
+        readingError={planReading.error}
+        retryReading={planReading.retry}
+        goDay={(day) => go({ mode: "plan", day })}
       />
       <main
         id="main"
@@ -135,12 +197,15 @@ export default function App() {
         tabIndex={-1}
         className={view === "read" ? "reading-main" : undefined}
       >
-        {error && !modal && (
+        {alert && !modal && (
           <div className="error" role="alert">
-            <span>{error}</span>
+            <span>{alert}</span>
             <button
               className="icon-button"
-              onClick={progress.clearError}
+              onClick={() => {
+                progress.clearError();
+                setModeError("");
+              }}
               aria-label="إغلاق التنبيه"
             >
               <X size={18} />
@@ -154,8 +219,9 @@ export default function App() {
             navigation={locationState.navigation}
             continuous={locationState.preferences.continuous}
             // Continuous listening moves on without taking keyboard focus.
-            onChapterEnd={locationState.go}
+            onContinue={locationState.go}
             reading={reading.data}
+            chronology={chronology.data}
             error={reading.error}
             retry={reading.retry}
             done={done}
@@ -164,19 +230,20 @@ export default function App() {
         ) : (
           <PlanView
             member={member}
+            completed={completion.plan}
             start={start}
             currentDate={currentDate}
             current={current}
             page={page}
             setPage={setPage}
-            go={go}
+            go={(day) => go({ mode: "plan", day })}
             join={() => openModal({ kind: "join" })}
           />
         )}
       </main>
       <dialog
         className="app-dialog"
-        aria-label="إدارة الرحلة"
+        aria-label="القراء على هذا الجهاز"
         ref={dialog}
         {...dialogProps}
       >
