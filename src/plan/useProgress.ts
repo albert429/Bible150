@@ -9,13 +9,20 @@ import {
   migrateProgress,
   selectReader,
   setCompletion,
+  emptyCompletion,
   setReadingCompletion,
+  type GuestState,
   type ReaderProfile,
+  type TrackCompletion,
 } from "./progress";
 
 type Snapshot = {
   profiles: ReaderProfile[];
   member: ReaderProfile | null;
+  /** Reading without a profile: its own places and completion. */
+  guest: GuestState;
+  /** The active reader's completion: the member's, else the guest's. */
+  completion: TrackCompletion;
   error: string;
   switches: number;
 };
@@ -25,9 +32,12 @@ let snapshot: Snapshot | undefined;
 
 function read() {
   const state = loadProgress(localStorage);
+  const member = state.profiles.find((p) => p.id === state.activeId) || null;
   return {
     profiles: state.profiles,
-    member: state.profiles.find((p) => p.id === state.activeId) || null,
+    member,
+    guest: state.guest,
+    completion: (member ?? state.guest).completion,
   };
 }
 function load(): Snapshot {
@@ -39,6 +49,8 @@ function load(): Snapshot {
     return {
       profiles: [],
       member: null,
+      guest: { track: "bible", places: {}, completion: emptyCompletion() },
+      completion: emptyCompletion(),
       error: (err as Error).message,
       switches: 0,
     };
@@ -97,7 +109,7 @@ const actions = {
   restore: (text: string) => act(() => importBackup(localStorage, text), 1),
   complete: (id: string, day: number, done: boolean) =>
     act(() => setCompletion(localStorage, id, day, done)),
-  /** Explicitly mark any track's reading done or not done. */
+  /** Explicitly mark any track's reading done or not done ("" = guest). */
   completeReading: (id: string, location: AnyReadingLocation, done: boolean) =>
     act(() => setReadingCompletion(localStorage, id, location, done)),
   fail,

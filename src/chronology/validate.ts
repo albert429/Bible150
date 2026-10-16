@@ -5,6 +5,7 @@ import {
   PROVENANCE_EXCEPTION_KINDS,
   isChronologyId,
   type ChronologicalReading,
+  type ChronologicalReadingDefinition,
   type ChronologyCatalog,
   type PassageOccurrence,
   type SourceProvenance,
@@ -70,11 +71,41 @@ export function validOccurrence(
   );
 }
 
-/** Every problem with a catalog, or [] when it is usable. */
+/** Problems with a summary's own fields (not its stage references). */
+function summaryErrors(
+  reading: Record<string, unknown>,
+  where: string,
+  provenance: (where: string, value: unknown) => void,
+): string[] {
+  const errors: string[] = [];
+  if (!isChronologyId(reading.stageId)) errors.push(`${where}: bad stageId`);
+  if (reading.substageId !== undefined && !isChronologyId(reading.substageId))
+    errors.push(`${where}: bad substageId`);
+  if (!text(reading.title)) errors.push(`${where}: missing title`);
+  const minutes = reading.estimatedMinutes;
+  if (
+    !Number.isInteger(minutes) ||
+    (minutes as number) < 1 ||
+    (minutes as number) > 600
+  )
+    errors.push(`${where}: bad estimatedMinutes`);
+  const verses = reading.verseCount;
+  if (
+    verses !== undefined &&
+    (!Number.isInteger(verses) || (verses as number) < 1)
+  )
+    errors.push(`${where}: bad verseCount`);
+  provenance(where, reading.provenance);
+  return errors;
+}
+
+/**
+ * Every problem with a catalog of reading summaries, or [] when usable.
+ * Summaries must not carry passages; those belong to definitions.
+ */
 export function chronologyCatalogErrors(
   value: unknown,
   testament: Testament,
-  books: readonly BibleBook[],
 ): string[] {
   if (!record(value)) return ["catalog is not an object"];
   const errors: string[] = [];
@@ -126,7 +157,6 @@ export function chronologyCatalogErrors(
   if (value.readings.length > MAX_CHRONOLOGY_READINGS)
     errors.push("too many readings");
   const ids = new Set<string>();
-  const occurrences = new Set<string>();
   for (const reading of value.readings) {
     if (!record(reading) || !isChronologyId(reading.id)) {
       errors.push("invalid reading id");
@@ -142,29 +172,9 @@ export function chronologyCatalogErrors(
       !substages.has(reading.substageId as string)
     )
       errors.push(`${where}: unknown substage`);
-    if (!text(reading.title)) errors.push(`${where}: missing title`);
-    const minutes = reading.estimatedMinutes;
-    if (
-      !Number.isInteger(minutes) ||
-      (minutes as number) < 1 ||
-      (minutes as number) > 600
-    )
-      errors.push(`${where}: bad estimatedMinutes`);
-    checkProvenance(where, reading.provenance);
-    if (!Array.isArray(reading.passages) || !reading.passages.length) {
-      errors.push(`${where}: no passages`);
-      continue;
-    }
-    for (const occurrence of reading.passages) {
-      if (!validOccurrence(occurrence, books, testament)) {
-        errors.push(`${where}: invalid passage`);
-        continue;
-      }
-      if (occurrences.has(occurrence.id))
-        errors.push(`${where}: duplicate occurrence ${occurrence.id}`);
-      occurrences.add(occurrence.id);
-      checkProvenance(`occurrence ${occurrence.id}`, occurrence.provenance);
-    }
+    if ("passages" in reading)
+      errors.push(`${where}: summaries carry no passages`);
+    errors.push(...summaryErrors(reading, where, checkProvenance));
   }
   return errors;
 }
@@ -172,11 +182,63 @@ export function chronologyCatalogErrors(
 export const isChronologyCatalog = (
   value: unknown,
   testament: Testament,
-  books: readonly BibleBook[],
 ): value is ChronologyCatalog =>
-  chronologyCatalogErrors(value, testament, books).length === 0;
+  chronologyCatalogErrors(value, testament).length === 0;
 
-/** A fetched reading that is the requested one, with matching verse ranges. */
+/**
+ * Every problem with one reading's definition, or [] when usable. Each
+ * passage reference is checked strictly against the canonical `books` of
+ * that testament; `verseCount`, when given, must equal the ranges' total.
+ */
+export function chronologyDefinitionErrors(
+  value: unknown,
+  testament: Testament,
+  id: string,
+  books: readonly BibleBook[],
+): string[] {
+  if (!record(value)) return ["definition is not an object"];
+  const errors: string[] = [];
+  if (value.id !== id || !isChronologyId(value.id)) errors.push("wrong id");
+  if (value.testament !== testament) errors.push("wrong testament");
+  const where = `reading ${id}`;
+  errors.push(
+    ...summaryErrors(value, where, (at, provenance) => {
+      if (provenance !== undefined && !validProvenance(provenance))
+        errors.push(`${at}: bad provenance`);
+    }),
+  );
+  if (!Array.isArray(value.passages) || !value.passages.length)
+    return [...errors, `${where}: no passages`];
+  if (value.passages.length > 200) errors.push(`${where}: too many passages`);
+  const occurrences = new Set<string>();
+  let verses = 0;
+  for (const occurrence of value.passages) {
+    if (!validOccurrence(occurrence, books, testament)) {
+      errors.push(`${where}: invalid passage`);
+      continue;
+    }
+    if (occurrences.has(occurrence.id))
+      errors.push(`${where}: duplicate occurrence ${occurrence.id}`);
+    occurrences.add(occurrence.id);
+    verses += occurrence.to - occurrence.from + 1;
+  }
+  if (
+    value.verseCount !== undefined &&
+    !errors.length &&
+    value.verseCount !== verses
+  )
+    errors.push(`${where}: verseCount ${value.verseCount} is not ${verses}`);
+  return errors;
+}
+export const isChronologyDefinition = (
+  value: unknown,
+  testament: Testament,
+  id: string,
+  books: readonly BibleBook[],
+): value is ChronologicalReadingDefinition =>
+  chronologyDefinitionErrors(value, testament, id, books).length === 0;
+
+/** A fetched reading that is the requested one, with consistent verses. */
 export function isChronologicalReadingData(
   value: unknown,
   testament: Testament,

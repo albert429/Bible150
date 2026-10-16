@@ -39,12 +39,17 @@ export type TrackCompletion = {
 /** A stored reader. `completed` always mirrors `completion.plan`. */
 export type ReaderProfile = Reader &
   ReaderPlaces & { completion: TrackCompletion };
-/** Everything on this device; the guest reads without a profile. */
+/**
+ * Reading without a profile (id ""): places and explicit completion. Never
+ * copied into, or merged with, a profile.
+ */
+export type GuestState = ReaderPlaces & { completion: TrackCompletion };
+/** Everything on this device. */
 export type ProgressState = {
   version: 2;
   activeId: string | null;
   profiles: ReaderProfile[];
-  guest: ReaderPlaces;
+  guest: GuestState;
   continuous: boolean;
 };
 /** The reader portion of a version 2 backup file. */
@@ -84,7 +89,8 @@ const validId = (id: unknown): id is string =>
   typeof id === "string" && !!id && id.length <= MAX_ID;
 export const validChapterId = (value: unknown): value is string => {
   if (typeof value !== "string") return false;
-  const match = /^([A-Z0-9]{3}):(\d{1,3})$/.exec(value);
+  // No leading zeros: one chapter has exactly one identifier.
+  const match = /^([A-Z0-9]{3}):([1-9]\d{0,2})$/.exec(value);
   const book = match && findBibleBook(catalog, match[1]);
   return !!book && Number(match[2]) >= 1 && Number(match[2]) <= book.chapters;
 };
@@ -177,7 +183,7 @@ const freshState = (): ProgressState => ({
   version: 2,
   activeId: null,
   profiles: [],
-  guest: freshPlaces(),
+  guest: { ...freshPlaces(), completion: emptyCompletion() },
   continuous: false,
 });
 
@@ -203,9 +209,18 @@ function parseState(raw: string): ProgressState {
     version: 2,
     activeId: data.activeId as string | null,
     profiles,
-    guest: places(data.guest),
+    guest: parseGuest(data.guest),
     continuous: data.continuous,
   };
+}
+
+/** Early v2 states stored the guest without completion: read it as empty. */
+function parseGuest(value: unknown): GuestState {
+  const completion =
+    record(value) && value.completion !== undefined
+      ? parseCompletion(value.completion)
+      : emptyCompletion();
+  return { ...places(value), completion };
 }
 
 /** Legacy v1 progress, validated exactly as before. */
@@ -250,7 +265,10 @@ export function migrateLegacy(
       ...placesFromPreferences(preferences, r.id),
       completion: emptyCompletion(r.completed),
     })),
-    guest: placesFromPreferences(preferences, ""),
+    guest: {
+      ...placesFromPreferences(preferences, ""),
+      completion: emptyCompletion(),
+    },
     continuous: preferences.continuous,
   };
 }
@@ -348,8 +366,18 @@ export function currentReader(storage: StorageLike) {
 }
 /** A reader's places; "" (or an unknown id) is the guest. */
 export function readerPlaces(state: ProgressState, id: string): ReaderPlaces {
-  const reader = id ? state.profiles.find((p) => p.id === id) : undefined;
-  return reader ? { track: reader.track, places: reader.places } : state.guest;
+  const reader =
+    (id ? state.profiles.find((p) => p.id === id) : undefined) ?? state.guest;
+  return { track: reader.track, places: reader.places };
+}
+/** A reader's completion; "" is the guest. Undefined for an unknown id. */
+export function readerCompletion(
+  state: ProgressState,
+  id: string,
+): TrackCompletion | undefined {
+  return id
+    ? state.profiles.find((p) => p.id === id)?.completion
+    : state.guest.completion;
 }
 function addProfile(
   storage: StorageLike,
@@ -391,23 +419,6 @@ export function createReader(
     };
   });
 }
-function changeProfile(
-  storage: StorageLike,
-  id: string,
-  change: (reader: ReaderProfile) => ReaderProfile,
-): ReaderProfile {
-  let updated: ReaderProfile | undefined;
-  update(storage, (s) => {
-    const reader = s.profiles.find((p) => p.id === id);
-    if (!reader) throw Error("اختر القارئ أولًا.");
-    updated = change(reader);
-    return {
-      ...s,
-      profiles: s.profiles.map((p) => (p.id === id ? updated! : p)),
-    };
-  });
-  return updated!;
-}
 /** The completion entry for a place: plan day, `USFM:chapter` or reading id. */
 export function completionEntry(location: AnyReadingLocation) {
   if (location.mode === "plan") return location.day;
@@ -421,16 +432,11 @@ export function isReadingComplete(
   const done: (string | number)[] = reader.completion[trackOf(location)];
   return done.includes(completionEntry(location));
 }
-/**
- * Mark or unmark one reading as completed. Completion is only ever explicit;
- * opening, reading or listening never records it.
- */
-export function setReadingCompletion(
-  storage: StorageLike,
-  id: string,
+function toggle(
+  completion: TrackCompletion,
   location: AnyReadingLocation,
   completed: boolean,
-): ReaderProfile {
+): TrackCompletion {
   const track: ReadingTrack = trackOf(location);
   const entry = completionEntry(location);
   const valid =
@@ -440,24 +446,53 @@ export function setReadingCompletion(
         ? validChapterId(entry)
         : isChronologyId(entry);
   if (!valid) throw Error("القراءة غير صالحة.");
-  return changeProfile(storage, id, (reader) => {
-    const done = new Set<string | number>(reader.completion[track]);
-    if (completed) done.add(entry);
-    else done.delete(entry);
-    const list = [...done];
-    const completion = {
-      ...reader.completion,
-      [track]: track === "plan" ? days(list as number[]) : list,
-    } as TrackCompletion;
-    if (
-      completion[track].length >
-      (track === "bible" ? BIBLE_CHAPTERS : MAX_CHRONOLOGY_READINGS)
-    )
-      throw Error("القراءة غير صالحة.");
-    return { ...reader, completion, completed: completion.plan };
-  });
+  const done = new Set<string | number>(completion[track]);
+  if (completed) done.add(entry);
+  else done.delete(entry);
+  const list = [...done];
+  if (
+    list.length > (track === "bible" ? BIBLE_CHAPTERS : MAX_CHRONOLOGY_READINGS)
+  )
+    throw Error("القراءة غير صالحة.");
+  return {
+    ...completion,
+    [track]: track === "plan" ? days(list as number[]) : list,
+  };
 }
-/** Youth plan days; kept for existing callers. */
+/**
+ * Mark or unmark one reading as completed for a profile, or for the guest
+ * when `id` is "". Only that one track's entry changes; completion is only
+ * ever explicit, never from opening, reading or listening.
+ */
+export function setReadingCompletion(
+  storage: StorageLike,
+  id: string,
+  location: AnyReadingLocation,
+  completed: boolean,
+): ReaderProfile | GuestState {
+  let updated: ReaderProfile | GuestState | undefined;
+  update(storage, (s) => {
+    if (!id) {
+      const guest = {
+        ...s.guest,
+        completion: toggle(s.guest.completion, location, completed),
+      };
+      updated = guest;
+      return { ...s, guest };
+    }
+    const reader = s.profiles.find((p) => p.id === id);
+    if (!reader) throw Error("اختر القارئ أولًا.");
+    const completion = toggle(reader.completion, location, completed);
+    const profile = { ...reader, completion, completed: completion.plan };
+    updated = profile;
+    return {
+      ...s,
+      profiles: s.profiles.map((p) => (p.id === id ? profile : p)),
+    };
+  });
+  return updated!;
+}
+/** Youth plan days for a profile; kept for existing callers. */
 export function setCompletion(
   storage: StorageLike,
   id: string,
@@ -465,7 +500,13 @@ export function setCompletion(
   completed: boolean,
 ): ReaderProfile {
   if (!isPlanDay(day)) throw Error("اليوم غير صالح.");
-  return setReadingCompletion(storage, id, { mode: "plan", day }, completed);
+  if (!id) throw Error("اختر القارئ أولًا.");
+  return setReadingCompletion(
+    storage,
+    id,
+    { mode: "plan", day },
+    completed,
+  ) as ReaderProfile;
 }
 export function selectReader(storage: StorageLike, id: string | null) {
   let selected: ReaderProfile | null = null;
@@ -477,7 +518,10 @@ export function selectReader(storage: StorageLike, id: string | null) {
   });
   return selected;
 }
-/** Save a reader's places ("" is the guest) and, optionally, continuous play. */
+/**
+ * Save a reader's places ("" is the guest) and, optionally, continuous play.
+ * Completion is untouched.
+ */
 export function saveReaderPlaces(
   storage: StorageLike,
   id: string,
@@ -491,7 +535,7 @@ export function saveReaderPlaces(
       throw Error("القارئ غير موجود.");
     return {
       ...s,
-      guest: id ? s.guest : parsed,
+      guest: id ? s.guest : { ...s.guest, ...parsed },
       profiles: id
         ? s.profiles.map((p) => (p.id === id ? { ...p, ...parsed } : p))
         : s.profiles,

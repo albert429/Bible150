@@ -55,18 +55,21 @@ export type PassageOccurrence = {
   provenance?: SourceProvenance;
 };
 
-/** A catalog entry: enough to list, label and estimate, without Scripture. */
+/**
+ * A catalog entry: enough to list, label and estimate a reading. It carries
+ * no passage references; those load with the reading's definition by id.
+ */
 export type ChronologicalReadingSummary = {
   id: string;
   stageId: string;
   substageId?: string;
   title: string;
   estimatedMinutes: number;
-  passages: PassageOccurrence[];
+  verseCount?: number;
   provenance?: SourceProvenance;
 };
 
-/** The small per-testament index, in reading order. */
+/** The small per-testament index of summaries, in reading order. */
 export type ChronologyCatalog = {
   version: 1;
   testament: Testament;
@@ -76,16 +79,25 @@ export type ChronologyCatalog = {
   readings: ChronologicalReadingSummary[];
 };
 
+/** One reading's passage references, fetched by id when it is selected. */
+export type ChronologicalReadingDefinition = ChronologicalReadingSummary & {
+  testament: Testament;
+  passages: PassageOccurrence[];
+};
+
 /** A fetched passage: the existing Scripture shape plus its occurrence. */
 export type ChronologicalPassage = Passage & {
   occurrenceId: string;
   provenance?: SourceProvenance;
 };
 
-/** A fetched reading; `passages` follow the summary's occurrence order. */
+/**
+ * A fetched reading with Scripture text; `passages` follow the definition's
+ * occurrence order and `verseCount` is their total.
+ */
 export type ChronologicalReading = Omit<
   ChronologicalReadingSummary,
-  "passages"
+  "verseCount"
 > & {
   mode: "chronological";
   testament: Testament;

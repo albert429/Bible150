@@ -14,6 +14,7 @@ import {
 } from "../src/bible/types.ts";
 import {
   chronologyCatalogErrors,
+  chronologyDefinitionErrors,
   isChronologicalReadingData,
 } from "../src/chronology/validate.ts";
 import {
@@ -26,10 +27,12 @@ import {
   isReadingComplete,
   loadProgress,
   migrateProgress,
+  readerCompletion,
   readerPlaces,
   saveReaderPlaces,
   selectReader,
   setCompletion,
+  validChapterId,
   setReadingCompletion,
 } from "../src/plan/progress.ts";
 import {
@@ -90,7 +93,13 @@ const legacy = () =>
 test("a fresh device opens the Bible at Genesis 1 and writes nothing", () => {
   const s = storage();
   const state = loadProgress(s);
-  assert.deepEqual(state.guest, { track: "bible", places: {} });
+  assert.deepEqual(readerPlaces(state, ""), { track: "bible", places: {} });
+  assert.deepEqual(readerCompletion(state, ""), {
+    bible: [],
+    plan: [],
+    "chrono:OT": [],
+    "chrono:NT": [],
+  });
   assert.deepEqual(currentPlace(state.guest, 1), {
     mode: "bible",
     book: "GEN",
@@ -387,6 +396,13 @@ test("invalid ids, references and prototype keys are rejected", () => {
       ...backup,
       reader: {
         ...backup.reader,
+        completion: { ...backup.reader.completion, bible: ["GEN:1", "GEN:01"] },
+      },
+    }),
+    JSON.stringify({
+      ...backup,
+      reader: {
+        ...backup.reader,
         completion: {
           ...backup.reader.completion,
           "chrono:OT": Array.from({ length: 1501 }, (_, i) => `r-${i}`),
@@ -462,8 +478,8 @@ test("a device holds at most 100 readers", () => {
   assert.equal(loadProgress(s).profiles.length, 100);
 });
 
-test("chronology catalogs are checked against their own testament", () => {
-  const good = {
+test("catalogs list summaries only; definitions carry checked references", () => {
+  const catalogData = {
     version: 1,
     testament: "OT",
     title: "العهد القديم زمنيًا",
@@ -483,34 +499,143 @@ test("chronology catalogs are checked against their own testament", () => {
         substageId: "creation",
         title: "الخليقة",
         estimatedMinutes: 6,
-        passages: [
-          {
-            id: "gen-1",
-            usfm: "GEN",
-            chapter: 1,
-            from: 1,
-            to: 31,
-            provenance: {
-              source: "ot-pdf",
-              page: 2,
-              pageEnd: 3,
-              group: "1",
-              exceptions: [{ kind: "split", note: "Split across two days." }],
-            },
-          },
-        ],
+        verseCount: 56,
+        provenance: { source: "ot-pdf", page: 2, group: "1" },
       },
     ],
   };
-  assert.deepEqual(chronologyCatalogErrors(good, "OT", catalog), []);
-  assert.ok(chronologyCatalogErrors(good, "NT", catalog).length);
-  const bad = structuredClone(good);
-  bad.readings[0].passages[0].to = 32;
+  assert.deepEqual(chronologyCatalogErrors(catalogData, "OT"), []);
+  assert.ok(chronologyCatalogErrors(catalogData, "NT").length);
+  const bad = structuredClone(catalogData);
   bad.readings[0].substageId = "missing";
-  bad.readings[0].passages[0].provenance.source = "unknown";
-  bad.readings[0].passages[0].provenance.exceptions[0].kind = "whim";
-  assert.equal(chronologyCatalogErrors(bad, "OT", catalog).length, 2);
-  const nt = structuredClone(good);
-  nt.readings[0].passages[0].usfm = "MRK";
-  assert.ok(chronologyCatalogErrors(nt, "OT", catalog).length);
+  bad.readings[0].provenance.source = "unknown";
+  Object.assign(bad.readings[0], { passages: [] });
+  assert.deepEqual(chronologyCatalogErrors(bad, "OT"), [
+    "reading ot-001: unknown substage",
+    "reading ot-001: summaries carry no passages",
+    "reading ot-001: unknown source unknown",
+  ]);
+
+  const definition = {
+    ...catalogData.readings[0],
+    testament: "OT",
+    passages: [
+      {
+        id: "gen-1",
+        usfm: "GEN",
+        chapter: 1,
+        from: 1,
+        to: 31,
+        provenance: {
+          source: "ot-pdf",
+          page: 2,
+          pageEnd: 3,
+          group: "1",
+          exceptions: [{ kind: "split", note: "Split across two days." }],
+        },
+      },
+      { id: "gen-2", usfm: "GEN", chapter: 2, from: 1, to: 25 },
+    ],
+  };
+  const errors = (value: unknown, testament: "OT" | "NT" = "OT") =>
+    chronologyDefinitionErrors(value, testament, "ot-001", catalog);
+  assert.deepEqual(errors(definition), []);
+  assert.deepEqual(errors(definition, "NT"), [
+    "wrong testament",
+    "reading ot-001: invalid passage",
+    "reading ot-001: invalid passage",
+  ]);
+  assert.ok(
+    chronologyDefinitionErrors(definition, "OT", "ot-002", catalog).length,
+  );
+  const variants: ((d: typeof definition) => void)[] = [
+    (d) => (d.passages[0].to = 32),
+    (d) => (d.passages[0].from = 0),
+    (d) => (d.passages[1].chapter = 51),
+    (d) => (d.passages[1].usfm = "MRK"),
+    (d) => (d.passages[1].id = "gen-1"),
+    (d) => (d.passages[0].provenance!.exceptions![0].kind = "whim"),
+    (d) => (d.passages[0].provenance!.pageEnd = 1),
+    (d) => (d.verseCount = 55),
+    (d) => (d.passages = []),
+  ];
+  for (const change of variants) {
+    const copy = structuredClone(definition);
+    change(copy);
+    assert.ok(errors(copy).length, change.toString());
+  }
+});
+
+test("canonical completion ids have exactly one spelling", () => {
+  assert.ok(validChapterId("GEN:1"));
+  assert.ok(validChapterId("PSA:150"));
+  assert.ok(validChapterId("1SA:31"));
+  for (const id of ["GEN:01", "GEN:001", "GEN:0", "gen:1", "GEN:1 ", "GEN:51"])
+    assert.ok(!validChapterId(id), id);
+  const s = storage();
+  setReadingCompletion(s, "", { mode: "bible", book: "GEN", chapter: 1 }, true);
+  assert.deepEqual(loadProgress(s).guest.completion.bible, ["GEN:1"]);
+});
+
+test("guests explicitly complete readings without joining", () => {
+  const s = storage();
+  const gen = { mode: "bible" as const, book: "GEN", chapter: 1 };
+  setReadingCompletion(s, "", gen, true);
+  setReadingCompletion(s, "", ot("ot-001"), true);
+  const guest = setReadingCompletion(s, "", nt("mark-1"), true);
+  assert.ok(isReadingComplete(guest, nt("mark-1")));
+  // Tracks stay independent: nothing completes across modes or testaments.
+  assert.ok(!isReadingComplete(guest, nt("ot-001")));
+  assert.ok(!isReadingComplete(guest, ot("mark-1")));
+  assert.deepEqual(guest.completion.plan, []);
+  // Undo, and the legacy plan-day API still needs a profile.
+  setReadingCompletion(s, "", ot("ot-001"), false);
+  assert.throws(() => setCompletion(s, "", 1, true), /اختر القارئ/);
+  // Saving places keeps the guest's completion, which persists.
+  saveReaderPlaces(s, "", withPlace(loadProgress(s).guest, ot("ot-004")));
+  const saved = loadProgress(s);
+  assert.deepEqual(readerCompletion(saved, ""), {
+    bible: ["GEN:1"],
+    plan: [],
+    "chrono:OT": [],
+    "chrono:NT": ["mark-1"],
+  });
+  assert.equal(saved.guest.track, "chrono:OT");
+  // Profiles can still be created and selected; they start with their own
+  // empty completion and never inherit the guest's.
+  const a = createReader(s, "أ", "2026-10-01");
+  assert.deepEqual(a.completion.bible, []);
+  assert.deepEqual(a.places, { "chrono:OT": ot("ot-004") });
+  setReadingCompletion(s, a.id, gen, true);
+  setReadingCompletion(s, "", gen, false);
+  selectReader(s, null);
+  selectReader(s, a.id);
+  const after = loadProgress(s);
+  assert.deepEqual(readerCompletion(after, a.id)!.bible, ["GEN:1"]);
+  assert.deepEqual(after.guest.completion.bible, []);
+  assert.equal(readerCompletion(after, "missing"), undefined);
+});
+
+test("an earlier v2 guest without completion still loads", () => {
+  const raw = JSON.stringify({
+    version: 2,
+    activeId: null,
+    profiles: [],
+    guest: { track: "bible", places: {} },
+    continuous: false,
+  });
+  const s = storage({ [STATE_KEY]: raw });
+  assert.deepEqual(loadProgress(s).guest.completion, {
+    bible: [],
+    plan: [],
+    "chrono:OT": [],
+    "chrono:NT": [],
+  });
+  setReadingCompletion(s, "", ot("ot-001"), true);
+  assert.deepEqual(loadProgress(s).guest.completion["chrono:OT"], ["ot-001"]);
+  const corrupt = JSON.parse(raw);
+  corrupt.guest.completion = { bible: ["GEN:01"] };
+  assert.throws(() =>
+    loadProgress(storage({ [STATE_KEY]: JSON.stringify(corrupt) })),
+  );
 });
