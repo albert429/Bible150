@@ -1,17 +1,21 @@
 import { useSyncExternalStore } from "react";
+import type { AnyReadingLocation } from "../bible/types";
 import {
   PROGRESS_KEY,
+  STATE_KEY,
   createReader,
   importBackup,
   loadProgress,
+  migrateProgress,
   selectReader,
   setCompletion,
-  type Reader,
+  setReadingCompletion,
+  type ReaderProfile,
 } from "./progress";
 
 type Snapshot = {
-  profiles: Reader[];
-  member: Reader | null;
+  profiles: ReaderProfile[];
+  member: ReaderProfile | null;
   error: string;
   switches: number;
 };
@@ -28,6 +32,8 @@ function read() {
 }
 function load(): Snapshot {
   try {
+    // Commit a pending v1 migration; on failure it is retried next time.
+    migrateProgress(localStorage);
     return { ...read(), error: "", switches: 0 };
   } catch (err) {
     return {
@@ -63,7 +69,8 @@ function act(run: () => unknown, switched = 0) {
   }
 }
 function onStorage(event: StorageEvent) {
-  if (event.key !== PROGRESS_KEY && event.key !== null) return;
+  if (event.key !== STATE_KEY && event.key !== PROGRESS_KEY && event.key)
+    return;
   try {
     const next = read();
     update({
@@ -90,13 +97,19 @@ const actions = {
   restore: (text: string) => act(() => importBackup(localStorage, text), 1),
   complete: (id: string, day: number, done: boolean) =>
     act(() => setCompletion(localStorage, id, day, done)),
+  /** Explicitly mark any track's reading done or not done. */
+  completeReading: (id: string, location: AnyReadingLocation, done: boolean) =>
+    act(() => setReadingCompletion(localStorage, id, location, done)),
   fail,
   clearError() {
     if (get().error) update({ error: "" });
   },
 };
 
-/** `switches` counts changes of the active reader, including re-selecting the same one. */
+/**
+ * Readers and their completion. Places come from `useReadingLocation`;
+ * `member.places` is only as fresh as the last progress change.
+ * `switches` counts changes of the active reader, including re-selecting the same one. */
 export function useProgress() {
   return { ...useSyncExternalStore(subscribe, get), ...actions };
 }

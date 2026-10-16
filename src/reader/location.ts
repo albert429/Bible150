@@ -3,15 +3,22 @@ import {
   parseReadingLocation,
   readingSearch,
   validBibleLocation,
+  validChronologicalLocation,
 } from "../bible/navigation.ts";
 import {
+  isReadingTrack,
   readingKey,
+  trackOf,
+  type AnyReadingLocation,
   type BibleLocation,
+  type ChronologicalLocation,
   type PlanLocation,
   type ReadingLocation,
+  type ReadingTrack,
 } from "../bible/types.ts";
 import { isPlanDay } from "../plan/schedule.ts";
 
+/** Legacy (v1) device places; read only to migrate into the v2 state. */
 export const LOCATION_KEY = "bible-reader-location-v1";
 /** The last mode and place in each mode on this device; never plan progress. */
 export type ReaderPreferences = {
@@ -113,7 +120,7 @@ export function initialPreferences(
   const linked = parseReadingLocation(search, catalog);
   return linked ? withLocation(saved, reader, linked) : saved;
 }
-export const sameLocation = (a?: ReadingLocation, b?: ReadingLocation) =>
+export const sameLocation = (a?: AnyReadingLocation, b?: AnyReadingLocation) =>
   !!a && !!b && readingKey(a) === readingKey(b) && a.verse === b.verse;
 /**
  * The address for a place reached inside the app. Canonical chapters get a
@@ -121,8 +128,130 @@ export const sameLocation = (a?: ReadingLocation, b?: ReadingLocation) =>
  * shortcut (the app has no web manifest) cannot pin one day; the stored place
  * reopens it instead. An explicit ?day= link is kept while it is current.
  */
-export const locationSearch = (location: ReadingLocation) =>
-  location.mode === "bible" ? readingSearch(location) : "";
+export const locationSearch = (location: AnyReadingLocation) =>
+  location.mode === "plan" ? "" : readingSearch(location);
+
+/* ---- v2: one place per reading track, per reader ---- */
+
+export const FIRST_CHAPTER: BibleLocation = {
+  mode: "bible",
+  book: "GEN",
+  chapter: 1,
+};
+/** The last place in each track; a missing track has not been opened yet. */
+export type TrackPlaces = {
+  bible?: BibleLocation;
+  plan?: PlanLocation;
+  "chrono:OT"?: ChronologicalLocation;
+  "chrono:NT"?: ChronologicalLocation;
+};
+/** A reader's current reading choice and their place in every track. */
+export type ReaderPlaces = { track: ReadingTrack; places: TrackPlaces };
+/** No saved state at all: the canonical Bible at Genesis 1. */
+export const freshPlaces = (): ReaderPlaces => ({ track: "bible", places: {} });
+
+export const validAnyLocation = (value: unknown): value is AnyReadingLocation =>
+  validLocation(value) || validChronologicalLocation(value);
+
+const copyLocation = (location: AnyReadingLocation): AnyReadingLocation =>
+  location.mode === "plan"
+    ? { mode: "plan", day: location.day, ...verseOf(location) }
+    : location.mode === "bible"
+      ? {
+          mode: "bible",
+          book: location.book,
+          chapter: location.chapter,
+          ...verseOf(location),
+        }
+      : {
+          mode: "chronological",
+          testament: location.testament,
+          readingId: location.readingId,
+          ...verseOf(location),
+        };
+const verseOf = (location: AnyReadingLocation) =>
+  location.verse === undefined ? {} : { verse: location.verse };
+
+/**
+ * Strictly validated places, rebuilt from known fields only; undefined when
+ * anything is unknown, malformed or filed under another track.
+ */
+export function parseTrackPlaces(value: unknown): TrackPlaces | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return;
+  const places: TrackPlaces = {};
+  for (const [track, place] of Object.entries(value)) {
+    if (
+      !isReadingTrack(track) ||
+      !validAnyLocation(place) ||
+      trackOf(place) !== track
+    )
+      return;
+    Object.assign(places, { [track]: copyLocation(place) });
+  }
+  return places;
+}
+export function parseReaderPlaces(value: unknown): ReaderPlaces | undefined {
+  if (!value || typeof value !== "object") return;
+  const { track, places } = value as Partial<ReaderPlaces>;
+  const parsed = parseTrackPlaces(places);
+  if (!isReadingTrack(track) || !parsed) return;
+  return { track, places: parsed };
+}
+
+/**
+ * The saved place in a track. The youth plan opens on the reader's scheduled
+ * day and the Bible at Genesis 1 until visited; a chronology has no place
+ * until one of its readings is opened (callers supply the catalog's first).
+ */
+export function trackPlace(
+  reader: ReaderPlaces,
+  track: ReadingTrack,
+  scheduled: number,
+): AnyReadingLocation | undefined {
+  const saved = reader.places[track];
+  if (saved) return saved;
+  if (track === "plan") return { mode: "plan", day: scheduled };
+  if (track === "bible") return FIRST_CHAPTER;
+}
+/**
+ * Where the reader is now. Without chronology support, or before a
+ * chronology has a place, the Bible place stands in.
+ */
+export function currentPlace(
+  reader: ReaderPlaces,
+  scheduled: number,
+  chronological = true,
+): AnyReadingLocation {
+  const track =
+    !chronological && reader.track.startsWith("chrono:")
+      ? "bible"
+      : reader.track;
+  return (
+    trackPlace(reader, track, scheduled) ??
+    (trackPlace(reader, "bible", scheduled) as BibleLocation)
+  );
+}
+/** Move within, or switch to, the location's own track. */
+export const withPlace = (
+  reader: ReaderPlaces,
+  location: AnyReadingLocation,
+): ReaderPlaces => ({
+  track: trackOf(location),
+  places: { ...reader.places, [trackOf(location)]: copyLocation(location) },
+});
+/** Legacy v1 preferences as one reader's v2 places. */
+export function placesFromPreferences(
+  preferences: ReaderPreferences,
+  reader: string,
+): ReaderPlaces {
+  const plan = Object.prototype.hasOwnProperty.call(preferences.plans, reader)
+    ? preferences.plans[reader]
+    : undefined;
+  return {
+    track: preferences.mode,
+    places: { bible: preferences.bible, ...(plan ? { plan } : {}) },
+  };
+}
 
 const POSITION_KEY = "bible-reader-audio-position-v1";
 export function playbackPosition(identity: string): number {
