@@ -73,6 +73,9 @@ test("tapping a verse opens its study sheet and only then loads study data", asy
     "ltr",
   );
   await expect(study(page).locator(".greek-ar").first()).not.toHaveText("—");
+  // Arabic, Greek and English share one line; the transliteration sits below.
+  const firstRow = study(page).locator(".greek-main").first();
+  await expect(firstRow.locator('bdi[lang="en"]')).toHaveText(/[a-z]/i);
   // Key words only: no Strong's numbers and no Greek word listed twice.
   const words = await study(page).locator(".greek-word").allTextContents();
   expect(new Set(words).size).toBe(words.length);

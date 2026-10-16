@@ -1,15 +1,15 @@
-// On-device AI data: cached answers, daily usage and consent. Every access is
-// guarded (private mode, quota errors, tampered values) and these keys are
-// separate from reading progress and never part of backups.
+// On-device AI data: cached answers, daily usage and the off switch. Every
+// access is guarded (private mode, quota errors, tampered values) and these
+// keys are separate from reading progress and never part of backups.
 
 export type StorageLike = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 
 export const CACHE_KEY = "nt-ai-cache-v1";
 export const USAGE_KEY = "nt-ai-usage-v1";
-/** Bump when the disclosure changes (providers, data use): asks again. */
-export const DISCLOSURE_VERSION = 1;
-export const consentKey = (version = DISCLOSURE_VERSION) =>
-  `nt-ai-consent-v${version}`;
+/** Set when the reader turns the feature off on this device. */
+export const OFF_KEY = "nt-ai-off-v1";
+/** Left by builds that asked for consent first; cleared with the other data. */
+const LEGACY_CONSENT_KEY = "nt-ai-consent-v1";
 export const MAX_ENTRIES = 60;
 export const MAX_TOTAL_CHARS = 200_000;
 const MAX_ANSWER = 6000;
@@ -104,11 +104,11 @@ export function saveAnswer(
   writeEntries(storage, entries);
 }
 
-// When storage is missing or refuses writes, counts and consent still hold
-// for this page session. Keyed by storage object, so each storage is separate.
+// When storage is missing or refuses writes, counts and the off switch still
+// hold for this page session. Keyed by storage object, so each is separate.
 const NO_STORAGE = {};
 const sessionUsage = new WeakMap<object, Usage>();
-const sessionConsent = new WeakSet<object>();
+const sessionOff = new WeakSet<object>();
 const slot = (storage: StorageLike | null) => storage ?? NO_STORAGE;
 
 function storedUsage(storage: StorageLike | null, date: string): Usage {
@@ -156,34 +156,38 @@ export const recordAttempt = (storage: StorageLike | null, date: string) =>
 export const recordAnswer = (storage: StorageLike | null, date: string) =>
   bump(storage, date, "n");
 
-export function hasConsent(storage: StorageLike | null) {
-  if (sessionConsent.has(slot(storage))) return true;
+export function isTurnedOff(storage: StorageLike | null) {
+  if (sessionOff.has(slot(storage))) return true;
   try {
-    return storage?.getItem(consentKey()) === "1";
+    return storage?.getItem(OFF_KEY) === "1";
   } catch {
     return false;
   }
 }
 
-export function giveConsent(storage: StorageLike | null) {
+/** Turn the feature off and delete cached answers. Usage counts stay (they
+ * hold no content), so turning it back on does not reset the daily caps. */
+export function turnOff(storage: StorageLike | null) {
+  try {
+    storage?.removeItem(CACHE_KEY);
+    storage?.removeItem(LEGACY_CONSENT_KEY);
+  } catch {
+    // Nothing to clear.
+  }
   try {
     if (!storage) throw new Error("no storage");
-    storage.setItem(consentKey(), "1");
+    storage.setItem(OFF_KEY, "1");
   } catch {
-    // Not saved: consent lasts until the page reloads. (A saved consent stays
-    // revocable from another tab, so it is not also kept in the session.)
-    sessionConsent.add(slot(storage));
+    // Not saved: the feature stays off until the page reloads.
+    sessionOff.add(slot(storage));
   }
 }
 
-/** Revoke consent and delete cached answers. Usage counts stay (they hold no content). */
-export function clearAiData(storage: StorageLike | null) {
-  sessionConsent.delete(slot(storage));
+export function turnOn(storage: StorageLike | null) {
+  sessionOff.delete(slot(storage));
   try {
-    storage?.removeItem(CACHE_KEY);
-    for (let v = 1; v <= DISCLOSURE_VERSION; v++)
-      storage?.removeItem(consentKey(v));
+    storage?.removeItem(OFF_KEY);
   } catch {
-    // Nothing to clear.
+    // Already on.
   }
 }

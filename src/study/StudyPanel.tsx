@@ -43,7 +43,6 @@ export default function StudyPanel({
       ) : (
         <div className="study-sections">
           <OtherTranslation day={day} id={id} />
-          <GreekWords text={verse.text} g={entry.g} />
           {AiPanel && (
             <Section
               key={id}
@@ -64,6 +63,7 @@ export default function StudyPanel({
               </ChunkBoundary>
             </Section>
           )}
+          <GreekWords text={verse.text} g={entry.g} />
         </div>
       )}
     </div>

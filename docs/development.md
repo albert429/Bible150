@@ -122,10 +122,10 @@ OpenRouter sees the reader's IP address. Free-model providers may keep prompts a
 
 - **The free allowance belongs to the OpenRouter account, so every reader shares it.** It is 20 requests a minute and 50 a day, rising to 1,000 a day after a one-time purchase of at least $10. It resets at 00:00 UTC. A group that taps the card together, for example during a meeting, can hit the per-minute limit. Those readers see «الخدمة مشغولة الآن» and can retry after 30 seconds to about a minute (OpenRouter's reset time, bounded in case the phone's clock is wrong). When the daily allowance runs out, everyone sees «انتهت حصة الخدمة المشتركة اليوم».
 - **The key is public and cannot be restricted to this site.** Anyone who copies it can use up the shared allowance until the key is rotated. Only a server could prevent this. The checklist below keeps spending at $0 and the models free.
-- **Each device has its own daily caps:** 10 answers and 20 requests by default. Chip answers are cached on the device (`nt-ai-cache-v1`, at most 60 answers); typed questions are not cached. Usage is stored in `nt-ai-usage-v1` and consent in `nt-ai-consent-v1`. «إيقاف الميزة ومسح بياناتها» removes the cache and the consent. None of these keys are part of progress backups. If the browser blocks storage, counts and consent last until the page reloads, so the caps still apply.
+- **Each device has its own daily caps:** 10 answers and 20 requests by default. Chip answers are cached on the device (`nt-ai-cache-v1`, at most 60 answers); typed questions are not cached. Usage is stored in `nt-ai-usage-v1`. The feature is on by default; its notes, data-sharing details and remaining count sit behind the card's «التفاصيل والإعدادات» link. «إيقاف الميزة ومسح بياناتها» there removes the cache and sets `nt-ai-off-v1` until the reader taps «تشغيل الميزة». None of these keys are part of progress backups. If the browser blocks storage, counts and the off switch last until the page reloads, so the caps still apply.
 - **Errors use fixed Arabic messages.** Server error text is never shown.
 
-When the prompt, chips or models change, bump `PROMPT_VERSION` in `src/ai/chips.ts` so cached answers are dropped. When what is sent, or who receives it, changes, bump `DISCLOSURE_VERSION` in `src/ai/cache.ts` so readers see the notice again.
+When the prompt, chips or models change, bump `PROMPT_VERSION` in `src/ai/chips.ts` so cached answers are dropped. When what is sent, or who receives it, changes, update the details text in `src/study/AiPanel.tsx` and the About page.
 
 ### Owner checklist
 

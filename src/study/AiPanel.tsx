@@ -7,18 +7,18 @@ import {
   useState,
   type FormEvent,
 } from "react";
-import { RefreshCw } from "lucide-react";
+import { Info, RefreshCw } from "lucide-react";
 import {
   answerKey,
   browserStorage,
-  clearAiData,
-  giveConsent,
-  hasConsent,
   readAnswer,
   recordAnswer,
   recordAttempt,
   saveAnswer,
   usage,
+  turnOff,
+  turnOn,
+  isTurnedOff,
   type StorageLike,
 } from "../ai/cache.ts";
 import {
@@ -145,7 +145,8 @@ export default function AiPanel({
   g: GreekToken[];
 }) {
   const storage = useMemo(browserStorage, []);
-  const [consent, setConsent] = useState(() => hasConsent(storage));
+  const [on, setOn] = useState(() => !isTurnedOff(storage));
+  const [details, setDetails] = useState(false);
   const [view, setView] = useState<View>({ s: "idle" });
   const [question, setQuestion] = useState("");
   const [asked, setAsked] = useState("");
@@ -167,7 +168,7 @@ export default function AiPanel({
   const retryButton = useRef<HTMLButtonElement>(null);
   const anotherButton = useRef<HTMLButtonElement>(null);
   const reportLink = useRef<HTMLAnchorElement>(null);
-  const proceedButton = useRef<HTMLButtonElement>(null);
+  const turnOnButton = useRef<HTMLButtonElement>(null);
   const busy = view.s === "loading" || view.s === "streaming";
 
   // Closing the sheet, or another verse or day, ends a request in flight.
@@ -195,8 +196,8 @@ export default function AiPanel({
     if (active && active !== document.body && !active.contains(root.current))
       return;
     const chip = view.s === "idle" ? lastChip.current : view.chip;
-    const target = !consent
-      ? proceedButton.current
+    const target = !on
+      ? turnOnButton.current
       : (stopButton.current ??
         retryButton.current ??
         anotherButton.current ??
@@ -406,28 +407,23 @@ export default function AiPanel({
           lastFocus.current = null;
       }}
     >
-      {!consent ? (
+      {!on ? (
         <>
-          <p className="ai-consent">
-            تُرسَل الآية وسياقها (وسؤالك إن كتبته) إلى خدمة OpenRouter، التي ترى
-            عنوان IP الخاص بك، ثم إلى مزوّد النموذج (Google أو غيره)، الذي قد
-            يحتفظ بالنص ويستخدمه لتحسين نماذجه وقد يطّلع عليه مراجعون. لا يُرسَل
-            اسمك أو تقدّمك. الإجابات آلية وقد تحتوي أخطاء.
-          </p>
+          <p className="ai-off">الميزة متوقفة على هذا الجهاز.</p>
           <button
-            ref={proceedButton}
+            ref={turnOnButton}
             type="button"
             className="primary"
             onClick={() => {
-              giveConsent(storage);
-              setConsent(true);
+              turnOn(storage);
+              setOn(true);
               // Safari does not focus clicked buttons, so move focus explicitly.
               requestAnimationFrame(() =>
                 chipButtons.current[CHIPS[0].id]?.focus(),
               );
             }}
           >
-            متابعة
+            تشغيل الميزة
           </button>
         </>
       ) : (
@@ -449,40 +445,24 @@ export default function AiPanel({
               </button>
             ))}
           </div>
-          <form className="ai-ask" onSubmit={submitQuestion}>
-            <label htmlFor={`${id}-question`}>اكتب سؤالك عن هذه الآية</label>
-            <div className="ai-ask-row">
-              <input
-                id={`${id}-question`}
-                type="text"
-                dir="auto"
-                maxLength={QUESTION_MAX}
-                value={question}
-                onChange={(event) => setQuestion(event.target.value)}
-                enterKeyHint="send"
-                autoComplete="off"
-              />
-              <button
-                ref={askButton}
-                type="submit"
-                className="quiet-button"
-                aria-disabled={
-                  busy || questionText.length < QUESTION_MIN || undefined
-                }
-              >
-                اسأل
-              </button>
-            </div>
-            <p className="ai-note">لا تكتب معلومات شخصية.</p>
-          </form>
-
           {view.s !== "idle" && (
             <div className="ai-answer" ref={answerRef} aria-busy={busy}>
               {view.s === "loading" && (
-                <p className="ai-progress">
-                  <AiSpark size={14} />
-                  {view.thinking ? "النموذج يفكّر…" : "جارٍ إعداد الإجابة…"}
-                </p>
+                <div className="ai-progress">
+                  <p className="ai-progress-line">
+                    <span className="ai-orb">
+                      <AiSpark size={22} />
+                    </span>
+                    <span className="ai-progress-text">
+                      {view.thinking ? "النموذج يفكّر…" : "جارٍ إعداد الإجابة…"}
+                    </span>
+                  </p>
+                  <div className="ai-shimmer" aria-hidden="true">
+                    <span />
+                    <span />
+                    <span />
+                  </div>
+                </div>
               )}
               {text && <AiAnswer blocks={parseAnswer(text)} />}
               {view.s === "error" && (
@@ -554,26 +534,72 @@ export default function AiPanel({
             </div>
           )}
 
-          <p className="ai-note">
-            يُرسَل نص الآية وسياقها إلى خدمة ذكاء اصطناعي خارجية، دون اسمك أو
-            تقدّمك. المتبقي على هذا الجهاز اليوم:{" "}
-            {ar(Math.max(0, __AI_DAILY_CAP__ - used))} من {ar(__AI_DAILY_CAP__)}
-            .
-          </p>
+          <form className="ai-ask" onSubmit={submitQuestion}>
+            <label htmlFor={`${id}-question`}>اكتب سؤالك عن هذه الآية</label>
+            <div className="ai-ask-row">
+              <input
+                id={`${id}-question`}
+                type="text"
+                dir="auto"
+                maxLength={QUESTION_MAX}
+                value={question}
+                onChange={(event) => setQuestion(event.target.value)}
+                enterKeyHint="send"
+                autoComplete="off"
+              />
+              <button
+                ref={askButton}
+                type="submit"
+                className="quiet-button"
+                aria-disabled={
+                  busy || questionText.length < QUESTION_MIN || undefined
+                }
+              >
+                اسأل
+              </button>
+            </div>
+          </form>
+
           <button
             type="button"
-            className="text-button ai-forget"
-            onClick={() => {
-              controller.current?.abort("unmount");
-              clearAiData(storage);
-              lastChip.current = null;
-              setConsent(false);
-              setView({ s: "idle" });
-              setStatus("");
-            }}
+            className="ai-details-toggle"
+            aria-expanded={details}
+            aria-controls={`${id}-ai-details`}
+            onClick={() => setDetails((open) => !open)}
           >
-            إيقاف الميزة ومسح بياناتها
+            <Info size={13} aria-hidden="true" />
+            <span>التفاصيل والإعدادات</span>
           </button>
+          <div id={`${id}-ai-details`} className="ai-details" hidden={!details}>
+            <p>لا تكتب معلومات شخصية.</p>
+            <p>
+              يُرسَل نص الآية وسياقها إلى خدمة ذكاء اصطناعي خارجية، دون اسمك أو
+              تقدّمك. المتبقي على هذا الجهاز اليوم:{" "}
+              {ar(Math.max(0, __AI_DAILY_CAP__ - used))} من{" "}
+              {ar(__AI_DAILY_CAP__)}.
+            </p>
+            <p>
+              تمرّ الآية وسياقها (وسؤالك إن كتبته) عبر خدمة{" "}
+              <bdi>OpenRouter</bdi>، التي ترى عنوان IP الخاص بك، ثم إلى مزوّد
+              النموذج (Google أو غيره)، الذي قد يحتفظ بالنص ويستخدمه لتحسين
+              نماذجه وقد يطّلع عليه مراجعون. الإجابات آلية وقد تحتوي أخطاء.
+            </p>
+            <button
+              type="button"
+              className="text-button ai-forget"
+              onClick={() => {
+                controller.current?.abort("unmount");
+                turnOff(storage);
+                lastChip.current = null;
+                setOn(false);
+                setDetails(false);
+                setView({ s: "idle" });
+                setStatus("");
+              }}
+            >
+              إيقاف الميزة ومسح بياناتها
+            </button>
+          </div>
         </>
       )}
       <p className="sr-only" role="status">

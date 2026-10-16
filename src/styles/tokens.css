@@ -8,7 +8,11 @@
   --olive: #4d633f;
   --olive-hover: #3d5132;
   --soft: #edf0e6;
-  --listening-bg: #f0d982;
+  --listening-bg: #e1e9d4;
+  --ai-gold: #8a6212;
+  --ai-teal: #1f6b66;
+  --ai-plum: #7a4590;
+  --ai-glow: rgba(200, 149, 43, 0.35);
   --button-ink: #fffefa;
   --error-bg: #faede7;
   --error-ink: #8a382c;
@@ -24,7 +28,11 @@
   --olive: #b2c59b;
   --olive-hover: #c4d5b2;
   --soft: #303d30;
-  --listening-bg: #67572b;
+  --listening-bg: #354531;
+  --ai-gold: #e6c26b;
+  --ai-teal: #6cc3bb;
+  --ai-plum: #c39ad6;
+  --ai-glow: rgba(230, 194, 107, 0.22);
   --button-ink: #1d281e;
   --error-bg: #442d28;
   --error-ink: #ffcabd;
