@@ -8,9 +8,9 @@ export default function About() {
     <section className="about-content" aria-label="معلومات التطبيق">
       <div className="about-intro">
         <p className="about-purpose">
-          طُوّر هذا التطبيق لشباب {APP_INFO.church}، لقراءة العهد الجديد
-          بالترتيب الزمني خلال ١٥٠ يومًا، مع قراءة الكتاب المقدس كاملًا حسب
-          السفر والإصحاح.
+          لقراءة الكتاب المقدس والاستماع إليه: سفرًا سفرًا بالترتيب المعتاد، أو
+          بالترتيب الزمني للعهدين القديم والجديد بحسب وقتك. ويضم خطة شباب{" "}
+          {APP_INFO.church} لقراءة العهد الجديد في ١٥٠ يومًا.
         </p>
         <div className="about-church-logo">
           <img
