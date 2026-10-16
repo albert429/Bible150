@@ -1,12 +1,12 @@
 ![An open Bible and a phone reader](docs/assets/readme-banner.png)
 
-# الكتاب المقدس
+# The Holy Bible / الكتاب المقدس
 
 قراءة واستماع، بالترتيب المعتاد أو الزمني.
 
 An Arabic Bible reader with Scripture given almost the entire screen. Originally built for the youth of the **Brethren Church at Kholousy**, the app is expanding from its 150-day New Testament plan and whole-Bible reader into four reading choices.
 
-The expanded release is **under integration**. The current app features below describe the existing reader; the [product guide](docs/product.md) describes the approved four-mode experience and its compatibility requirements. Audio availability depends on the media deployed by each host.
+The expanded release is **under integration**. The current app features below describe the existing reader; the [product guide](docs/product.md) describes the approved four-mode experience and its compatibility requirements.
 
 [Open the app](https://sfk-bible-reading.vercel.app/) · [Development guide](docs/development.md) · [Data sources](data/SOURCES.md)
 
@@ -65,7 +65,7 @@ The optional AI explanations («اسأل الذكاء الاصطناعي») are 
 
 See the [development guide](docs/development.md) for architecture, deployment troubleshooting, source regeneration, and performance checks. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before making changes.
 
-The existing audio pipeline supports separately hosted static audio: the New Testament is a dramatised Van Dyck recording and the Old Testament a non-dramatic one, both distributed by Faith Comes By Hearing (credits in the app's About and in [audio provenance](data/audio/SOURCES.md)). See the [audio guide](docs/audio.md) for local preparation, timing review, CDN setup, and free-tier bandwidth estimates. A normal Git-only deployment keeps audio hidden until media is available or an audio host is configured. This repository does not imply that all chapter recordings, daily tracks, or chronology playlists are deployed. Audio recording rights are separate from the public-domain Scripture text; consult the provenance and applicable recording terms.
+The existing audio pipeline supports separately hosted static audio: the New Testament is a dramatised Van Dyck recording and the Old Testament a non-dramatic one, both distributed by Faith Comes By Hearing (credits in the app's About and in [audio provenance](data/audio/SOURCES.md)). See the [audio guide](docs/audio.md) for local preparation, timing review, CDN setup, and free-tier bandwidth estimates. A normal Git-only deployment keeps audio hidden until media is available or an audio host is configured. Audio recording rights are separate from the public-domain Scripture text; consult the provenance and applicable recording terms.
 
 ## Scripture attribution and rights
 
