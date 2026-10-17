@@ -1,4 +1,11 @@
-import { Suspense, lazy, useEffect, useRef, useState } from "react";
+import {
+  Suspense,
+  lazy,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { Check, X } from "lucide-react";
 import { useProgress } from "./plan/useProgress";
 import { dayIndex, pageFor, scheduledDay } from "./plan/schedule";
@@ -54,6 +61,18 @@ export default function App() {
   const currentDate = useToday();
   const menuToggle = useRef<HTMLButtonElement>(null);
   const main = useRef<HTMLElement>(null);
+  // The latest mode choice; an older asynchronous choice must not apply.
+  const intent = useRef(0);
+  const latest = useRef({
+    navigation: locationState.navigation,
+    switches: progress.switches,
+  });
+  useLayoutEffect(() => {
+    latest.current = {
+      navigation: locationState.navigation,
+      switches: progress.switches,
+    };
+  });
   const start = member?.startDate || currentDate;
   const current = dayIndex(start, currentDate);
   const done = isReadingComplete({ completion }, location);
@@ -113,24 +132,34 @@ export default function App() {
     window.scrollTo({ top: 0 });
   }
   function go(next: AnyReadingLocation) {
+    intent.current++;
     setModeError("");
     locationState.go(next);
     navigate("read");
   }
   async function chooseTrack(track: ReadingTrack) {
+    const request = ++intent.current;
+    const before = latest.current;
     setModeError("");
     if (locationState.chooseMode(track)) {
       navigate("read");
       return;
     }
-    // A chronology opens on its first reading the first time.
+    // A chronology opens on its first reading the first time; its catalog
+    // may still be loading. Any later choice, navigation (including Back)
+    // or reader change wins over this one when it resolves.
+    const superseded = () =>
+      request !== intent.current ||
+      latest.current.navigation !== before.navigation ||
+      latest.current.switches !== before.switches;
     const testament = track === "chrono:OT" ? "OT" : "NT";
     try {
       const catalog = await chronologyCatalogs.load(testament);
+      if (superseded()) return;
       if (locationState.chooseMode(track, firstChronologicalLocation(catalog)))
         navigate("read");
     } catch (err) {
-      setModeError((err as Error).message);
+      if (!superseded()) setModeError((err as Error).message);
     }
   }
   function openModal(next: Modal) {
@@ -141,6 +170,7 @@ export default function App() {
     setModal(null);
   }
   function chooseReader(id: string | null) {
+    intent.current++;
     if (!progress.select(id)) return;
     if (id === null) setModal({ kind: "join" });
     else closeModal();

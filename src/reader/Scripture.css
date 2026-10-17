@@ -68,10 +68,12 @@
   border-radius: 2px;
 }
 
+/* Compact: the first verse still begins within 200px of a 390x844 phone. */
 .audio-unavailable {
-  margin-block: 0 16px;
+  margin-block: 0 8px;
   color: var(--muted);
   font-size: 13px;
+  line-height: 1.6;
 }
 /* Paragraph and poetry starts: a new line with a little space, inside the
    flowing verses rather than a block per verse. */

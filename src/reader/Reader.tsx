@@ -163,7 +163,16 @@ export default function Reader({
       return;
     }
     if (!current) return;
-    const target = verseElement(0, location.verse);
+    // A chronological link names a verse number but not its occurrence: the
+    // first passage that contains it (canonical links have one passage).
+    const verse = location.verse;
+    const passage = Math.max(
+      0,
+      current.passages.findIndex(
+        (item) => verse >= item.start && verse <= item.end,
+      ),
+    );
+    const target = verseElement(passage, verse);
     if (!target) return;
     verseNumberButton(target)?.focus({ preventScroll: true });
     // Below the sticky toolbar, which grows with large text and zoom.

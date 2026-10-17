@@ -1,7 +1,9 @@
 import { test, expect, type Page } from "@playwright/test";
-import { PROGRESS_KEY } from "../../src/plan/progress.ts";
 import {
+  MODES,
   chooseFromMenu,
+  completeButton,
+  storedState,
   closeSheet,
   createGate,
   expectAccessible,
@@ -47,21 +49,21 @@ test("Bible menu mode opens 66 books and preserves plan progress and last locati
   );
   await page.goto("/");
   await ready(page);
-  const progress = await page.evaluate(
-    (key) => localStorage.getItem(key),
-    PROGRESS_KEY,
-  );
+  const completion = async () =>
+    (await storedState(page)).profiles.map(
+      (reader: { completion: unknown }) => reader.completion,
+    );
+  const progress = await completion();
   expect(requests).toEqual(["/readings/10.json"]);
-  await chooseFromMenu(page, "الكتاب المقدس");
+  await chooseFromMenu(page, MODES.bible);
   await ready(page);
   await expect(page.getByRole("article")).toHaveAttribute(
     "data-reading",
     "bible:GEN:1",
   );
   await expect(page.getByRole("article")).not.toHaveAttribute("data-day");
-  await expect(
-    page.getByRole("button", { name: "تمت القراءة", exact: true }),
-  ).toHaveCount(0);
+  // Each chapter has its own explicit completion; opening one records nothing.
+  await expect(completeButton(page)).toBeVisible();
   await expect(
     page.getByRole("button", { name: "الإصحاح السابق", exact: true }),
   ).toBeDisabled();
@@ -78,10 +80,10 @@ test("Bible menu mode opens 66 books and preserves plan progress and last locati
   await sheet.getByRole("combobox", { name: "السفر" }).selectOption("JHN");
   await sheet.getByRole("button", { name: "يوحنا ٣", exact: true }).click();
   await ready(page);
-  await chooseFromMenu(page, "خطة القراءة");
+  await chooseFromMenu(page, MODES.plan);
   await ready(page);
   await expect(page.getByRole("article")).toHaveAttribute("data-day", "10");
-  await chooseFromMenu(page, "الكتاب المقدس");
+  await chooseFromMenu(page, MODES.bible);
   await ready(page);
   await expect(page.getByRole("article")).toHaveAttribute(
     "data-reading",
@@ -93,9 +95,7 @@ test("Bible menu mode opens 66 books and preserves plan progress and last locati
     "data-reading",
     "bible:JHN:3",
   );
-  expect(
-    await page.evaluate((key) => localStorage.getItem(key), PROGRESS_KEY),
-  ).toBe(progress);
+  expect(await completion()).toEqual(progress);
   expect(requests.filter((path) => path.startsWith("/audio/"))).toEqual([]);
 });
 
@@ -133,7 +133,7 @@ test("canonical links jump below the sticky header and Back/Forward restore iden
   await page.goto("/?day=17");
   await ready(page);
   await expect(page.getByRole("article")).toHaveAttribute("data-day", "17");
-  await chooseFromMenu(page, "الكتاب المقدس");
+  await chooseFromMenu(page, MODES.bible);
   await ready(page);
   await chooseChapter(page, "JHN", "يوحنا ٣", "NT");
   await page
@@ -196,7 +196,7 @@ test("rapid chapter and mode changes ignore stale text; failed chapters retry", 
     "bible:GEN:3",
   );
   await expect(page.locator(".passage h2")).toHaveText(/التكوين.*٣/);
-  await chooseFromMenu(page, "خطة القراءة");
+  await chooseFromMenu(page, MODES.plan);
   await ready(page);
   await expect(page.getByRole("article")).toHaveAttribute("data-day", "1");
   let fail = true;
@@ -205,7 +205,7 @@ test("rapid chapter and mode changes ignore stale text; failed chapters retry", 
       ? route.fulfill({ status: 503, body: "unavailable" })
       : route.continue(),
   );
-  await chooseFromMenu(page, "الكتاب المقدس");
+  await chooseFromMenu(page, MODES.bible);
   await page
     .getByRole("button", { name: "الإصحاح التالي", exact: true })
     .click();
