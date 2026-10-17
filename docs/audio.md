@@ -264,6 +264,12 @@ the media pattern are handled; anything else passes through untouched.
   background. A `206`, a response carrying `Content-Range`, an error or a
   truncated body is never stored. The cache key is the path without its query
   string, so cache-busting parameters cannot multiply entries.
+- **Preconditions come first** (RFC 9110 order), checked against the file's own
+  ETag and `Last-Modified`, on cache hits, cold fills and whole-file/`HEAD`
+  answers alike: a failed `If-Match` or `If-Unmodified-Since` returns `412`; a
+  matching `If-None-Match` (weak comparison, `*`) or an unchanged
+  `If-Modified-Since` returns `304` with validators and no body. Pages is always
+  asked for the plain file, so its own `304` can never be sliced or cached.
 - `If-Range` keeps the range only for the same strong ETag or exact
   `Last-Modified`; anything else, including a weak ETag, gets the whole file.
 - `HEAD` and whole-file answers keep Pages' `Content-Length` and add

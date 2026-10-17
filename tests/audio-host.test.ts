@@ -378,3 +378,142 @@ test("Audio host handles unsatisfiable ranges, malformed ranges, HEAD and non-me
   assert.equal(other.headers.get("Accept-Ranges"), null);
   assert.equal(env.calls[0].headers.get("Range"), "bytes=0-1");
 });
+
+// The parent's probe: a Pages stand-in that itself answers a matching
+// If-None-Match with 304, and otherwise 200 with ETag "sample" and 4 bytes.
+function conditionalHost() {
+  const calls: Request[] = [];
+  return {
+    calls,
+    ASSETS: {
+      fetch: async (request: Request) => {
+        calls.push(request);
+        const headers = {
+          ETag: '"sample"',
+          "Last-Modified": LAST_MODIFIED,
+          "Content-Type": "audio/mp4",
+        };
+        if (request.headers.get("If-None-Match") === '"sample"')
+          return new Response(null, { status: 304, headers });
+        return new Response(
+          request.method === "HEAD" ? null : new Uint8Array([1, 2, 3, 4]),
+          { status: 200, headers: { ...headers, "Content-Length": "4" } },
+        );
+      },
+    },
+  };
+}
+const SAMPLE_PATH = "/audio/days/001-abcd.m4a";
+const BEFORE = "Tue, 13 Oct 2026 10:00:00 GMT";
+const AFTER = "Thu, 15 Oct 2026 10:00:00 GMT";
+
+test("Preconditions win over Range, cold and warm: 304 and 412 are never 206", async () => {
+  const cases: [Record<string, string>, number][] = [
+    [{ "If-None-Match": '"sample"' }, 304],
+    [{ "If-None-Match": 'W/"sample"' }, 304],
+    [{ "If-None-Match": '"other", "sample"' }, 304],
+    [{ "If-None-Match": "*" }, 304],
+    [{ "If-None-Match": '"other"' }, 206],
+    [{ "If-Modified-Since": LAST_MODIFIED }, 304],
+    [{ "If-Modified-Since": AFTER }, 304],
+    [{ "If-Modified-Since": BEFORE }, 206],
+    [{ "If-Modified-Since": "not a date" }, 206],
+    // If-None-Match takes precedence: a non-matching tag ignores the date.
+    [{ "If-None-Match": '"other"', "If-Modified-Since": AFTER }, 206],
+    [{ "If-Match": '"other"' }, 412],
+    [{ "If-Match": 'W/"sample"' }, 412],
+    [{ "If-Match": '"sample"' }, 206],
+    [{ "If-Match": "*" }, 206],
+    [{ "If-Unmodified-Since": BEFORE }, 412],
+    [{ "If-Unmodified-Since": AFTER }, 206],
+    // If-Match takes precedence over If-Unmodified-Since.
+    [{ "If-Match": '"sample"', "If-Unmodified-Since": BEFORE }, 206],
+    // A 304 precondition is evaluated before If-Range.
+    [{ "If-None-Match": '"sample"', "If-Range": '"changed"' }, 304],
+    [{ "If-Match": '"sample"', "If-Range": '"changed"' }, 200],
+  ];
+  for (const warm of [false, true])
+    for (const [headers, status] of cases) {
+      // A fresh colo cache per case: cold means nothing cached yet.
+      const cache = useCache();
+      const env = conditionalHost();
+      if (warm)
+        await serve(
+          { Range: "bytes=0-0" },
+          env as never,
+          context(),
+          SAMPLE_PATH,
+        );
+      const calls = env.calls.length;
+      const response = await serve(
+        { Range: "bytes=0-1", ...headers },
+        env as never,
+        context(),
+        SAMPLE_PATH,
+      );
+      const label = `${warm ? "warm" : "cold"} ${JSON.stringify(headers)}`;
+      assert.equal(response.status, status, label);
+      // Pages is asked for the plain file, so it never answers 304 itself.
+      for (const request of env.calls.slice(calls))
+        for (const name of [
+          "If-None-Match",
+          "If-Modified-Since",
+          "If-Match",
+          "Range",
+        ])
+          assert.equal(request.headers.get(name), null, `${label} ${name}`);
+      if (warm && status !== 200)
+        assert.equal(env.calls.length, calls, `${label} answered from cache`);
+      const body = new Uint8Array(await response.arrayBuffer());
+      if (status === 304 || status === 412) {
+        assert.equal(body.byteLength, 0, label);
+        assert.equal(response.headers.get("Content-Range"), null, label);
+        assert.equal(
+          response.headers.get("Vercel-CDN-Cache-Control"),
+          "no-store",
+        );
+        assert.equal(
+          response.headers.get("X-Audio-Cache"),
+          warm ? "HIT" : "MISS",
+        );
+      }
+      if (status === 304) {
+        assert.equal(response.headers.get("ETag"), '"sample"', label);
+        assert.match(response.headers.get("Cache-Control")!, /immutable/);
+      }
+      if (status === 412)
+        assert.equal(response.headers.get("Cache-Control"), "no-store", label);
+      if (status === 206) {
+        assert.equal(
+          response.headers.get("Content-Range"),
+          "bytes 0-1/4",
+          label,
+        );
+        assert.deepEqual(body, new Uint8Array([1, 2]), label);
+      }
+      // Only complete 200 responses were ever stored.
+      assert.ok(
+        cache.puts.every((put) => put.status === 200 && put.length === 4),
+      );
+    }
+});
+
+test("Whole-file and HEAD requests keep their preconditions too", async () => {
+  for (const method of ["GET", "HEAD"]) {
+    const send = async (headers: Record<string, string>) =>
+      worker.fetch(
+        request(headers, method, SAMPLE_PATH),
+        conditionalHost(),
+        context(),
+      );
+    // Pages' own 304 passes through untouched.
+    assert.equal((await send({ "If-None-Match": '"sample"' })).status, 304);
+    assert.equal((await send({ "If-Modified-Since": AFTER })).status, 304);
+    // Pages ignores If-Match; the handler must not.
+    assert.equal((await send({ "If-Match": '"other"' })).status, 412);
+    assert.equal((await send({ "If-Unmodified-Since": BEFORE })).status, 412);
+    const ok = await send({ "If-Match": '"sample"' });
+    assert.equal(ok.status, 200);
+    assert.equal(ok.headers.get("Accept-Ranges"), "bytes");
+  }
+});

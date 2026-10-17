@@ -48,6 +48,72 @@ function ifRangeMatches(validator, headers) {
   return !!modified && validator === modified;
 }
 
+const tags = (header) =>
+  header
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+const opaque = (tag) => tag.replace(/^W\//, "");
+const date = (value) => Date.parse(value || "");
+
+/**
+ * HTTP preconditions (RFC 9110 section 13.2.2), evaluated against the file's
+ * own validators before any Range: 412 for a failed If-Match or
+ * If-Unmodified-Since, 304 for a matching If-None-Match or an unchanged
+ * If-Modified-Since, otherwise 0. Pages is always asked for the plain file,
+ * so these are answered here, cold or warm.
+ */
+function precondition(request, headers) {
+  const etag = headers.get("ETag");
+  const modified = date(headers.get("Last-Modified"));
+  const match = request.headers.get("If-Match");
+  if (match !== null) {
+    const strong = !!etag && !etag.startsWith("W/");
+    if (match.trim() !== "*" && !(strong && tags(match).includes(etag)))
+      return 412;
+  } else {
+    const since = date(request.headers.get("If-Unmodified-Since"));
+    if (!Number.isNaN(since) && !Number.isNaN(modified) && modified > since)
+      return 412;
+  }
+  const none = request.headers.get("If-None-Match");
+  if (none !== null) {
+    if (
+      none.trim() === "*" ||
+      (!!etag && tags(none).some((tag) => opaque(tag) === opaque(etag)))
+    )
+      return 304;
+  } else {
+    const since = date(request.headers.get("If-Modified-Since"));
+    if (!Number.isNaN(since) && !Number.isNaN(modified) && modified <= since)
+      return 304;
+  }
+  return 0;
+}
+
+const CONDITIONALS = [
+  "If-Match",
+  "If-None-Match",
+  "If-Modified-Since",
+  "If-Unmodified-Since",
+];
+const conditional = (request) =>
+  CONDITIONALS.some((name) => request.headers.has(name));
+
+/** 304 or 412: validators and caching only, never a body or range. */
+function preconditionResponse(status, source, cache) {
+  const headers = new Headers();
+  for (const name of ["ETag", "Last-Modified"])
+    if (source.has(name)) headers.set(name, source.get(name));
+  headers.set(
+    "Cache-Control",
+    status === 304 ? AUDIO_CACHE_CONTROL : "no-store",
+  );
+  headers.set("Vercel-CDN-Cache-Control", "no-store");
+  if (cache) headers.set("X-Audio-Cache", cache);
+  return new Response(null, { status, headers });
+}
+
 function mediaHeaders(source) {
   const headers = new Headers(source);
   headers.delete("Content-Encoding");
@@ -99,17 +165,24 @@ const CONTENT_RANGE = /^bytes (\d+)-(\d+)\/(\d+)$/;
  * Serve a range from the colo cache, or undefined to fall back to the asset.
  * Only well-formed 206 and 416 answers for a complete cached file are used.
  */
-async function fromCache(cache, key, range, validator) {
+async function fromCache(cache, key, request) {
   let hit;
   try {
     hit = await cache.match(
-      new Request(key.url, { headers: { Range: range } }),
+      new Request(key.url, {
+        headers: { Range: request.headers.get("Range") },
+      }),
     );
   } catch {
     return undefined;
   }
   if (!hit) return undefined;
-  if (!ifRangeMatches(validator, hit.headers)) {
+  const failed = precondition(request, hit.headers);
+  if (failed) {
+    await hit.body?.cancel();
+    return preconditionResponse(failed, hit.headers, "HIT");
+  }
+  if (!ifRangeMatches(request.headers.get("If-Range"), hit.headers)) {
     // A changed validator asks for the whole current file; immutable media
     // makes this rare, so the asset answers it.
     await hit.body?.cancel();
@@ -154,6 +227,12 @@ export default {
       const response = await env.ASSETS.fetch(request);
       // Advertise range support on whole-file and HEAD answers too.
       if (!media || response.status !== 200) return response;
+      const failed =
+        conditional(request) && precondition(request, response.headers);
+      if (failed) {
+        await response.body?.cancel();
+        return preconditionResponse(failed, response.headers);
+      }
       return new Response(response.body, {
         status: 200,
         headers: mediaHeaders(response.headers),
@@ -164,17 +243,13 @@ export default {
     const cache = cacheStore();
     const key = cacheKey(url);
     if (cache) {
-      const hit = await fromCache(
-        cache,
-        key,
-        request.headers.get("Range"),
-        validator,
-      );
+      const hit = await fromCache(cache, key, request);
       if (hit) return hit;
     }
 
     // Ask Pages for the complete file: no Range or conditional headers, so a
     // 304 or partial answer can never be cached or sliced as the whole file.
+    // The client's preconditions are evaluated below against that file.
     const headers = new Headers(request.headers);
     for (const name of [
       "Range",
@@ -190,6 +265,11 @@ export default {
     );
     if (asset.status !== 200 || asset.headers.has("Content-Range"))
       return asset;
+    const failed = precondition(request, asset.headers);
+    if (failed) {
+      await asset.body?.cancel();
+      return preconditionResponse(failed, asset.headers, "MISS");
+    }
     if (!ifRangeMatches(validator, asset.headers)) return asset;
     const declared = asset.headers.get("Content-Length");
     // Refuse to buffer more than the bundle cap; the whole file is valid HTTP.
