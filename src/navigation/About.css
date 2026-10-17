@@ -43,7 +43,7 @@
 }
 .about-contact-label {
   color: var(--muted);
-  font-size: 13px;
+  font-size: 12px;
 }
 .about-contacts {
   display: grid;
@@ -51,6 +51,8 @@
   margin: 0 0 24px;
   padding: 0;
   list-style: none;
+  color: var(--muted);
+  font-size: 12px;
 }
 .about-contacts li {
   display: flex;
@@ -61,13 +63,14 @@
 }
 .about-contacts span {
   color: var(--muted);
-  font-size: 13px;
+  font-size: inherit;
 }
 .about-contacts a {
   display: inline-block;
   min-height: 44px;
   padding-block: 7px;
   overflow-wrap: anywhere;
+  font-size: inherit;
 }
 .about-content .about-rights {
   margin-bottom: 0;
