@@ -1,43 +1,41 @@
-import { useEffect, useEffectEvent, type RefObject } from "react";
-import { stepCueIndex, type AudioManifest } from "./manifest";
+import { useEffect, useEffectEvent } from "react";
+import { stepCueIndex, type Timeline } from "./manifest";
 import appIcon from "../assets/favicon.svg";
 
 type MediaSessionOptions = {
-  manifest: AudioManifest | undefined;
+  timeline: Timeline | undefined;
   title: string;
-  audio: RefObject<HTMLAudioElement | null>;
   playing: boolean;
   time: number;
   rate: number;
   play: () => Promise<void>;
   pause: () => void;
-  seek: (index: number) => void;
+  /** Seek on the reading timeline. */
+  seekTo: (seconds: number) => void;
   onClose: () => void;
 };
 
 /** Lock-screen metadata, transport controls and position for the audio. */
 export function useMediaSession({
-  manifest,
+  timeline,
   title,
-  audio,
   playing,
   time,
   rate,
   play,
   pause,
-  seek,
+  seekTo,
   onClose,
 }: MediaSessionOptions) {
-  const stepCue = useEffectEvent((manifest: AudioManifest, step: number) =>
-    seek(stepCueIndex(manifest, audio.current?.currentTime || 0, step)),
-  );
-  const seekTo = useEffectEvent((manifest: AudioManifest, seconds: number) => {
-    if (audio.current)
-      audio.current.currentTime = Math.max(
-        0,
-        Math.min(seconds, manifest.duration),
-      );
+  const stepCue = useEffectEvent((timeline: Timeline, step: number) => {
+    const { cues } = timeline;
+    if (!cues.length) return;
+    const index = stepCueIndex(timeline, time, step);
+    seekTo(cues[Math.max(0, Math.min(index, cues.length - 1))].start);
   });
+  const scrub = useEffectEvent((timeline: Timeline, seconds: number) =>
+    seekTo(Math.max(0, Math.min(seconds, timeline.duration))),
+  );
   const resume = useEffectEvent(() => void play());
   const stop = useEffectEvent(() => {
     pause();
@@ -46,7 +44,7 @@ export function useMediaSession({
   const halt = useEffectEvent(pause);
 
   useEffect(() => {
-    if (!("mediaSession" in navigator) || !manifest) return;
+    if (!("mediaSession" in navigator) || !timeline) return;
     const session = navigator.mediaSession;
     session.metadata = new MediaMetadata({
       title,
@@ -59,10 +57,10 @@ export function useMediaSession({
     > = {
       play: () => resume(),
       pause: () => halt(),
-      previoustrack: () => stepCue(manifest, -1),
-      nexttrack: () => stepCue(manifest, 1),
+      previoustrack: () => stepCue(timeline, -1),
+      nexttrack: () => stepCue(timeline, 1),
       seekto: (details) => {
-        if (details.seekTime !== undefined) seekTo(manifest, details.seekTime);
+        if (details.seekTime !== undefined) scrub(timeline, details.seekTime);
       },
       stop: () => stop(),
     };
@@ -84,19 +82,19 @@ export function useMediaSession({
       session.metadata = null;
       session.playbackState = "none";
     };
-  }, [manifest, title]);
+  }, [timeline, title]);
 
   useEffect(() => {
-    if (!("mediaSession" in navigator) || !manifest) return;
+    if (!("mediaSession" in navigator) || !timeline) return;
     navigator.mediaSession.playbackState = playing ? "playing" : "paused";
     try {
       navigator.mediaSession.setPositionState({
-        duration: manifest.duration,
+        duration: timeline.duration,
         playbackRate: rate,
-        position: Math.min(time, manifest.duration),
+        position: Math.min(time, timeline.duration),
       });
     } catch {
       /* Older browsers omit position-state support. */
     }
-  }, [playing, time, rate, manifest]);
+  }, [playing, time, rate, timeline]);
 }

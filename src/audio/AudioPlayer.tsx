@@ -1,15 +1,32 @@
-import type { ScriptureReading } from "../bible/types";
+import {
+  isBibleChapter,
+  isChronologicalReading,
+  type AnyReadingLocation,
+  type AnyScriptureReading,
+} from "../bible/types";
 import { chapterVerse } from "../bible/reference";
 import { dayLabel } from "../plan/labels";
 import { ar } from "../lib/format";
 import AudioControls from "./AudioControls";
-import { activeCueIndex, announcementAt, stepCueIndex } from "./manifest";
+import {
+  activeCueIndex,
+  announcementAt,
+  entryAt,
+  stepCueIndex,
+} from "./manifest";
 import { nextRate } from "./speed.ts";
 import { useAudioManifest } from "./useAudioManifest";
 import { useMediaElement } from "./useMediaElement";
 import { useMediaSession } from "./useMediaSession";
+import { useNextManifest } from "./useNextManifest";
 import { usePauseOnDialog } from "./usePauseOnDialog";
 import { useVerseHighlight } from "./useVerseHighlight";
+
+function readingTitle(reading: AnyScriptureReading) {
+  if (isChronologicalReading(reading)) return reading.title;
+  if (isBibleChapter(reading)) return `${reading.book} ${ar(reading.chapter)}`;
+  return dayLabel(reading.day);
+}
 
 export default function AudioPlayer({
   reading,
@@ -17,46 +34,62 @@ export default function AudioPlayer({
   onEnded,
   initialTime = 0,
   onPosition,
+  next,
 }: {
-  reading: ScriptureReading;
+  reading: AnyScriptureReading;
   onClose: () => void;
   /** Only the parent may opt into an ended handoff; manual navigation unmounts. */
   onEnded?: () => void;
   initialTime?: number | ((source: string) => number);
   onPosition?: (seconds: number, source: string) => void;
+  /** The continuation target, whose timing JSON may be fetched once playing. */
+  next?: AnyReadingLocation;
 }) {
-  const { manifest, error: loadError, retry } = useAudioManifest(reading);
-  const media = useMediaElement(manifest, { initialTime, onEnded, onPosition });
-  const { playing, waiting, time, rate, play, pause, seek } = media;
-  const index = manifest ? activeCueIndex(manifest, time) : -1;
-  const cue = manifest?.cues[index];
-  const announcement = manifest && announcementAt(manifest, time);
-  const passage = reading.passages[announcement?.passage ?? cue?.passage ?? 0];
+  const { timeline, error: loadError, retry } = useAudioManifest(reading);
+  const media = useMediaElement(timeline, { initialTime, onEnded, onPosition });
+  const { playing, waiting, time, rate, play, pause, seekTo } = media;
+  useNextManifest(next, playing);
+  const index = timeline ? activeCueIndex(timeline, time) : -1;
+  const cue = timeline?.cues[index];
+  const announcement = timeline && announcementAt(timeline, time);
+  // A playlist entry is its reading passage; one file may hold several.
+  const entryIndex = timeline ? entryAt(timeline, time) : 0;
+  const entry = timeline?.entries[entryIndex];
+  const passage =
+    reading.passages[
+      announcement?.passage ??
+        cue?.passage ??
+        ((timeline?.entries.length ?? 0) > 1 ? entryIndex : 0)
+    ];
   // A recording's own opening is labelled by the chapter reference below; only
   // inserted spoken references have reviewed display text.
   const detail =
     announcement?.kind === "reference"
       ? announcement.reference
-      : manifest?.version === 2 && manifest.alignment === "chapter"
+      : entry?.alignment === "chapter"
         ? "تسجيل الإصحاح دون تتبع الآيات"
         : undefined;
-  const label =
-    "day" in reading
-      ? dayLabel(reading.day)
-      : `${reading.book} ${ar(reading.chapter)}`;
+  const label = readingTitle(reading);
+  const step = (direction: number) => {
+    if (!timeline?.cues.length) return;
+    const target = stepCueIndex(timeline, time, direction);
+    seekTo(
+      timeline.cues[Math.max(0, Math.min(target, timeline.cues.length - 1))]
+        .start,
+    );
+  };
 
   usePauseOnDialog(pause);
   useVerseHighlight(cue, playing);
   useMediaSession({
-    manifest,
+    timeline,
     title: label,
-    audio: media.audio,
     playing,
     time,
     rate,
     play,
     pause,
-    seek,
+    seekTo,
     onClose,
   });
 
@@ -72,22 +105,22 @@ export default function AudioPlayer({
             : ar(passage.chapter),
         }
       }
-      ready={!!manifest}
+      ready={!!timeline}
       cueIndex={index}
-      cueCount={manifest?.cues.length ?? 0}
-      canPrevious={!!manifest && stepCueIndex(manifest, time, -1) >= 0}
+      cueCount={timeline?.cues.length ?? 0}
+      canPrevious={!!timeline && stepCueIndex(timeline, time, -1) >= 0}
       active={playing || waiting}
       rate={rate}
       time={time}
-      duration={manifest?.duration ?? 0}
+      duration={timeline?.duration ?? 0}
       error={media.error || loadError || ""}
       waiting={waiting}
-      onPrevious={() => manifest && seek(stepCueIndex(manifest, time, -1))}
+      onPrevious={() => step(-1)}
       onToggle={() => (playing || waiting ? pause() : void play())}
-      onNext={() => manifest && seek(stepCueIndex(manifest, time, 1))}
+      onNext={() => step(1)}
       onRate={() => media.setRate(nextRate(rate))}
       onRetry={() => {
-        if (manifest) void play();
+        if (timeline) void play();
         else {
           media.clearError();
           retry();
