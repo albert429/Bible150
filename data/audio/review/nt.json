@@ -1,0 +1,206 @@
+{
+  "version": 1,
+  "method": "machine review only (hashes, bounds, score, speech rate); not listening review",
+  "thresholds": {
+    "minScore": 0.3,
+    "rateLettersPerSecond": [
+      2.02,
+      10.81
+    ],
+    "openingSeconds": 60.0,
+    "trailerSeconds": 90.0
+  },
+  "chapters": {
+    "pass": 240,
+    "flagged": 20,
+    "rejected": 0
+  },
+  "verses": 7959,
+  "flaggedVerses": 21,
+  "flags": {
+    "1TH-1": {
+      "flags": {
+        "4": [
+          "implausible-rate"
+        ]
+      },
+      "notes": [],
+      "minScore": 0.5565
+    },
+    "ACT-12": {
+      "flags": {
+        "22": [
+          "low-score"
+        ]
+      },
+      "notes": [],
+      "minScore": 0.2675
+    },
+    "ACT-15": {
+      "flags": {
+        "6": [
+          "implausible-rate"
+        ]
+      },
+      "notes": [],
+      "minScore": 0.4986
+    },
+    "ACT-23": {
+      "flags": {
+        "13": [
+          "implausible-rate"
+        ]
+      },
+      "notes": [],
+      "minScore": 0.5318
+    },
+    "ACT-25": {
+      "flags": {
+        "17": [
+          "implausible-rate"
+        ]
+      },
+      "notes": [],
+      "minScore": 0.5539
+    },
+    "ACT-7": {
+      "flags": {
+        "28": [
+          "implausible-rate"
+        ]
+      },
+      "notes": [],
+      "minScore": 0.5236
+    },
+    "JAS-1": {
+      "flags": {
+        "16": [
+          "implausible-rate"
+        ]
+      },
+      "notes": [],
+      "minScore": 0.5182
+    },
+    "JAS-4": {
+      "flags": {
+        "10": [
+          "implausible-rate"
+        ]
+      },
+      "notes": [],
+      "minScore": 0.5341
+    },
+    "JHN-11": {
+      "flags": {
+        "48": [
+          "implausible-rate"
+        ]
+      },
+      "notes": [],
+      "minScore": 0.4649
+    },
+    "JHN-12": {
+      "flags": {
+        "5": [
+          "implausible-rate"
+        ]
+      },
+      "notes": [],
+      "minScore": 0.3567
+    },
+    "JHN-4": {
+      "flags": {
+        "20": [
+          "implausible-rate"
+        ]
+      },
+      "notes": [],
+      "minScore": 0.5424
+    },
+    "JHN-9": {
+      "flags": {
+        "33": [
+          "implausible-rate"
+        ]
+      },
+      "notes": [],
+      "minScore": 0.4703
+    },
+    "LUK-19": {
+      "flags": {
+        "38": [
+          "low-score"
+        ]
+      },
+      "notes": [],
+      "minScore": 0.2219
+    },
+    "LUK-2": {
+      "flags": {
+        "14": [
+          "low-score"
+        ]
+      },
+      "notes": [],
+      "minScore": 0.2549
+    },
+    "LUK-8": {
+      "flags": {
+        "28": [
+          "low-score"
+        ]
+      },
+      "notes": [],
+      "minScore": 0.2526
+    },
+    "MRK-1": {
+      "flags": {
+        "24": [
+          "low-score"
+        ]
+      },
+      "notes": [],
+      "minScore": 0.0706
+    },
+    "MRK-11": {
+      "flags": {
+        "10": [
+          "low-score"
+        ]
+      },
+      "notes": [],
+      "minScore": 0.0063
+    },
+    "MRK-5": {
+      "flags": {
+        "9": [
+          "low-score"
+        ]
+      },
+      "notes": [],
+      "minScore": 0.2868
+    },
+    "MRK-6": {
+      "flags": {
+        "12": [
+          "implausible-rate"
+        ],
+        "36": [
+          "implausible-rate"
+        ]
+      },
+      "notes": [],
+      "minScore": 0.3825
+    },
+    "REV-22": {
+      "flags": {
+        "17": [
+          "low-score"
+        ]
+      },
+      "notes": [],
+      "minScore": 0.0087
+    }
+  },
+  "rejected": {}
+}

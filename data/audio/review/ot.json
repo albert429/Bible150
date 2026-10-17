@@ -1,0 +1,196 @@
+{
+  "version": 1,
+  "method": "machine review only (hashes, bounds, score, speech rate); not listening review",
+  "thresholds": {
+    "minScore": 0.3,
+    "rateLettersPerSecond": [
+      1.68,
+      9.62
+    ],
+    "openingSeconds": 60.0,
+    "trailerSeconds": 90.0
+  },
+  "chapters": {
+    "pass": 910,
+    "flagged": 19,
+    "rejected": 0
+  },
+  "verses": 23145,
+  "flaggedVerses": 18,
+  "flags": {
+    "1CH-14": {
+      "flags": {
+        "13": [
+          "implausible-rate"
+        ]
+      },
+      "notes": [],
+      "minScore": 0.5009
+    },
+    "1CH-6": {
+      "flags": {
+        "47": [
+          "implausible-rate"
+        ]
+      },
+      "notes": [],
+      "minScore": 0.4706
+    },
+    "1KI-7": {
+      "flags": {
+        "43": [
+          "implausible-rate"
+        ]
+      },
+      "notes": [],
+      "minScore": 0.4876
+    },
+    "2CH-6": {
+      "flags": {
+        "7": [
+          "low-score",
+          "implausible-rate"
+        ]
+      },
+      "notes": [],
+      "minScore": 0.1092
+    },
+    "DEU-25": {
+      "flags": {
+        "4": [
+          "low-score"
+        ]
+      },
+      "notes": [],
+      "minScore": 0.2979
+    },
+    "EZK-33": {
+      "flags": {
+        "28": [
+          "low-score",
+          "implausible-rate"
+        ]
+      },
+      "notes": [],
+      "minScore": 0.0182
+    },
+    "GEN-27": {
+      "flags": {
+        "43": [
+          "implausible-rate"
+        ]
+      },
+      "notes": [],
+      "minScore": 0.5016
+    },
+    "GEN-4": {
+      "flags": {
+        "13": [
+          "implausible-rate"
+        ]
+      },
+      "notes": [],
+      "minScore": 0.5174
+    },
+    "GEN-5": {
+      "flags": {
+        "6": [
+          "low-score"
+        ]
+      },
+      "notes": [],
+      "minScore": 0.2405
+    },
+    "JER-11": {
+      "flags": {
+        "1": [
+          "low-score"
+        ]
+      },
+      "notes": [],
+      "minScore": 0.0751
+    },
+    "JOB-36": {
+      "flags": {},
+      "notes": [
+        "trailer 204.4s"
+      ],
+      "minScore": 0.5255
+    },
+    "LEV-16": {
+      "flags": {
+        "5": [
+          "implausible-rate"
+        ]
+      },
+      "notes": [],
+      "minScore": 0.4841
+    },
+    "NEH-7": {
+      "flags": {
+        "40": [
+          "low-score"
+        ]
+      },
+      "notes": [],
+      "minScore": 0.2621
+    },
+    "NUM-15": {
+      "flags": {
+        "7": [
+          "implausible-rate"
+        ]
+      },
+      "notes": [],
+      "minScore": 0.5381
+    },
+    "NUM-25": {
+      "flags": {
+        "17": [
+          "implausible-rate"
+        ]
+      },
+      "notes": [],
+      "minScore": 0.561
+    },
+    "NUM-33": {
+      "flags": {
+        "24": [
+          "implausible-rate"
+        ]
+      },
+      "notes": [],
+      "minScore": 0.5451
+    },
+    "PSA-120": {
+      "flags": {
+        "4": [
+          "low-score",
+          "implausible-rate"
+        ]
+      },
+      "notes": [],
+      "minScore": 0.0781
+    },
+    "PSA-72": {
+      "flags": {
+        "20": [
+          "low-score"
+        ]
+      },
+      "notes": [],
+      "minScore": 0.0
+    },
+    "ZEP-3": {
+      "flags": {
+        "3": [
+          "low-score",
+          "implausible-rate"
+        ]
+      },
+      "notes": [],
+      "minScore": 0.0306
+    }
+  },
+  "rejected": {}
+}

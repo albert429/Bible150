@@ -61,5 +61,19 @@ export function buildAudioIndex({ out, root = ROOT }) {
       );
     }
   }
-  return `Prepared ${days.length} audio manifests and ${chapters.length} chapter manifests (recordings are hosted separately).`;
+  const readingCatalog = join(root, "data/audio/reading-catalog.json");
+  const readings = existsSync(readingCatalog)
+    ? read("data/audio/reading-catalog.json").readings
+    : [];
+  for (const identity of readings) {
+    const [, testament, id] = identity.split(":");
+    const manifest = read(`data/audio/readings/${testament}/${id}.json`);
+    if (!validManifest(manifest, identity))
+      throw new Error(`Audio playlist for ${identity} is malformed.`);
+    // Written beside the others; vite.config.ts drops any it does not advertise.
+    const directory = join(out, "chrono", testament);
+    mkdirSync(directory, { recursive: true });
+    writeFileSync(join(directory, `${id}.json`), JSON.stringify(manifest));
+  }
+  return `Prepared ${days.length} audio manifests, ${chapters.length} chapter manifests and ${readings.length} reading playlists (recordings are hosted separately).`;
 }

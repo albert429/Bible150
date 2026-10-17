@@ -80,6 +80,39 @@ on an Apple-silicon Mac and still needs listening review before publication.
 Keep the 2.2 GB of chapter media outside `public/` (Vite copies `public/` into
 every local build) and point `AUDIO_MEDIA_ROOT` at it when preparing the host.
 
+## Chronological readings (version-3 playlists)
+
+A chronological reading is several passages, so it is one **playlist** manifest
+(`data/audio/readings/<OT|NT>/<id>.json`, published at
+`/audio/chrono/<OT|NT>/<id>.json`; `data/audio/reading-catalog.json` lists the
+complete ones). Each entry carries its own immutable `src`, `duration`, cues
+and reference; the player lays them on one timeline and the browser's native
+`ended` event moves from file to file (no timers). The reading hash covers the
+displayed passages, so a changed text or chronology makes the manifest stale
+and the player refuses it.
+
+`scripts/build-reading-audio.py --chronology <public/chronology> --ot <OT> --nt <NT>`
+builds them offline, resume-safe and deterministic:
+
+- A passage that is a whole chapter reuses that chapter's published file and
+  timing unchanged.
+- A partial chapter becomes a **clip** `/audio/clips/<USFM>-<ch>-<from>-<to>-<hash>.m4a`
+  cut from the **original** recording (not from the canonical AAC) with the
+  canonical encoding. The cut is 0.25 s outside the verses, never past the
+  midpoint of the silence shared with the neighbouring verse. Identical ranges
+  share one file; the name fingerprints source, text, settings and cut points.
+- A clip needs verse alignment whose first, last and neighbouring verses pass
+  the machine review (`scripts/review-audio-alignments.py`: source and
+  transcript hashes, bounds, score >= 0.30, speech rate within 6 MADs of the
+  set). Otherwise the whole reading is **blocked** and listed with its reason
+  in `artifacts/audio-work/reading-audio-report.json`. Nothing is invented,
+  and a blocked reading shows no Listen button.
+
+The machine review is not listening review. The 929 Old Testament alignments
+(`data/audio/alignments/ot/`, MMS_FA, committed timings only) pass structurally;
+their review flags are in `data/audio/review/`. Whole-chapter OT playback stays
+chapter-only; its alignments only serve clip cuts.
+
 ## Spoken passage references
 
 `data/audio/reference-texts.json` holds a draft spoken reference for each of the
