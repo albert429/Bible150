@@ -6,7 +6,7 @@ import {
   lazy,
   Suspense,
 } from "react";
-import { chapterHasAudio } from "../audio/availability";
+import { readingHasAudio } from "../audio/availability";
 import { catalog } from "../bible/catalog";
 import { adjacentChapter, findBibleBook } from "../bible/navigation";
 import {
@@ -55,17 +55,6 @@ type Listening = {
   navigation: number;
   reading: AnyScriptureReading;
 };
-
-/**
- * Whether a published recording exists. Chronological readings stay silent
- * until the audio agent's playlist availability lands (readingHasAudio).
- */
-function hasAudio(location: AnyReadingLocation) {
-  if (location.mode === "plan") return __AUDIO_DAYS__.includes(location.day);
-  if (location.mode === "bible")
-    return chapterHasAudio(catalog, __AUDIO_CHAPTERS__, location);
-  return false;
-}
 
 /**
  * Verse study works per canonical chapter: a chronological passage is
@@ -184,17 +173,24 @@ export default function Reader({
       16;
     window.scrollTo({ top: Math.max(0, top), behavior: "instant" });
   }, [current, location.verse, navigation]);
-  const audio = hasAudio(location);
-  const playerReading = listening && (current || listening.reading);
-  function ended() {
-    if (playerSource.current) savePlaybackPosition(playerSource.current, 0);
-    if (!continuous || !playerReading) return;
+  const audio = readingHasAudio(location);
+  // The next canonical/chronological place, only when continuous listening is
+  // on and its recording is published; never crosses into another mode.
+  const nextLocation = (() => {
+    if (!continuous) return undefined;
     const next =
       location.mode === "bible"
         ? adjacentChapter(catalog, location, 1)
         : location.mode === "chronological" && chronology
           ? adjacentChronologicalLocation(chronology, location, 1)
           : undefined;
+    return next && readingHasAudio(next) ? next : undefined;
+  })();
+  const playerReading = listening && (current || listening.reading);
+  function ended() {
+    if (playerSource.current) savePlaybackPosition(playerSource.current, 0);
+    const next = nextLocation;
+    if (!playerReading) return;
     if (!next) return;
     setListening({
       continuing: true,
@@ -236,9 +232,8 @@ export default function Reader({
           <ChunkBoundary>
             <Suspense fallback={<Loading label="جارٍ فتح المشغل…" />}>
               <AudioPlayer
-                // Widened to AnyScriptureReading by the audio agent; only plan
-                // days and chapters reach the player until then (hasAudio).
-                reading={playerReading as ScriptureReading}
+                reading={playerReading}
+                next={nextLocation}
                 initialTime={(source) =>
                   listening.continuing ? 0 : playbackPosition(source)
                 }
