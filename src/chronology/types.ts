@@ -2,7 +2,7 @@
  * Pure contracts for the self-paced Old and New Testament chronologies.
  * Types only: catalogs and readings are fetched on demand, never imported.
  */
-import type { Testament } from "../bible/types.ts";
+import type { BibleBlock, Testament } from "../bible/types.ts";
 import type { Passage, PassageRef } from "../plan/readings.ts";
 
 /**
@@ -85,10 +85,15 @@ export type ChronologicalReadingDefinition = ChronologicalReadingSummary & {
   passages: PassageOccurrence[];
 };
 
-/** A fetched passage: the existing Scripture shape plus its occurrence. */
+/**
+ * A fetched passage: the existing Scripture shape plus its occurrence.
+ * `structure` holds the canonical chapter's blocks for verses start–end,
+ * unchanged (canonical verse numbers, codepoint offsets).
+ */
 export type ChronologicalPassage = Passage & {
   occurrenceId: string;
   provenance?: SourceProvenance;
+  structure?: BibleBlock[];
 };
 
 /**
