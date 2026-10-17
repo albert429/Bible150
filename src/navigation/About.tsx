@@ -20,7 +20,7 @@ export default function About() {
           />
         </div>
       </div>
-      <p className="about-contact-label">للمزيد من المعلومات</p>
+      <p className="about-contact-label">للشكاوى والاستفسارات</p>
       <ul className="about-contacts">
         <li>
           <span>البريد الإلكتروني</span>
