@@ -218,14 +218,16 @@ export function checkReview(source, review) {
 
 /**
  * One item per verse read, in order. `natural` marks a place a reading may
- * begin: a source group, a chapter start, or a section heading/acrostic that
- * starts the verse.
+ * begin, from canonical structure only: a chapter start, the verse after a
+ * chapter's last verse, or a section heading/acrostic that starts the verse.
+ * Source group (daily) boundaries are not breaks on their own.
  */
 export function verseSequence(occurrences, chapterOf) {
   const items = [];
-  let group;
+  let afterChapterEnd = false;
   for (const occurrence of occurrences) {
     const chapter = chapterOf(occurrence.usfm, occurrence.chapter);
+    const count = chapter.passages[0].verses.length;
     const sections = new Set(
       chapter.structure
         .filter(
@@ -236,18 +238,14 @@ export function verseSequence(occurrences, chapterOf) {
         .map((block) => block.verse),
     );
     for (let verse = occurrence.from; verse <= occurrence.to; verse++) {
-      const first = verse === occurrence.from;
       items.push({
         occurrence,
         verse,
         words: wordCount(chapter.passages[0].verses[verse - 1].text),
-        natural:
-          (first && occurrence.group !== group) ||
-          verse === 1 ||
-          sections.has(verse),
+        natural: afterChapterEnd || verse === 1 || sections.has(verse),
       });
+      afterChapterEnd = verse === count;
     }
-    group = occurrence.group;
   }
   return items;
 }
@@ -293,8 +291,7 @@ export function stageStarts(stages, items) {
  * Greedy grouping of items [start, end) into readings near `target` words.
  * Each break is the natural boundary whose running total is nearest the
  * target; on a tie the earlier boundary wins. `end` (a stage or substage
- * boundary) is always a break. A remainder under a quarter of the target
- * before `end` joins the reading before it if that stays within 1.5 targets.
+ * boundary) is always a break, so a stage may end with a short reading.
  */
 export function groupSegment(items, start, end, target = TARGET_WORDS) {
   const total = [0];
@@ -317,51 +314,74 @@ export function groupSegment(items, start, end, target = TARGET_WORDS) {
           ? under
           : after[over];
     }
-    if (
-      choice < end &&
-      words(choice, end) < target / 4 &&
-      words(s, end) <= target * 1.5
-    )
-      choice = end;
     ends.push(choice);
     s = choice;
   }
   return ends;
 }
 
-/** «التكوين ١–٣؛ أخبار الأيام الأول ١: ١–٤» for a reading's passages. */
+/**
+ * Exact verses read, per book in order of first appearance, as contiguous
+ * runs: «التكوين ١١: ٢٧–٣١، ١٢–١٤؛ أخبار الأيام الأول ١: ٥–٧». Gaps are never
+ * bridged; a title over 200 characters ends with «…» instead.
+ */
 export function readingTitle(passages) {
   const byBook = new Map();
   for (const p of passages) {
-    if (!byBook.has(p.usfm)) byBook.set(p.usfm, []);
-    byBook.get(p.usfm).push(p);
+    if (!byBook.has(p.usfm)) byBook.set(p.usfm, new Set());
+    const verses = byBook.get(p.usfm);
+    for (let v = p.from; v <= p.to; v++) verses.add(p.chapter * 1000 + v);
   }
-  const parts = [...byBook].map(([usfm, list]) => {
+  const parts = [...byBook].map(([usfm, set]) => {
     const book = bookOf.get(usfm);
-    const chapters = [...new Set(list.map((p) => p.chapter))].sort(
-      (a, b) => a - b,
-    );
-    if (chapters.length === 1) {
-      const covered = new Set();
-      for (const p of list) for (let v = p.from; v <= p.to; v++) covered.add(v);
-      const count = book.verseCounts[chapters[0] - 1];
-      if (covered.size === count) return `${book.name} ${ar(chapters[0])}`;
-      const from = Math.min(...covered);
-      const to = Math.max(...covered);
-      return `${book.name} ${ar(chapters[0])}: ${from === to ? ar(from) : `${ar(from)}–${ar(to)}`}`;
-    }
+    const last = (chapter) => book.verseCounts[chapter - 1];
     const runs = [];
-    for (const c of chapters) {
-      const last = runs.at(-1);
-      if (last && last[1] === c - 1) last[1] = c;
-      else runs.push([c, c]);
+    for (const key of [...set].sort((a, b) => a - b)) {
+      const chapter = Math.floor(key / 1000);
+      const verse = key % 1000;
+      const run = runs.at(-1);
+      const follows =
+        run &&
+        ((run.c2 === chapter && run.v2 === verse - 1) ||
+          (run.c2 === chapter - 1 && run.v2 === last(run.c2) && verse === 1));
+      if (follows) Object.assign(run, { c2: chapter, v2: verse });
+      else runs.push({ c1: chapter, v1: verse, c2: chapter, v2: verse });
     }
-    return `${book.name} ${runs.map(([a, b]) => (a === b ? ar(a) : `${ar(a)}–${ar(b)}`)).join("، ")}`;
+    const chapters = (a, b) => (a === b ? ar(a) : `${ar(a)}–${ar(b)}`);
+    const verses = (c, a, b) =>
+      `${ar(c)}: ${a === b ? ar(a) : `${ar(a)}–${ar(b)}`}`;
+    const text = runs.map(({ c1, v1, c2, v2 }) => {
+      const wholeStart = v1 === 1;
+      const wholeEnd = v2 === last(c2);
+      if (wholeStart && wholeEnd) return chapters(c1, c2);
+      if (c1 === c2) return verses(c1, v1, v2);
+      // Split at whole-chapter edges: «١١٦–١١٨، ١١٩: ١–٦٤».
+      if (wholeStart) return `${chapters(c1, c2 - 1)}، ${verses(c2, 1, v2)}`;
+      if (wholeEnd)
+        return `${verses(c1, v1, last(c1))}، ${chapters(c1 + 1, c2)}`;
+      return `${ar(c1)}: ${ar(v1)}–${ar(c2)}: ${ar(v2)}`;
+    });
+    return { name: book.name, runs: text };
   });
-  let title = parts.join("؛ ");
-  for (let n = parts.length - 1; title.length > 200 && n > 0; n--)
-    title = `${parts.slice(0, n).join("؛ ")}؛ …`;
-  return title;
+  const render = (list) =>
+    list.map((p) => `${p.name} ${p.runs.join("، ")}`).join("؛ ");
+  const full = render(parts);
+  if (full.length <= 200) return full;
+  // Keep whole runs only, in order, and mark that more follows.
+  const kept = [];
+  for (const part of parts)
+    for (const run of part.runs) {
+      const next =
+        kept.at(-1)?.name === part.name
+          ? [
+              ...kept.slice(0, -1),
+              { ...kept.at(-1), runs: [...kept.at(-1).runs, run] },
+            ]
+          : [...kept, { name: part.name, runs: [run] }];
+      if (render(next).length + 2 > 200) return `${render(kept)} …`;
+      kept.splice(0, kept.length, ...next);
+    }
+  return full;
 }
 
 const groupLabel = (groups) => {

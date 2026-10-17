@@ -10,7 +10,10 @@ import {
   prepareChronology,
   readingTitle,
   sourceOccurrences,
+  verseSequence,
 } from "../scripts/build-chronology.js";
+import { readBibleChapters } from "../scripts/build-bible.js";
+import type { BibleChapter } from "../src/bible/types.ts";
 import { catalog as books } from "../src/bible/catalog.ts";
 import type { Day } from "../src/plan/readings.ts";
 import type {
@@ -240,11 +243,11 @@ test("Reading ids are stable slugs, unique per testament, and regeneration is id
       .slice(0, 16);
   assert.deepEqual(
     [ot.catalog.readings.length, nt.catalog.readings.length],
-    [411, 139],
+    [412, 141],
   );
   assert.deepEqual(
     [digest(ot), digest(nt)],
-    ["43226de0a5b4cf62", "a2cd988034772899"],
+    ["4399a8dea286269c", "e50549a12430635c"],
   );
 });
 
@@ -291,10 +294,110 @@ test("Grouping picks the boundary nearest the target and the earlier one on a ti
   );
   // The segment end (a stage boundary) is always a break.
   assert.deepEqual(groupSegment(items([300, 300, 300]), 0, 2, 800), [2]);
-  // A remainder under a quarter of the target joins the reading before it.
-  assert.deepEqual(groupSegment(items([800, 150]), 0, 2, 800), [2]);
-  assert.deepEqual(groupSegment(items([800, 250]), 0, 2, 800), [1, 2]);
+  // A small remainder before a stage end cannot override the closest or
+  // tied-earlier boundary: the stage may end with a short reading.
+  assert.deepEqual(groupSegment(items([800, 150]), 0, 2, 800), [1, 2]);
+  assert.deepEqual(groupSegment(items([700, 100, 100]), 0, 3, 800), [2, 3]);
+  assert.deepEqual(groupSegment(items([700, 200, 50]), 0, 3, 800), [1, 3]);
   assert.equal(TARGET_WORDS, 800);
+});
+
+const chapter = (verses: number, sections: number[] = []) => ({
+  passages: [
+    {
+      verses: Array.from({ length: verses }, (_, i) => ({
+        number: i + 1,
+        text: "كلمة كلمة",
+      })),
+    },
+  ],
+  structure: sections.map((verse) => ({
+    kind: "heading",
+    marker: "s1",
+    text: "عنوان",
+    verse,
+    offset: 0,
+  })),
+});
+const occurrence = (
+  id: string,
+  group: number,
+  usfm: string,
+  ch: number,
+  from: number,
+  to: number,
+) => ({ id, group, usfm, chapter: ch, from, to });
+
+test("Source day/group boundaries are not breaks; chapter ends and sections are", () => {
+  const chapters: Record<string, ReturnType<typeof chapter>> = {
+    "A:1": chapter(10, [6]),
+    "A:2": chapter(10),
+    "B:1": chapter(20),
+  };
+  const sequence = verseSequence(
+    [
+      // Group 1 ends mid-chapter at A 2:4; group 2 continues at A 2:5.
+      occurrence("g001-1", 1, "A", 1, 1, 10),
+      occurrence("g001-2", 1, "A", 2, 1, 4),
+      occurrence("g002-1", 2, "A", 2, 5, 8),
+      // After A 2:8 (not a chapter end), B 1:5 begins mid-chapter.
+      occurrence("g002-2", 2, "B", 1, 5, 9),
+      // After the chapter end A 1:10, B 1:12 may begin a reading.
+      occurrence("g003-1", 3, "A", 1, 10, 10),
+      occurrence("g003-2", 3, "B", 1, 12, 13),
+    ],
+    (usfm: string, ch: number) => chapters[`${usfm}:${ch}`],
+  );
+  const natural = sequence
+    .filter((item: { natural: boolean }) => item.natural)
+    .map(
+      (item: {
+        occurrence: { usfm: string; chapter: number };
+        verse: number;
+      }) => `${item.occurrence.usfm} ${item.occurrence.chapter}:${item.verse}`,
+    );
+  assert.deepEqual(natural, ["A 1:1", "A 1:6", "A 2:1", "B 1:12"]);
+});
+
+test("No real reading starts at a bare source-group boundary", () => {
+  const canonical = new Map(
+    readBibleChapters(root).map((c: BibleChapter) => [
+      `${c.usfm}:${c.chapter}`,
+      c,
+    ]),
+  );
+  const forced = new Set(
+    [ot, nt].flatMap((p) =>
+      p.catalog.stages.flatMap((s) =>
+        (s.substages ?? [s]).map(
+          (sub) =>
+            p.catalog.readings.find((r) =>
+              s.substages ? r.substageId === sub.id : r.stageId === s.id,
+            )!.id,
+        ),
+      ),
+    ),
+  );
+  for (const p of [ot, nt])
+    p.definitions.forEach((d, i) => {
+      if (forced.has(d.id)) return;
+      const first = d.passages[0];
+      const before = p.definitions[i - 1].passages.at(-1)!;
+      const previous = canonical.get(`${before.usfm}:${before.chapter}`)!;
+      const own = canonical.get(`${first.usfm}:${first.chapter}`)!;
+      const section = own.structure.some(
+        (b) =>
+          (b.kind === "heading" || b.kind === "acrostic") &&
+          b.offset === 0 &&
+          b.verse === first.from,
+      );
+      assert.ok(
+        first.from === 1 || before.to === previous.verseCount || section,
+        `${d.id} starts at an artificial boundary`,
+      );
+    });
+  // Genesis 28:1-5 (group 9) and 28:6-22 (group 10) read continuously.
+  assert.ok(!ot.catalog.readings.some((r) => r.id === "gen-28-6"));
 });
 
 test("Titles summarize books and chapters in Arabic numerals", () => {
@@ -305,11 +408,30 @@ test("Titles summarize books and chapters in Arabic numerals", () => {
       { usfm: "GEN", chapter: 10, from: 6, to: 32 },
       { usfm: "GEN", chapter: 11, from: 1, to: 26 },
     ]),
-    "التكوين ١٠–١١؛ أخبار الأيام الأول ١: ٥–٧",
+    "التكوين ١٠، ١١: ١–٢٦؛ أخبار الأيام الأول ١: ٥–٧",
   );
   assert.equal(
     readingTitle([{ usfm: "PSA", chapter: 119, from: 1, to: 88 }]),
     "المزامير ١١٩: ١–٨٨",
+  );
+  // Disjoint ranges are listed exactly, never as one span with unread verses.
+  assert.equal(
+    readingTitle([
+      { usfm: "1SA", chapter: 13, from: 1, to: 5 },
+      { usfm: "1SA", chapter: 13, from: 19, to: 23 },
+      { usfm: "GEN", chapter: 11, from: 32, to: 32 },
+      { usfm: "GEN", chapter: 11, from: 27, to: 30 },
+    ]),
+    "صموئيل الأول ١٣: ١–٥، ١٣: ١٩–٢٣؛ التكوين ١١: ٢٧–٣٠، ١١: ٣٢",
+  );
+  assert.equal(
+    readingTitle([
+      { usfm: "PSA", chapter: 116, from: 1, to: 19 },
+      { usfm: "PSA", chapter: 117, from: 1, to: 2 },
+      { usfm: "PSA", chapter: 118, from: 1, to: 29 },
+      { usfm: "PSA", chapter: 119, from: 1, to: 64 },
+    ]),
+    "المزامير ١١٦–١١٨، ١١٩: ١–٦٤",
   );
 });
 

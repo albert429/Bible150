@@ -75,20 +75,28 @@ exception.
   the repository is the New Testament audio drama, at 82.3 words per minute
   over 260 chapters. Rounding down keeps the estimates slightly long.
   `estimatedMinutes` = words ÷ 80, rounded.
-- A reading may begin only at a natural boundary: the start of a source group,
-  the start of a chapter, or a section heading or acrostic at the start of a
-  verse. Verses are never split, and no reading crosses a stage or substage.
+- A reading may begin only at a canonical boundary: a chapter start, the
+  verse after a chapter's last verse (even when the source continues
+  mid-chapter elsewhere), or a section heading or acrostic at the start of a
+  verse. The source's own groups are daily divisions, not breaks: a passage
+  that continues across two groups (e.g. Genesis 28:1–5 and 28:6–22) is read
+  together. Verses are never split, and no reading crosses a stage or
+  substage; those ends are always breaks.
 - Each reading ends at the boundary nearest 800 words. On a tie, the earlier
-  boundary wins. A remainder under 200 words before a stage end joins the
-  previous reading if the result stays within 1,200 words.
+  boundary wins. Nothing overrides this rule, so a stage may end with a short
+  reading.
+- Titles list exactly the verses read, per book, as contiguous runs
+  («التكوين ١١: ٢٧–٣١، ١٢–١٤»). Gaps are never shown as one span. A title
+  over 200 characters ends with «…».
 - Reading ids are the first verse as a slug (`gen-1-1`, `1sa-8-1`). When a
   repeated passage starts a second reading at the same verse, the id gets a
   suffix (`num-7-1-2`). Ids are deterministic, and a test pins them; changing
   them affects saved places and completion.
 
-Result: 411 Old Testament readings and 139 New Testament readings. About 90%
-take 7–13 minutes. The range is 3–14 minutes; the shortest readings end a
-stage.
+Result: 412 Old Testament readings and 141 New Testament readings. Over 95%
+take 7–13 minutes; none is longer than 14. Readings under 5 minutes occur only
+at a stage or substage end, for example Joel 3:18–21 (1 minute), which ends
+the Old Testament.
 
 ## Audit (`npm test`: `tests/chronology*.test.ts`)
 
