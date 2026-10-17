@@ -4,24 +4,24 @@
 
 قراءة واستماع، بالترتيب المعتاد أو الزمني.
 
-An Arabic Bible reader with Scripture given almost the entire screen. Originally built for the youth of the **Brethren Church at Kholousy**, the app is expanding from its 150-day New Testament plan and whole-Bible reader into four reading choices.
+An Arabic Bible reader with Scripture given almost the entire screen. Originally built for the youth of the **Brethren Church at Kholousy**, the app offers four reading choices: the whole Bible, self-paced Old and New Testament chronologies, and the 150-day youth plan.
 
-The expanded release is **under integration**. The current app features below describe the existing reader; the [product guide](docs/product.md) describes the approved four-mode experience and its compatibility requirements.
+The four-mode release is **under integration and final testing**. See the [product guide](docs/product.md) for reading choices and compatibility, and the [chronology guide](docs/chronology.md) for the reviewed source audit.
 
 [Open the app](https://sfk-bible-reading.vercel.app/) · [Development guide](docs/development.md) · [Data sources](data/SOURCES.md)
 
 [![Checks](https://github.com/albert429/Bible150/actions/workflows/checks.yml/badge.svg)](https://github.com/albert429/Bible150/actions/workflows/checks.yml)
 
-## Current reader
+## Reading experience
 
 - One slim, sticky toolbar; the rest of the page is for reading.
 - Clear Arabic text in Amiri, adjustable from 22–38px, with light and dark themes.
 - Original passage order, Scripture section headings, verse numbers, and quick passage jumps.
-- Two reading modes in the menu: «خطة القراءة» (the 150-day plan) and «الكتاب المقدس» (all 66 books, Genesis to Revelation, with source section headings, Psalm titles and paragraphs). Each mode remembers its place; chapters have shareable links and work with Back/Forward.
-- A personal start date, a 150-day calendar, completion with undo, and multiple readers on one device.
-- Local progress, JSON backup/restore, and optional sharing initiated by the reader.
+- Four menu choices: «الكتاب المقدس» (66 books in the usual order), «العهد القديم بالترتيب الزمني» (412 self-paced readings), «العهد الجديد بالترتيب الزمني» (141 self-paced readings), and «العهد الجديد في ١٥٠ يومًا» — خطة شباب كنيسة الإخوة بخلوصي.
+- A fresh reader opens Genesis 1. Guests and named readers have independent places and explicit completion for each mode; passage links override saved places and support Back/Forward.
+- The youth plan keeps its personal start date and 150-day calendar. Version 2 JSON backups retain places and progress, with migration and import support for version 1 youth-plan data.
 - Static frontend hosting, daily reading caches, nearby readings prepared in the background, and secondary screens loaded on demand.
-- Optional recorded reading with a small audio player; recordings load only when requested. Daily readings and New Testament chapters highlight each verse; Old Testament chapters play without verse tracking for now. Bible mode can continue to the next chapter.
+- Optional listening through one native audio player, using 48 kbps mono AAC chapters, daily tracks, and chronology playlists. Media downloads start only after Listen; background audio prefetch is metadata-only.
 
 <p align="center">
   <img src="docs/assets/mobile-reader.png" width="300" alt="Actual mobile app: a slim Arabic day toolbar followed immediately by Scripture" />
@@ -59,13 +59,13 @@ npm start                           # Preview the production build on port 4173
 
 React, TypeScript, and Vite build a static `dist/` directory. Vercel settings are checked into `vercel.json`; use the Vite preset and `npm run build`. The app requires no backend, database, or public API.
 
-Progress and appearance preferences stay in the current browser. There is no automatic account sync or live group tracking. Backups contain the reader's name, start date, and completed days; keep them private. Readings need a network connection on their first fetch; the app does not currently provide persistent offline access.
+Progress and appearance preferences stay in the current browser. There is no automatic account sync or live group tracking. Backups contain the reader's name, start date, saved places, and completion records; keep them private. Readings need a network connection on their first fetch; the app does not currently provide persistent offline access.
 
 The optional AI explanations («اسأل الذكاء الاصطناعي») are off unless a deployment enables them. When a reader uses them, after a one-time notice, the verse, its context and any question they type go to OpenRouter and the model's provider, which may keep the text and train on it. The reader's name and progress are never sent. The key is public by design, so it is limited to free models and a $0 credit limit; see the [development guide](docs/development.md#ai-explanations-optional).
 
 See the [development guide](docs/development.md) for architecture, deployment troubleshooting, source regeneration, and performance checks. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before making changes.
 
-The existing audio pipeline supports separately hosted static audio: the New Testament is a dramatised Van Dyck recording and the Old Testament a non-dramatic one, both distributed by Faith Comes By Hearing (credits in the app's About and in [audio provenance](data/audio/SOURCES.md)). See the [audio guide](docs/audio.md) for local preparation, timing review, CDN setup, and free-tier bandwidth estimates. A normal Git-only deployment keeps audio hidden until media is available or an audio host is configured. Audio recording rights are separate from the public-domain Scripture text; consult the provenance and applicable recording terms.
+The existing audio pipeline supports separately hosted static audio: the New Testament is a dramatised Van Dyck recording and the Old Testament a non-dramatic one, both distributed by Faith Comes By Hearing (credits in the app's About and in [audio provenance](data/audio/SOURCES.md)). See the [audio guide](docs/audio.md) for local preparation, timing review, CDN setup, and free-tier bandwidth estimates. All 1,189 canonical chapter files are prepared and uploading; verification is not yet complete. Availability follows only the published inventory. Audio recording rights are separate from the public-domain Scripture text; consult the provenance and applicable recording terms.
 
 ## Scripture attribution and rights
 

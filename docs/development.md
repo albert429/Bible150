@@ -21,7 +21,7 @@
 | `data/bible/`                                         | Full Van Dyck source (66 books, structure), catalog and provenance (see `data/bible/SOURCES.md`)                           |
 | `data/study/`                                         | Imported study data (CC BY / CC BY-SA; see `data/study/LICENSE.md`)                                                        |
 | `data/audio/`                                         | Verse timing alignments and audio sources (see `data/audio/SOURCES.md`)                                                    |
-| `scripts/build-data.js`                               | Runs the four builders below into `public/` (`predev`/`prebuild`)                                                          |
+| `scripts/build-data.js`                               | Runs the static-data builders below into `public/` (`predev`/`prebuild`)                                                   |
 | `scripts/build-{readings,bible,study,audio-index}.js` | Split plan, 1,189 chapters, study data, and audio manifests into static JSON, with budgets; `scripts/lib/books.js` shared  |
 | `scripts/import*.py`, `extract-plan.py`, `usfm.py`    | Source extraction and importers, with coverage gates                                                                       |
 | `scripts/{align,build}-audio.py`, `audio_*.py`        | Alignment (NT/OT), daily build with optional spoken references; `scripts/tests/` holds the Python tests                    |
@@ -65,11 +65,11 @@ Visual and performance scripts expect a running `npm start`. `BASELINE_URL` opti
 
 ## State and privacy
 
-`nt-reading-progress-v1` stores profiles, the active reader, personal start dates, and completed days in localStorage. Backup imports create a separate profile. `word-font` and `word-dark` preserve appearance settings. Clearing site data or moving to another browser/domain requires restoring a saved backup to retain progress.
+`bible-reader-state-v2` stores independent places and explicit completion for the guest and each named reader across Bible, youth plan, Old Testament chronology and New Testament chronology. It migrates `nt-reading-progress-v1` and `bible-reader-location-v1`; new backups use version 2 and version 1 youth-plan backups remain importable as separate profiles. `bible-reader-audio-position-v1` retains listening positions by immutable media path. `word-font` and `word-dark` preserve appearance settings. Clearing site data or moving browsers/domains requires restoring a saved backup.
 
-`bible-reader-location-v1` remembers the reading mode, each reader's last plan day (by reader id; a reader without one opens on their scheduled day), the last Bible chapter and the continuous-listening choice. `bible-reader-audio-position-v1` remembers listening positions by immutable media path. Neither is part of backups, which keep their existing format, and neither changes completion records.
+A fresh reader opens Genesis 1; explicit URLs override saved places. Legacy `?day=N` and `?mode=bible&book=GEN&chapter=1&verse=1` links remain supported alongside chronology links. Navigation supports Back/Forward without marking a reading complete.
 
-Canonical chapters have static links, `/?mode=bible&book=GEN&chapter=1&verse=1`, and every navigation is a history entry, so Back and Forward move between days, chapters and modes. An explicit `?day=N` link opens that day and stays in the address bar until the reader moves; days reached in the app keep the bare URL, because without a web manifest a home-screen shortcut would otherwise always open one day. The chapter arrows stop at Genesis 1 and Revelation 22. The Bible catalog (book names and chapter and verse counts) is bundled for immediate link validation; chapter text loads one chapter at a time, with the same 500ms neighbour prefetch rules as days. Study opens for New Testament verses through the plan's study data; Old Testament verses say that no study is available, with no Hebrew data presented.
+`src/chronology/` loads reference-only reading definitions and slices canonical chapter text through the shared chapter cache. The reviewed output contains 412 Old Testament and 141 New Testament readings; source order, repetitions, the documented 1 Timothy 6:22 exception, and nearest natural chapter/section breaks are described in [chronology.md](chronology.md). `scripts/build-chronology.js` runs through the data build; keep that guide authoritative for regeneration and audit details.
 
 Schedules use Cairo dates. Catch-up and advance reading do not move a reader's start date. Daily JSON is cached in memory during the browser session, with concurrent requests deduplicated; failed requests can be retried. This is not a persistent offline/PWA implementation.
 
