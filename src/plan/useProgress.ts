@@ -12,6 +12,7 @@ import {
   emptyCompletion,
   setReadingCompletion,
   type GuestState,
+  type ReadOn,
   type ReaderProfile,
   type TrackCompletion,
 } from "./progress";
@@ -23,12 +24,15 @@ type Snapshot = {
   guest: GuestState;
   /** The active reader's completion: the member's, else the guest's. */
   completion: TrackCompletion;
+  /** When the active reader's completed readings were marked done. */
+  readOn: ReadOn;
   error: string;
   switches: number;
 };
 
 const listeners = new Set<() => void>();
 let snapshot: Snapshot | undefined;
+const NO_DATES: ReadOn = {};
 
 function read() {
   const state = loadProgress(localStorage);
@@ -38,6 +42,7 @@ function read() {
     member,
     guest: state.guest,
     completion: (member ?? state.guest).completion,
+    readOn: (member ?? state.guest).readOn ?? NO_DATES,
   };
 }
 function load(): Snapshot {
@@ -51,6 +56,7 @@ function load(): Snapshot {
       member: null,
       guest: { track: "bible", places: {}, completion: emptyCompletion() },
       completion: emptyCompletion(),
+      readOn: NO_DATES,
       error: (err as Error).message,
       switches: 0,
     };
