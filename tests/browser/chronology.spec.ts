@@ -65,12 +65,11 @@ test("a chronology opens on its first reading and moves reading by reading with 
   const previous = (await previousReading(page).boundingBox())!;
   const next = (await nextReading(page).boundingBox())!;
   expect(previous.x).toBeGreaterThan(next.x);
-  // No recording is published for chronological readings yet: say so and
-  // fetch nothing.
-  await expect(page.locator(".audio-unavailable")).toHaveText(
-    "التسجيل الصوتي غير متاح لهذه القراءة حاليًا.",
-  );
-  await expect(page.locator(".listen-button")).toHaveCount(0);
+  // gen-1-1 has a published recording: Listen is offered, and nothing is
+  // fetched until it is clicked (the test never clicks it).
+  await expect(page.locator(".listen-button")).toBeVisible();
+  await expect(page.locator(".audio-unavailable")).toHaveCount(0);
+  expect(audio).toEqual([]);
   await nextReading(page).click();
   await ready(page);
   await expect(article(page)).toHaveAttribute(
@@ -78,6 +77,11 @@ test("a chronology opens on its first reading and moves reading by reading with 
     reading("OT", "gen-2-1"),
   );
   expect(await page.evaluate(() => scrollY)).toBe(0);
+  // gen-2-1 has no published recording: say so and fetch nothing.
+  await expect(page.locator(".audio-unavailable")).toHaveText(
+    "التسجيل الصوتي غير متاح لهذه القراءة حاليًا.",
+  );
+  await expect(page.locator(".listen-button")).toHaveCount(0);
   for (let i = 0; i < 3; i++) await nextReading(page).click();
   await ready(page);
   await expect(article(page)).toHaveAttribute(
