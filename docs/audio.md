@@ -243,9 +243,11 @@ never caches proxied media itself; the browser and Cloudflare do.
 ## Current deployment: Vercel + Cloudflare Pages
 
 The 150 daily recordings live in the `bible-reading-audio` Pages project.
-The corrected canonical set (1,340 files) and the complete chronology set (2,435
-files) passed live byte-range verification and are recorded in
-`publication.json`. The all-audio build, with 553 playlists, 1,189 chapters and
+The complete release is 2,435 files in total (1,189 chapter recordings + 150
+daily + 1,095 clips + 1 superseded Job 36 file kept for rollback). All passed
+live byte-range verification and are recorded in `publication.json`. The earlier
+canonical-only release of 1,340 files was the 150 days, 1,189 chapters and that
+one rollback file. The all-audio build, with 553 playlists, 1,189 chapters and
 150 days enabled, is the [integration preview](https://chrono-bible-git-codex-full-bible-au-c41c98-albert429s-projects.vercel.app/); `main` and `dev` are
 untouched, so this is not a production release. Chrome playback of Genesis 1,
 Job 36 and youth day 1 passed, and Genesis 1 passed WebKit. A real Android
@@ -298,7 +300,7 @@ extra files (for example an older prepared inventory). Media roots are a
 hard-linked into the bundle when on the same disk (no 2.7 GB copy; `--copy`
 forces copies). Limits are checked: at most 8 MiB per file and 20,000 files per
 deployment. The earlier release was 1,339 files (150 days + 1,189 chapters); the
-corrected canonical set (1,340) and chronology set (2,435) supersede it.
+2,435-file release supersedes it.
 
 1. `AUDIO_MEDIA_ROOT=<daily root>:<chapter root> npm run audio:host:prepare`
 2. Deploy `artifacts/pages-audio` with
