@@ -121,12 +121,14 @@ test.describe("compact menu", () => {
       await expect(
         dialog.getByRole("heading", { name: "القراءة بالترتيب الزمني" }),
       ).toBeVisible();
-      await expect(modes.nth(1)).toContainText("بحسب وقتك");
-      await expect(modes.nth(2)).toContainText("بحسب وقتك");
+      await expect(modes.nth(1)).toContainText("بحسب الترتيب الزمني");
+      await expect(modes.nth(2)).toContainText("بحسب الترتيب الزمني");
       await expect(
-        dialog.getByRole("heading", { name: "خطة شباب الكنيسة" }),
+        dialog.getByRole("heading", { name: "خطة قراءة العهد الجديد" }),
       ).toBeVisible();
-      await expect(modes.nth(3)).toContainText("خطة شباب كنيسة الإخوة بخلوصي");
+      await expect(modes.nth(3)).toContainText(
+        "خطة يومية لقراءة العهد الجديد كاملًا",
+      );
       // The seeded reader is on the youth plan; that mode is current.
       await expect(modes.nth(3)).toHaveAttribute("aria-current", "page");
       await expect(

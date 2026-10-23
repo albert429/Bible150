@@ -7,7 +7,7 @@ export const TESTAMENT_NAMES: Record<Testament, string> = {
   NT: "العهد الجديد",
 };
 export const PLAN_NAME = "العهد الجديد في ١٥٠ يومًا";
-export const PLAN_OWNER = "خطة شباب كنيسة الإخوة بخلوصي";
+export const PLAN_SUBTITLE = "خطة يومية لقراءة العهد الجديد كاملًا";
 
 /** Each track's full name, for menus and accessible labels. */
 export const TRACK_NAMES: Record<ReadingTrack, string> = {

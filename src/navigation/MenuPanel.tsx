@@ -15,7 +15,12 @@ import { useProgress } from "../plan/useProgress";
 import { downloadBackup, readBackupFile } from "../plan/backup";
 import { ar } from "../lib/format";
 import { APP_INFO } from "../appInfo";
-import { PLAN_NAME, PLAN_OWNER, TESTAMENT_NAMES, TRACK_NAMES } from "./modes";
+import {
+  PLAN_NAME,
+  PLAN_SUBTITLE,
+  TESTAMENT_NAMES,
+  TRACK_NAMES,
+} from "./modes";
 import logo from "../assets/favicon.svg";
 import "./MenuPanel.css";
 
@@ -119,7 +124,7 @@ export default function MenuPanel({
               track={`chrono:${testament}`}
               current={track}
               label={TESTAMENT_NAMES[testament]}
-              detail="بحسب وقتك"
+              detail="بحسب الترتيب الزمني"
               icon={Hourglass}
               choose={choose}
             />
@@ -127,13 +132,13 @@ export default function MenuPanel({
         </section>
         <section aria-labelledby={planHeading}>
           <h3 className="menu-section" id={planHeading}>
-            خطة شباب الكنيسة
+            خطة قراءة العهد الجديد
           </h3>
           <ModeButton
             track="plan"
             current={track}
             label={PLAN_NAME}
-            detail={PLAN_OWNER}
+            detail={PLAN_SUBTITLE}
             icon={CalendarDays}
             choose={choose}
           />
