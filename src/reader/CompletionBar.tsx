@@ -4,13 +4,11 @@ import "./CompletionBar.css";
 export default function CompletionBar({
   done,
   doneLabel,
-  disabled,
   onComplete,
 }: {
   done: boolean;
   /** What was read, e.g. «تمت قراءة هذا اليوم». */
   doneLabel: string;
-  disabled: boolean;
   onComplete: () => void;
 }) {
   return (
@@ -22,7 +20,6 @@ export default function CompletionBar({
       )}
       <button
         className={done ? "quiet-button" : "primary"}
-        disabled={disabled}
         onClick={onComplete}
       >
         {done ? (

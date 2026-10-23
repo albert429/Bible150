@@ -264,12 +264,13 @@ export default function Reader({
           onAfterClose={tap.afterClose}
         />
       )}
-      <CompletionBar
-        done={done}
-        doneLabel={DONE_LABELS[location.mode]}
-        disabled={!current}
-        onComplete={complete}
-      />
+      {current && (
+        <CompletionBar
+          done={done}
+          doneLabel={DONE_LABELS[location.mode]}
+          onComplete={complete}
+        />
+      )}
     </div>
   );
 }

@@ -85,7 +85,7 @@ test.describe("loading and caching", () => {
     await expect(page.getByRole("alert")).toContainText("تعذر تحميل القراءة");
     await expect(
       page.getByRole("button", { name: "تمت القراءة", exact: true }),
-    ).toBeDisabled();
+    ).toHaveCount(0);
     failDay = false;
     await page.getByRole("button", { name: "إعادة المحاولة" }).click();
     await ready(page);
