@@ -6,7 +6,7 @@
 
 An Arabic Bible reader with Scripture given almost the entire screen. Originally built for the youth of the **Brethren Church at Kholousy**, the app offers four reading choices: the whole Bible, self-paced Old and New Testament chronologies, and the 150-day youth plan.
 
-The four-mode release is available as an [integration preview](https://chrono-bible-git-codex-full-bible-au-c41c98-albert429s-projects.vercel.app/); the release is available on `dev`, and `main` (production) is unchanged. See the [product guide](docs/product.md) for reading choices and compatibility, and the [chronology guide](docs/chronology.md) for the reviewed source audit.
+The four-mode release is available as an [development preview](https://chrono-bible-git-dev-albert429s-projects.vercel.app/); the release is available on `dev`, and `main` (production) is unchanged. See the [product guide](docs/product.md) for reading choices and compatibility, and the [chronology guide](docs/chronology.md) for the reviewed source audit.
 
 [Open the app](https://sfk-bible-reading.vercel.app/) · [Development guide](docs/development.md) · [Data sources](data/SOURCES.md)
 

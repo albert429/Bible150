@@ -248,7 +248,7 @@ daily + 1,095 clips + 1 superseded Job 36 file kept for rollback). All passed
 live byte-range verification and are recorded in `publication.json`. The earlier
 canonical-only release of 1,340 files was the 150 days, 1,189 chapters and that
 one rollback file. The all-audio build, with 553 playlists, 1,189 chapters and
-150 days enabled, is the [integration preview](https://chrono-bible-git-codex-full-bible-au-c41c98-albert429s-projects.vercel.app/); the release is available on
+150 days enabled, is the [development preview](https://chrono-bible-git-dev-albert429s-projects.vercel.app/); the release is available on
 `dev`, and `main` (production) is unchanged. Chrome playback of Genesis 1,
 Job 36 and youth day 1 passed, and Genesis 1 passed WebKit. The user confirmed on
 physical Android Chrome that audio continues while locked and passages advance;
