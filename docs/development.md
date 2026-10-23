@@ -27,6 +27,7 @@
 | `scripts/{align,build}-audio.py`, `audio_*.py`        | Alignment (NT/OT), daily build with optional spoken references; `scripts/tests/` holds the Python tests                    |
 | `scripts/{build,verify}-canonical-audio.py`           | Encode and verify the 1,189 chapter recordings; `import-bible.py` imports the full text                                    |
 | `scripts/{prepare,verify}-audio-host.*`               | Prepare and verify the static audio host                                                                                   |
+| `scripts/{build,review}-*audio*.py`                   | Chronological playlists and clips; alignment review. Evidence limits and publication gate: `docs/audio.md`                 |
 | `scripts/snapshot.mjs`                                | Build-output snapshot and compare tool (`npm run snapshot`)                                                                |
 | `scripts/`                                            | Also: asset regeneration, AI model check, SSE stub, visual and performance checks                                          |
 | `tests/`                                              | Unit/data checks; `tests/browser/` holds mobile browser workflows                                                          |

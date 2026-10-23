@@ -1,7 +1,8 @@
 # Static audio delivery
 
 The plan reader plays a single audio file for each day; the Bible reader plays one
-file per chapter. All source selection, verse alignment, trimming, and encoding
+file per chapter; a chronological reading plays a playlist of chapters and clips.
+No spoken labels are generated: the release plays Scripture only. All source selection, verse alignment, trimming, and encoding
 happen offline. The reader is a static frontend
 with no audio API, runtime secret, or speech model. The current Cloudflare Pages
 audio host uses a small byte-range handler for native seeking.
@@ -72,7 +73,8 @@ and never invents verse timing: chapters without an alignment get
 
 An original that also contains another chapter gets a reviewed **source trim**
 in `data/audio/source-trims.json` (today only Job 36, whose file continues
-with all of Job 37). Each trim names its evidence, a forced alignment of the
+with all of Job 37; the cut was corrected and re-derived from the reviewed
+evidence rather than taken from an earlier estimate). Each trim names its evidence, a forced alignment of the
 whole original against both chapters' text; the build re-derives the cut (the
 midpoint between the last kept verse and the first appended one) and checks
 the original's SHA-256, both transcripts, appended scores >= 0.30, that the
@@ -132,13 +134,22 @@ builds them offline, resume-safe and deterministic:
   chapter-only clip and silence-confirmed cut). Nothing is invented, and a
   blocked reading shows no Listen button.
 
+### Evidence boundary
+
 The machine review is not listening review. The 929 Old Testament alignments
 (`data/audio/alignments/ot/`, MMS_FA, committed timings only) pass structurally;
-their review flags are in `data/audio/review/`. Whole-chapter OT playback stays
-chapter-only; its alignments only serve clip cuts. With the chronology of 23
-October 2026 all 553 readings build (OT 412, NT 141; 1,095 clips): 27 clips
-are chapter-only because of one questionable interior verse, and the Deut
-25:4|5 cut (25:4 scores 0.298) is confirmed by silence at 44.457-45.72 s.
+their review flags are in `data/audio/review/`. Nobody has yet listened to every
+cut, and the build does not claim they are perfect: it only refuses what the
+evidence cannot support. Whole-chapter OT playback stays chapter-only; its
+alignments only serve clip cuts.
+
+With the chronology of 23 October 2026 all 553 readings build (OT 412, NT 141)
+from 1,095 deduplicated clips. Some clips use chapter-only tracking because a
+verse inside them is questionable (the parent audit counted 26 occurrences; the
+exact figure belongs to the generated report, not to this guide). That is the
+passage-level fallback: the passage still plays, tracked at passage level with no
+verse highlighting or skip, instead of cues the evidence cannot back. The
+Deut 25:4|5 cut (25:4 scores 0.298) is confirmed by silence at 44.457-45.72 s.
 
 ## Spoken passage references
 
@@ -146,7 +157,7 @@ are chapter-only because of one questionable interior verse, and the Deut
 537 plan passages (`scripts/prepare-reference-texts.py`), for example
 «إنجيل لوقا، الإصحاح الأول، من الآية الأولى إلى الرابعة». All are
 `reviewed: false`. Generating the voice is separate work; nothing is spoken in the
-browser.
+browser, and the current release publishes no spoken labels or announced days.
 
 `build-audio.py --announcements <catalog.json>` assembles days with a reference
 before every passage. The catalog sits beside its WAV clips:
@@ -199,7 +210,10 @@ reading**. The prepared 150-day set is **481.6 MB** (median **3.18 MB**, largest
 passages. File sizes vary with encoding overhead and recording length.
 
 The player code, timing JSON, and audio load only after the reader taps “استمع”.
-No audio is prefetched at startup or downloaded for adjacent days. A native audio
+No audio is prefetched at startup or downloaded for adjacent days or readings.
+One native audio element plays everything, including playlists, which move
+between files on its `ended` event. The browser reuses an immutable file from
+its cache, and readings that share a chapter or clip point at the same URL. A native audio
 element handles buffering and HTTP range requests; audio is never fetched into a
 JavaScript Blob or processed with Web Audio. Scripture is not rerendered on each
 audio event; only the active verse marker and small player update.
@@ -228,10 +242,13 @@ never caches proxied media itself; the browser and Cloudflare do.
 
 ## Current deployment: Vercel + Cloudflare Pages
 
-The 150 daily recordings live in the `bible-reading-audio` Pages project; the
-1,189 chapter files are prepared for the same project but not yet deployed.
+The 150 daily recordings live in the `bible-reading-audio` Pages project.
+Hosting verification of the 1,339 earlier assets passed. The corrected canonical
+chapters are now uploading, and the chronological assets (clips) are uploaded
+and verified after them (see _Staged release_ below); none of this is a
+deployed release until `publication.json` says so.
 Vercel proxies only `/audio/days/:file`, `/audio/chapters/assets/:file` and
-`/audio/clips/:file` (partial-chapter clips, none published yet) to that host;
+`/audio/clips/:file` (partial-chapter clips) to that host;
 timing manifests remain in the app build.
 Set `VITE_AUDIO_BASE_URL=/` to enable the same-origin media route in a Git-only
 build. The `dev` preview is configured this way. Production/main must be configured
@@ -276,7 +293,8 @@ extra files (for example an older prepared inventory). Media roots are a
 `:`-separated `AUDIO_MEDIA_ROOT` or repeated `--media`; recordings are
 hard-linked into the bundle when on the same disk (no 2.7 GB copy; `--copy`
 forces copies). Limits are checked: at most 8 MiB per file and 20,000 files per
-deployment. The current release is 1,339 files (150 days + 1,189 chapters).
+deployment. The earlier release was 1,339 files (150 days + 1,189 chapters); the
+corrected canonical chapters and the 1,095 clips add to or supersede it.
 
 1. `AUDIO_MEDIA_ROOT=<daily root>:<chapter root> npm run audio:host:prepare`
 2. Deploy `artifacts/pages-audio` with
@@ -291,6 +309,17 @@ deployment. The current release is 1,339 files (150 days + 1,189 chapters).
    A path whose bytes differ from an earlier verified entry is refused.
 5. Commit the inventory, then set `VITE_AUDIO_CHAPTERS_ENABLED=true` for the
    Vercel environment and rebuild.
+
+#### Staged release
+
+1. Upload and verify the corrected canonical chapters, publish them.
+2. Upload and verify the clips and chronological assets, publish them.
+3. Only then rebuild the app with the flags on. Each stage can be rolled back
+   alone because superseded files stay in the bundle (`supersedes`), and because
+   a reading is advertised only when everything it references is verified, an
+   interrupted upload leaves the app consistent: readings simply stay without
+   Listen. Nothing is claimed as deployed, fully tested or checked on a physical
+   iPhone until the parent records it.
 
 Here `--branch main` selects the **audio host's** production deployment; it does
 not push or modify the application's Git branch. The bundle includes the range

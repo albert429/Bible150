@@ -6,7 +6,7 @@
 
 An Arabic Bible reader with Scripture given almost the entire screen. Originally built for the youth of the **Brethren Church at Kholousy**, the app offers four reading choices: the whole Bible, self-paced Old and New Testament chronologies, and the 150-day youth plan.
 
-The four-mode release is **under integration and final testing**. See the [product guide](docs/product.md) for reading choices and compatibility, and the [chronology guide](docs/chronology.md) for the reviewed source audit.
+The four-mode release is **in final integration and testing**; it is not yet announced as deployed, fully tested or verified on a physical iPhone. See the [product guide](docs/product.md) for reading choices and compatibility, and the [chronology guide](docs/chronology.md) for the reviewed source audit.
 
 [Open the app](https://sfk-bible-reading.vercel.app/) · [Development guide](docs/development.md) · [Data sources](data/SOURCES.md)
 
@@ -21,7 +21,7 @@ The four-mode release is **under integration and final testing**. See the [produ
 - A fresh reader opens Genesis 1. Guests and named readers have independent places and explicit completion for each mode; passage links override saved places and support Back/Forward.
 - The youth plan keeps its personal start date and 150-day calendar. Version 2 JSON backups retain places and progress, with migration and import support for version 1 youth-plan data.
 - Static frontend hosting, daily reading caches, nearby readings prepared in the background, and secondary screens loaded on demand.
-- Optional listening through one native audio player, using 48 kbps mono AAC chapters, daily tracks, and chronology playlists. Media downloads start only after Listen; background audio prefetch is metadata-only.
+- Optional listening through one native audio player, using 48 kbps mono AAC chapters, daily tracks, and chronology playlists. Nothing audio is fetched until the reader taps Listen; files are immutable and reused by the browser, and a clip shared by several readings is stored once.
 
 <p align="center">
   <img src="docs/assets/mobile-reader.png" width="300" alt="Actual mobile app: a slim Arabic day toolbar followed immediately by Scripture" />
@@ -65,7 +65,7 @@ The optional AI explanations («اسأل الذكاء الاصطناعي») are 
 
 See the [development guide](docs/development.md) for architecture, deployment troubleshooting, source regeneration, and performance checks. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before making changes.
 
-The existing audio pipeline supports separately hosted static audio: the New Testament is a dramatised Van Dyck recording and the Old Testament a non-dramatic one, both distributed by Faith Comes By Hearing (credits in the app's About and in [audio provenance](data/audio/SOURCES.md)). See the [audio guide](docs/audio.md) for local preparation, timing review, CDN setup, and free-tier bandwidth estimates. All 1,189 canonical chapter files are prepared and uploading; verification is not yet complete. Availability follows only the published inventory. Audio recording rights are separate from the public-domain Scripture text; consult the provenance and applicable recording terms.
+Listening is built offline and served as separately hosted static audio: the New Testament is a dramatised Van Dyck recording and the Old Testament a non-dramatic one, both distributed by Faith Comes By Hearing (credits in the app's About and in [audio provenance](data/audio/SOURCES.md)). The integration covers 1,189 canonical chapters, the 150 retained daily tracks, 553 chronological playlists (412 Old Testament, 141 New Testament) and 1,095 deduplicated 48 kbps mono AAC clips. No spoken labels are generated: Listen plays Scripture only. A reading shows Listen only when every file it needs is in the verified publication inventory, so unfinished uploads never appear as broken buttons. Hosting verification of the 1,339 earlier files has passed; the corrected canonical chapters are being uploaded and the chronological assets follow. The machine alignments are not a listening review; see the [audio guide](docs/audio.md) for the evidence boundary, publication gate, staged release and bandwidth estimates. Audio recording rights are separate from the public-domain Scripture text; consult the provenance and applicable recording terms.
 
 ## Scripture attribution and rights
 
