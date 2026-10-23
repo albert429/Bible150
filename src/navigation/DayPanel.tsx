@@ -48,10 +48,10 @@ export default function DayPanel({
   close,
   jump,
 }: Props) {
-  const { member } = useProgress();
+  const { member, completion } = useProgress();
   const today = useToday();
   const start = member?.startDate || today;
-  const done = member?.completed.includes(selected) || false;
+  const done = completion.plan.includes(selected);
   const currentDay = clampDay(dayIndex(start, today));
   const status = dayStatus(selected, currentDay, done);
   return (
@@ -119,7 +119,7 @@ export default function DayPanel({
           onClick={() => close(() => navigate("calendar"))}
         >
           <CalendarDays size={18} aria-hidden="true" />
-          خطة الـ١٥٠ يومًا
+          أيام الخطة والتقدم
         </button>
       </div>
     </>

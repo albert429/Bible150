@@ -2,7 +2,7 @@
   "name": "nt-bible-reading",
   "version": "1.0.0",
   "private": true,
-  "description": "A smartphone-first Arabic New Testament reader with a 150-day chronological plan.",
+  "description": "The Holy Bible / الكتاب المقدس: Arabic reading and listening in canonical or chronological order, with a 150-day youth plan.",
   "author": "Albert Alfred <albertalfred429@gmail.com>",
   "license": "UNLICENSED",
   "repository": {
@@ -20,7 +20,7 @@
     "start": "vite preview --host 0.0.0.0",
     "test": "node --experimental-strip-types --test tests/*.test.ts",
     "test:browser": "playwright test",
-    "test:e2e": "export AUDIO_TEST_FIXTURES=1 VITE_AUDIO_BASE_URL=https://audio.example.test && npm run build && playwright test",
+    "test:e2e": "export AUDIO_TEST_FIXTURES=1 VITE_AUDIO_BASE_URL=https://audio.example.test VITE_AUDIO_CHAPTERS_ENABLED=true && npm run build && playwright test",
     "test:visual": "node scripts/capture-preview.mjs",
     "icons:build": "node scripts/export-favicon.mjs",
     "audit:performance": "node scripts/audit-performance.mjs",

@@ -3,23 +3,23 @@ import "./CompletionBar.css";
 
 export default function CompletionBar({
   done,
-  disabled,
+  doneLabel,
   onComplete,
 }: {
   done: boolean;
-  disabled: boolean;
+  /** What was read, e.g. «تمت قراءة هذا اليوم». */
+  doneLabel: string;
   onComplete: () => void;
 }) {
   return (
     <div className={`reading-completion ${done ? "is-complete" : ""}`}>
       {done && (
         <p className="completion-state">
-          <Check size={18} aria-hidden="true" /> تمت قراءة هذا اليوم
+          <Check size={18} aria-hidden="true" /> {doneLabel}
         </p>
       )}
       <button
         className={done ? "quiet-button" : "primary"}
-        disabled={disabled}
         onClick={onComplete}
       >
         {done ? (
