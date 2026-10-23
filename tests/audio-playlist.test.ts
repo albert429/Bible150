@@ -295,8 +295,10 @@ test("Native ended advances to the next file in the same task, exactly once", as
   media.metadata();
   media.finish(full.duration);
   assert.equal(player.ended(), "next");
-  // Switched and asked to play synchronously: no timer, no user gesture.
+  // Switched synchronously; the caller plays it once from the same task.
   assert.equal(media.src, `https://host${clip.src}`);
+  assert.equal(media.plays, 1, "the controller never plays by itself");
+  await player.play();
   assert.equal(media.plays, 2);
   assert.equal(player.entry, 1);
   assert.equal(player.time(), full.duration);
@@ -376,6 +378,27 @@ test("Retry after a network error reloads the same file at the same place", asyn
   media.metadata();
   player.loadedMetadata();
   assert.equal(media.currentTime, 16.5);
+});
+
+test("A rejected next-entry play keeps the place and a retry reuses the element", async () => {
+  const { media, player, timeline } = await controller();
+  player.setTimeline(timeline, 0);
+  await player.play();
+  media.metadata();
+  media.finish(full.duration);
+  assert.equal(player.ended(), "next");
+  media.reject = new Error("blocked");
+  await assert.rejects(player.play(), /blocked/);
+  assert.equal(player.entry, 1);
+  assert.equal(media.src, `https://host${clip.src}`);
+  assert.equal(player.time(), full.duration);
+  assert.equal(player.ended(), "ignored", "a late duplicate ended is stale");
+  media.reject = undefined;
+  await player.play();
+  assert.equal(media.paused, false);
+  assert.equal(media.src, `https://host${clip.src}`);
+  assert.equal(media.sources.length, 2, "retry loads nothing new");
+  assert.equal(player.entry, 1);
 });
 
 test("Navigation replaces or releases the reading; stale events do nothing", async () => {

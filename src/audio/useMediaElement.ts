@@ -190,8 +190,9 @@ export function useMediaElement(
     onEnded: () => {
       const outcome = controller.current!.ended();
       if (outcome === "next") {
-        dispatch({ type: "request" });
         setTime(controller.current!.time());
+        // Same task as the native event, through the normal play path.
+        void play();
         return;
       }
       if (outcome !== "finished") return;

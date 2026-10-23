@@ -159,8 +159,8 @@ export class PlaylistController {
   }
 
   /**
-   * The element's native `ended`. Returns "next" after switching to and
-   * playing the following entry, "finished" exactly once after the last
+   * The element's native `ended`. Returns "next" after switching to the
+   * following entry (the caller must play it, once), "finished" exactly once after the last
    * entry, or "ignored" for a stale or repeated event: once the next file is
    * loading the element is no longer `ended`.
    */
@@ -170,8 +170,9 @@ export class PlaylistController {
     if (!this.isLast()) {
       const next = this.timeline.entries[this.entry + 1];
       this.load(next.offset);
-      // Same task as the native event: allowed without a new user gesture.
-      element.play().catch(() => {});
+      // The caller plays it from the same native event task (no new user
+      // gesture needed) through its normal play path, so a rejection shows
+      // retry with the position kept.
       return "next";
     }
     this.known = this.timeline.duration;
