@@ -8,17 +8,20 @@ ordered and inside the recording. Each verse is then flagged when its model
 score is below --min-score, or its speech rate (Arabic letters per second) is
 far outside the whole set's own distribution (median +/- --rate-mads MADs),
 which catches verses squeezed into or stretched over the wrong audio. Long
-openings/trailers are reported per chapter.
+openings/trailers are reported per chapter; a reviewed source trim
+(data/audio/source-trims.json) ends the recording for both checks.
 
 This is not listening review: an unflagged verse is not proof of accuracy.
 Flags only decide what an automated build may not rely on (clip boundaries).
 
 With --import DIR, alignments whose hashes match are copied there unchanged
 (resume-safe: identical files are left alone), and --summary writes the
-compact flag list that scripts/build-reading-audio.py consults. Standard
-library only.
+compact flag list that scripts/build-reading-audio.py consults, with the
+SHA-256 of every alignment file it reviewed so the builder can refuse an
+alignment the summary does not describe. Standard library only.
 """
 import argparse
+import hashlib
 import json
 import re
 import shutil
@@ -27,8 +30,7 @@ import sys
 import unicodedata
 from pathlib import Path
 
-from audio_sources import bible_chapters
-from audio_text import chapter_text_hash
+from audio_sources import alignment_problems, bible_chapters, load_source_trims
 
 ROOT = Path(__file__).resolve().parents[1]
 OPENING_LIMIT = 60.0
@@ -49,34 +51,24 @@ def load_alignments(folders):
     return found
 
 
-def review(paths, readings, provenance, min_score, rate_mads):
+def review(paths, readings, provenance, min_score, rate_mads, trims=None):
     """(per-chapter results, rate bounds). Pure apart from reading files."""
+    trims = trims or {}
     chapters, rates = {}, []
     for key, path in sorted(paths.items()):
-        data = json.loads(path.read_text())
+        raw = path.read_bytes()
+        data = json.loads(raw)
         code, chapter = data.get("book"), data.get("chapter")
         identity = f"bible:{code}:{chapter}"
-        problems = []
         reading = readings.get(identity)
-        record = provenance.get(identity)
         if key != f"{code}-{chapter}" or reading is None:
             chapters[key] = {"status": "rejected", "problems": ["unknown or misnamed chapter"]}
             continue
         verses = reading["passages"][0]["verses"]
-        if record is None or data.get("audioHash") != record["sourceHash"] or data.get("file") != record["source"]:
-            problems.append("original recording hash or name differs from canonical provenance")
-        if data.get("textHash") != chapter_text_hash({v["number"]: v["text"] for v in verses}):
-            problems.append("transcript hash differs from the current Bible text")
+        end = trims[identity]["end"] if identity in trims else None
+        problems = alignment_problems(data, reading, provenance.get(identity), end)
         aligned = data.get("verses", [])
-        if [v.get("verse") for v in aligned] != [v["number"] for v in verses]:
-            problems.append("verses incomplete or out of order")
-        duration = data.get("duration", 0)
-        previous = 0
-        for verse in aligned:
-            if not (previous <= verse["start"] < verse["end"] <= duration + .1) or not (0 <= verse["score"] <= 1):
-                problems.append(f"invalid interval or score at verse {verse.get('verse')}")
-                break
-            previous = verse["end"]
+        duration = min(data.get("duration", 0), end if end is not None else float("inf"))
         if problems:
             chapters[key] = {"status": "rejected", "problems": problems}
             continue
@@ -86,7 +78,8 @@ def review(paths, readings, provenance, min_score, rate_mads):
             rate = letters(text[verse["verse"]]) / (verse["end"] - verse["start"])
             rows.append({**verse, "rate": rate})
             rates.append(rate)
-        chapters[key] = {"status": "ok", "rows": rows, "duration": duration, "path": str(path)}
+        chapters[key] = {"status": "ok", "rows": rows, "duration": duration, "path": str(path),
+                         "sha256": hashlib.sha256(raw).hexdigest()}
     if not rates:
         return chapters, (0, 0)
     median = statistics.median(rates)
@@ -124,6 +117,7 @@ def main(argv=None):
     parser.add_argument("alignments", type=Path, nargs="+", help="Folders of <USFM>-<n>.json alignments")
     parser.add_argument("--bible", type=Path, default=ROOT / "data/bible/source.json.gz")
     parser.add_argument("--provenance", type=Path, default=ROOT / "data/audio/canonical-sources.json")
+    parser.add_argument("--trims", type=Path, default=ROOT / "data/audio/source-trims.json")
     parser.add_argument("--min-score", type=float, default=0.30)
     parser.add_argument("--rate-mads", type=float, default=6.0)
     parser.add_argument("--report", type=Path, default=ROOT / "artifacts/audio-work/alignment-review.json")
@@ -136,7 +130,8 @@ def main(argv=None):
     paths = load_alignments(args.alignments)
     if args.expect is not None and len(paths) != args.expect:
         parser.error(f"expected {args.expect} alignments, found {len(paths)}")
-    chapters, (low, high) = review(paths, readings, provenance, args.min_score, args.rate_mads)
+    chapters, (low, high) = review(paths, readings, provenance, args.min_score, args.rate_mads,
+                                   load_source_trims(args.trims))
     counts = {status: sum(r["status"] == status for r in chapters.values()) for status in ("pass", "flagged", "rejected")}
     flagged_verses = sum(len(r.get("flags", {})) for r in chapters.values())
     total_verses = sum(r.get("verses", 0) for r in chapters.values())
@@ -149,6 +144,7 @@ def main(argv=None):
         "flags": {k: {"flags": r.get("flags", {}), "notes": r.get("notes", []), "minScore": r.get("minScore")}
                   for k, r in sorted(chapters.items()) if r["status"] == "flagged"},
         "rejected": {k: r["problems"] for k, r in sorted(chapters.items()) if r["status"] == "rejected"},
+        "reviewed": {k: r["sha256"] for k, r in sorted(chapters.items()) if r["status"] != "rejected"},
     }
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(json.dumps({**summary, "detail": chapters}, ensure_ascii=False, indent=1) + "\n")

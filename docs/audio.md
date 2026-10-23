@@ -70,8 +70,22 @@ and never invents verse timing: chapters without an alignment get
   chapters and their provenance (source name and SHA-256, size, duration).
 - `/audio/chapters/assets/<USFM>-<n>-<hash>.m4a`: encoded media, outside Git.
 
+An original that also contains another chapter gets a reviewed **source trim**
+in `data/audio/source-trims.json` (today only Job 36, whose file continues
+with all of Job 37). Each trim names its evidence, a forced alignment of the
+whole original against both chapters' text; the build re-derives the cut (the
+midpoint between the last kept verse and the first appended one) and checks
+the original's SHA-256, both transcripts, appended scores >= 0.30, that the
+appended chapter runs to the end, and that ffmpeg detects silence at the cut.
+The trim end enters the immutable name and the provenance record
+(`trimEnd`), and the review and clip builder treat it as the recording's end.
+Rebuild one chapter without touching the others with
+`--chapters JOB:36 --output <media root>/audio` (only that provenance record
+changes). The superseded asset is listed as `supersedes` for rollback.
+
 Check everything with
-`python3 scripts/verify-canonical-audio.py --media <folder with audio/chapters/assets> --ot <OT> --nt <NT>`.
+`python3 scripts/verify-canonical-audio.py --media <folder with audio/chapters/assets>... --ot <OT> --nt <NT>`
+(several media roots allowed, first match wins).
 Current state and the OT alignment benchmark are in
 [audio provenance](../data/audio/SOURCES.md#canonical-chapter-audio). The
 alignment script takes `--testament OT|NT|all`; a full OT run takes about 2.4 hours

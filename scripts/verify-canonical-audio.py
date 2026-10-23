@@ -6,8 +6,12 @@ the transcript hash, the immutable name's fingerprint, the provenance record
 in canonical-sources.json, verse cues against the tracked alignment (or
 honest chapter-only timing), and the encoded file under --media (present,
 within the 8 MiB range-handler limit, AAC mono 24 kHz, moov before mdat,
-duration). With --ot and --nt it also hashes every original recording and
-checks the exact 1,189-chapter source coverage. Writes a JSON report.
+duration). A chapter with a reviewed source trim (data/audio/source-trims.json)
+must carry exactly that trim end in its provenance and name, and its encoded
+duration must match it. --media takes several roots (first match wins). Each trim
+is re-derived from its evidence. With --ot and --nt it also hashes every
+original recording and checks the exact 1,189-chapter source coverage.
+Writes a JSON report.
 """
 import argparse
 import json
@@ -16,7 +20,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-from audio_sources import bible_chapters, file_hash, source_files, verified_alignment
+from audio_sources import (bible_chapters, check_source_trim, file_hash, load_source_trims, source_files,
+                           verified_alignment)
 from audio_text import compact, digest, reading_hash
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -51,7 +56,7 @@ def probe(path):
             "rate": int(stream["sample_rate"]), "duration": float(data["format"]["duration"])}
 
 
-def check_chapter(reading, manifest, record, settings, aligned, media):
+def check_chapter(reading, manifest, record, settings, aligned, media, trim=None):
     problems = []
     identity = f"bible:{reading['usfm']}:{reading['chapter']}"
     text_hash = reading_hash(reading)
@@ -60,8 +65,12 @@ def check_chapter(reading, manifest, record, settings, aligned, media):
     if record.get("src") != manifest.get("src") or record.get("alignment") != manifest.get("alignment"):
         problems.append("provenance record differs from manifest")
     name = Path(manifest["src"]).name
+    end = record.get("trimEnd")
+    if end != (trim["end"] if trim else None):
+        problems.append("trim end differs from the reviewed source trims")
     expected = digest(compact([record["sourceHash"], text_hash, settings, manifest["cues"],
-                               manifest["announcements"], TAG]).encode())[:20]
+                               manifest["announcements"], TAG]
+                              + ([{"trimEnd": end}] if end is not None else [])).encode())[:20]
     if name != f"{reading['usfm']}-{reading['chapter']}-{expected}.m4a":
         problems.append("media name fingerprint differs from its inputs")
     alignment_path = aligned / f"{reading['usfm']}-{reading['chapter']}.json"
@@ -78,8 +87,9 @@ def check_chapter(reading, manifest, record, settings, aligned, media):
             problems.append("opening interval differs from the first verse")
     elif manifest["cues"] or manifest["announcements"] or alignment_path.exists():
         problems.append("chapter-only timing carries cues or ignores an alignment")
-    file = media / manifest["src"].lstrip("/")
-    if not file.exists():
+    file = next((root / manifest["src"].lstrip("/") for root in media
+                 if (root / manifest["src"].lstrip("/")).exists()), None)
+    if file is None:
         return problems + ["media file missing"], None
     size = file.stat().st_size
     info = probe(file)
@@ -94,6 +104,8 @@ def check_chapter(reading, manifest, record, settings, aligned, media):
         problems.append("not fast start (moov after mdat)")
     if abs(info["duration"] - manifest["duration"]) > .05:
         problems.append(f"duration {info['duration']} differs from manifest {manifest['duration']}")
+    if end is not None and abs(info["duration"] - end) > .1:
+        problems.append(f"duration {info['duration']} differs from the trim end {end}")
     if manifest["cues"] and manifest["cues"][-1]["end"] > info["duration"] + .1:
         problems.append("cues exceed the encoded duration")
     return problems, {"bytes": size, "duration": info["duration"]}
@@ -101,8 +113,9 @@ def check_chapter(reading, manifest, record, settings, aligned, media):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--media", type=Path, default=ROOT / "public",
-                        help="Folder holding audio/chapters/assets (default public)")
+    parser.add_argument("--media", type=Path, nargs="+", default=[ROOT / "public"],
+                        help="Folders holding audio/chapters/assets (default public)")
+    parser.add_argument("--trims", type=Path, default=ROOT / "data/audio/source-trims.json")
     parser.add_argument("--ot", type=Path, help="Original Old Testament MP3 folder (hash check)")
     parser.add_argument("--nt", type=Path, help="Original New Testament MP3 folder (hash check)")
     parser.add_argument("--report", type=Path, default=ROOT / "artifacts/canonical-audio-verification.json")
@@ -112,6 +125,7 @@ def main():
     catalog = json.loads((ROOT / "data/audio/chapter-catalog.json").read_text())["chapters"]
     sources = json.loads((ROOT / "data/audio/canonical-sources.json").read_text())
     records = {r["identity"]: r for r in sources["chapters"]}
+    trims = load_source_trims(args.trims)
     problems, measured = {}, {}
     if catalog != list(readings):
         problems["catalog"] = ["catalog is not every chapter in canonical order"]
@@ -120,11 +134,18 @@ def main():
         reading = readings[identity]
         manifest = json.loads((ROOT / f"data/audio/chapters/{reading['usfm']}/{reading['chapter']}.json").read_text())
         found, info = check_chapter(reading, manifest, records[identity], sources["settings"],
-                                    ROOT / "data/audio/alignments", args.media)
+                                    ROOT / "data/audio/alignments", args.media, trims.get(identity))
         if originals is not None:
             original = originals[(reading["usfm"], reading["chapter"])]
             if original.name != records[identity]["source"] or file_hash(original) != records[identity]["sourceHash"]:
                 found.append("original recording differs from its recorded hash")
+        if identity in trims:
+            trim = trims[identity]
+            try:
+                check_source_trim(trim, records[identity], reading, readings[trim["appended"]],
+                                  json.loads((ROOT / trim["evidence"]).read_text()))
+            except ValueError as error:
+                found.append(str(error))
         if found:
             problems[identity] = found
         if info:
@@ -137,7 +158,7 @@ def main():
         "bytes": sum(m["bytes"] for m in measured.values()),
         "hours": round(sum(m["duration"] for m in measured.values()) / 3600, 3),
         "largest": {"identity": largest[0], **largest[1], "headroom": MAX_BYTES - largest[1]["bytes"]} if largest else None,
-        "sourcesHashed": originals is not None, "problems": problems,
+        "sourcesHashed": originals is not None, "trimmed": sorted(trims), "problems": problems,
     }
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n")

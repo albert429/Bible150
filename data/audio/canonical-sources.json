@@ -4720,13 +4720,14 @@
     },
     {
       "identity": "bible:JOB:36",
-      "src": "/audio/chapters/assets/JOB-36-26fa3a24ae2029ba3164.m4a",
-      "bytes": 2953613,
-      "duration": 471.301,
+      "src": "/audio/chapters/assets/JOB-36-6ed5b7c644686255de11.m4a",
+      "bytes": 1685262,
+      "duration": 267.75,
       "sourceHash": "0e628179db974e2cfd2a3691fd87d28c9e4b068506bfbff6a7748a4fe5a5dffd",
       "source": "A18___36_Job_________ARZVDVO1DA.mp3",
       "alignment": "chapter",
-      "minimumScore": null
+      "minimumScore": null,
+      "trimEnd": 267.75
     },
     {
       "identity": "bible:JOB:37",
