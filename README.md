@@ -19,7 +19,8 @@ The four-mode release is available as an [development preview](https://chrono-bi
 - Original passage order, Scripture section headings, verse numbers, and quick passage jumps.
 - Four menu choices: «الكتاب المقدس» (66 books in the usual order), «العهد القديم بالترتيب الزمني» (412 self-paced readings), «العهد الجديد بالترتيب الزمني» (141 self-paced readings), and «العهد الجديد في ١٥٠ يومًا» — خطة شباب كنيسة الإخوة بخلوصي.
 - A fresh reader opens Genesis 1. Guests and named readers have independent places and explicit completion for each mode; passage links override saved places and support Back/Forward.
-- The youth plan keeps its personal start date and 150-day calendar. Version 2 JSON backups retain places and progress, with migration and import support for version 1 youth-plan data.
+- The youth plan keeps its personal start date and 150-day calendar; its day menu jumps to any of the 150 days. Version 2 JSON backups retain places and progress, with migration and import support for version 1 youth-plan data.
+- A reading streak counts consecutive days with a completed reading in any track, forgiving one missed day a week. It is shown in the menu, the plan's day menu and calendar, and under a completed reading, with light, motion-safe milestone moments.
 - Static frontend hosting, daily reading caches, nearby readings prepared in the background, and secondary screens loaded on demand.
 - Optional listening through one native audio player, using 48 kbps mono AAC chapters, daily tracks, and chronology playlists. Nothing audio is fetched until the reader taps Listen; files are immutable and reused by the browser, and a clip shared by several readings is stored once.
 
@@ -59,7 +60,7 @@ npm start                           # Preview the production build on port 4173
 
 React, TypeScript, and Vite build a static `dist/` directory. Vercel settings are checked into `vercel.json`; use the Vite preset and `npm run build`. The app requires no backend, database, or public API.
 
-Progress and appearance preferences stay in the current browser. There is no automatic account sync or live group tracking. Backups contain the reader's name, start date, saved places, and completion records; keep them private. Readings need a network connection on their first fetch; the app does not currently provide persistent offline access.
+Progress and appearance preferences stay in the current browser. There is no automatic account sync or live group tracking. Backups contain the reader's name, start date, saved places, completion records and the dates readings were completed; keep them private. Readings need a network connection on their first fetch; the app does not currently provide persistent offline access.
 
 The optional AI explanations («اسأل الذكاء الاصطناعي») are off unless a deployment enables them. When a reader uses them, after a one-time notice, the verse, its context and any question they type go to OpenRouter and the model's provider, which may keep the text and train on it. The reader's name and progress are never sent. The key is public by design, so it is limited to free models and a $0 credit limit; see the [development guide](docs/development.md#ai-explanations-optional).
 
