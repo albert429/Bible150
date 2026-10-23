@@ -24,6 +24,10 @@ test("Every catalogued playlist is valid, unique and uses published media", () =
     ...json("data/audio/review/ot.json").flags,
     ...json("data/audio/review/nt.json").flags,
   };
+  const evidence: Record<
+    string,
+    { chapterOnly: number[]; silenceCuts: { between: number[] }[] }
+  > = json("data/audio/review/clips.json").clips;
   for (const key of catalog) {
     const [, testament, id] = key.split(":");
     const manifest: AudioManifestV3 = json(
@@ -37,14 +41,28 @@ test("Every catalogued playlist is valid, unique and uses published media", () =
         assert.equal(entry.src, chapter.src, key);
         assert.equal(entry.duration, chapter.duration, key);
       } else {
-        // A clip never rests on a boundary verse the review flagged.
+        // A flagged verse inside a clip drops its cues; one beside a cut
+        // needs that cut confirmed by detected silence.
         const review = flagged[`${entry.book}-${entry.chapter}`]?.flags ?? {};
-        for (let verse = entry.from - 1; verse <= entry.to + 1; verse++)
-          assert.ok(
-            !(verse in review),
-            `${key}: ${entry.book} ${entry.chapter}:${verse}`,
-          );
-        assert.equal(entry.alignment, "verse", key);
+        const name = entry.src.slice("/audio/clips/".length);
+        const cuts = (evidence[name]?.silenceCuts ?? []).map((c) =>
+          c.between.join("|"),
+        );
+        const inside: number[] = [];
+        for (let verse = entry.from; verse <= entry.to; verse++)
+          if (verse in review) inside.push(verse);
+        assert.equal(
+          entry.alignment,
+          inside.length ? "chapter" : "verse",
+          `${key}: ${name}`,
+        );
+        assert.deepEqual(evidence[name]?.chapterOnly ?? [], inside, name);
+        for (const [before, after] of [
+          [entry.from - 1, entry.from],
+          [entry.to, entry.to + 1],
+        ])
+          if (before in review || after in review)
+            assert.ok(cuts.includes(`${before}|${after}`), `${name} ${before}`);
       }
     }
   }

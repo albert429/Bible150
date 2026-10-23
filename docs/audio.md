@@ -115,17 +115,30 @@ builds them offline, resume-safe and deterministic:
   canonical encoding. The cut is 0.25 s outside the verses, never past the
   midpoint of the silence shared with the neighbouring verse. Identical ranges
   share one file; the name fingerprints source, text, settings and cut points.
-- A clip needs verse alignment whose first, last and neighbouring verses pass
-  the machine review (`scripts/review-audio-alignments.py`: source and
-  transcript hashes, bounds, score >= 0.30, speech rate within 6 MADs of the
-  set). Otherwise the whole reading is **blocked** and listed with its reason
-  in `artifacts/audio-work/reading-audio-report.json`. Nothing is invented,
-  and a blocked reading shows no Listen button.
+- Alignments are validated when the builder loads them (original name and
+  SHA-256, transcript hash of the current text, complete ordered verses
+  inside the recording or its trim), and the file's SHA-256 must be one the
+  review summaries (`scripts/review-audio-alignments.py`: hashes, bounds,
+  score >= 0.30, speech rate within 6 MADs of the set) record as reviewed. A
+  stale summary or alignment refuses the chapter's clips.
+- A verse is _questionable_ if its score is < 0.30 or the review flagged it.
+  Only the two cut points need trusted timing: both verses beside each cut
+  must be unquestionable, or, when exactly one is, the cut must sit in
+  silence (>= 0.3 s at -35 dB, detected in the original) that contains both
+  aligned verse edges. A clip containing a questionable verse is cut the same
+  way but published with chapter-only tracking (`alignment: "chapter"`, no
+  cues). Anything else **blocks** the whole reading, listed with its reason
+  in `artifacts/audio-work/reading-audio-report.json` (with every
+  chapter-only clip and silence-confirmed cut). Nothing is invented, and a
+  blocked reading shows no Listen button.
 
 The machine review is not listening review. The 929 Old Testament alignments
 (`data/audio/alignments/ot/`, MMS_FA, committed timings only) pass structurally;
 their review flags are in `data/audio/review/`. Whole-chapter OT playback stays
-chapter-only; its alignments only serve clip cuts.
+chapter-only; its alignments only serve clip cuts. With the chronology of 23
+October 2026 all 553 readings build (OT 412, NT 141; 1,095 clips): 27 clips
+are chapter-only because of one questionable interior verse, and the Deut
+25:4|5 cut (25:4 scores 0.298) is confirmed by silence at 44.457-45.72 s.
 
 ## Spoken passage references
 
