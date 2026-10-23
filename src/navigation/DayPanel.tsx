@@ -92,7 +92,7 @@ export default function DayPanel({
         </ol>
       )}
       <ChunkBoundary>
-        <Suspense fallback={<div className="day-jumper-placeholder" />}>
+        <Suspense fallback={null}>
           <DayJumper
             selected={selected}
             current={currentDay}

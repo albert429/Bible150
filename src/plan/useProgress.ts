@@ -32,7 +32,6 @@ type Snapshot = {
 
 const listeners = new Set<() => void>();
 let snapshot: Snapshot | undefined;
-const NO_DATES: ReadOn = {};
 
 function read() {
   const state = loadProgress(localStorage);
@@ -42,7 +41,7 @@ function read() {
     member,
     guest: state.guest,
     completion: (member ?? state.guest).completion,
-    readOn: (member ?? state.guest).readOn ?? NO_DATES,
+    readOn: (member ?? state.guest).readOn ?? {},
   };
 }
 function load(): Snapshot {
@@ -56,7 +55,7 @@ function load(): Snapshot {
       member: null,
       guest: { track: "bible", places: {}, completion: emptyCompletion() },
       completion: emptyCompletion(),
-      readOn: NO_DATES,
+      readOn: {},
       error: (err as Error).message,
       switches: 0,
     };

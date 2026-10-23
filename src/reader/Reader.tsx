@@ -266,6 +266,8 @@ export default function Reader({
       )}
       {current && (
         <CompletionBar
+          key={identity}
+          plan={location.mode === "plan"}
           done={done}
           doneLabel={DONE_LABELS[location.mode]}
           onComplete={complete}

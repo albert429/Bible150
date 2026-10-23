@@ -253,7 +253,7 @@ function parseGuest(value: unknown): GuestState {
       : emptyCompletion();
   return withReadOn(
     { ...places(value), completion },
-    record(value) ? parseReadOn(value.readOn, completion) : undefined,
+    parseReadOn((value as { readOn?: unknown }).readOn, completion),
   );
 }
 
@@ -495,9 +495,6 @@ function toggle(
     [track]: track === "plan" ? days(list as number[]) : list,
   };
 }
-/** The date key for a reading: `track|entry`. */
-export const readOnKey = (location: AnyReadingLocation) =>
-  `${trackOf(location)}|${completionEntry(location)}`;
 /**
  * Record when a reading was marked done (keeping an earlier date), or forget
  * it when unmarked. An empty record is removed.
@@ -508,7 +505,7 @@ function stamp<T extends Completed>(
   completed: boolean,
   date: string,
 ): T {
-  const key = readOnKey(location);
+  const key = `${trackOf(location)}|${completionEntry(location)}`;
   const { readOn = {}, ...rest } = reader;
   const next = { ...readOn };
   if (completed) next[key] ??= date;
