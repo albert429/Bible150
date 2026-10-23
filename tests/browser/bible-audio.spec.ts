@@ -6,6 +6,7 @@ import {
   createGate,
   expectAccessible,
   noOverflow,
+  MODES,
   openAppearance,
   ready,
   recordRequests,
@@ -261,10 +262,10 @@ test("manual chapter, picker, mode and history navigation stop playback at once,
   await expect(audio(page)).toHaveCount(0);
   await ready(page);
   await play();
-  await chooseFromMenu(page, "خطة القراءة");
+  await chooseFromMenu(page, MODES.plan);
   await expect(audio(page)).toHaveCount(0);
   await ready(page);
-  await chooseFromMenu(page, "الكتاب المقدس");
+  await chooseFromMenu(page, MODES.bible);
   await ready(page);
   await expect(article(page)).toHaveAttribute("data-reading", "bible:GEN:2");
   await play();
@@ -475,7 +476,7 @@ test("an announced plan day shows each spoken reference, highlights no verse dur
   await page.route("https://audio.example.test/audio/days/*.m4a", (route) =>
     fulfillWav(route, manifest.duration),
   );
-  await page.goto("/");
+  await page.goto("/?day=1");
   await ready(page);
   await page.getByRole("button", { name: "استمع إلى قراءة اليوم" }).click();
   await expect.poll(() => currentTime(page)).toBeGreaterThan(0);
