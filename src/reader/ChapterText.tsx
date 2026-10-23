@@ -2,6 +2,7 @@ import { Fragment } from "react";
 import type { BibleBlock } from "../bible/types";
 import type { Verse } from "../plan/readings";
 import { ar } from "../lib/format";
+import { displayArabic } from "../lib/arabicDisplay";
 import { chapterSegments } from "./chapterSegments";
 
 /** A source paragraph or poetry line starts a new line; `nb` continues one. */
@@ -10,15 +11,28 @@ const startsLine = (block: BibleBlock) =>
   block.kind === "poetry";
 
 /** Headings, Psalm titles and unnumbered source notes between verses. */
-function Note({ block }: { block: BibleBlock }) {
+function Note({
+  block,
+  diacritics,
+}: {
+  block: BibleBlock;
+  diacritics: boolean;
+}) {
   if (!block.text) return null;
-  if (block.kind === "heading") return <h3>{block.text}</h3>;
+  const text = displayArabic(block.text, diacritics);
+  if (block.kind === "heading") return <h3>{text}</h3>;
   const kind = block.kind === "paragraph" ? "source-note" : block.kind;
-  return <p className={`scripture-${kind}`}>{block.text}</p>;
+  return <p className={`scripture-${kind}`}>{text}</p>;
 }
 
 /** The few headings that fall inside a numbered verse. */
-function InlineNote({ block }: { block: BibleBlock }) {
+function InlineNote({
+  block,
+  diacritics,
+}: {
+  block: BibleBlock;
+  diacritics: boolean;
+}) {
   if (!block.text) return null;
   const heading = block.kind === "heading";
   return (
@@ -27,7 +41,7 @@ function InlineNote({ block }: { block: BibleBlock }) {
       role={heading ? "heading" : undefined}
       aria-level={heading ? 3 : undefined}
     >
-      <span>{block.text}</span>
+      <span>{displayArabic(block.text, diacritics)}</span>
     </span>
   );
 }
@@ -38,9 +52,11 @@ function InlineNote({ block }: { block: BibleBlock }) {
 export default function ChapterText({
   verses,
   structure,
+  diacritics = true,
 }: {
   verses: readonly Verse[];
   structure: readonly BibleBlock[];
+  diacritics?: boolean;
 }) {
   return (
     <div className="verse-text chapter-text">
@@ -61,7 +77,7 @@ export default function ChapterText({
         return (
           <Fragment key={verse.number}>
             {before.map((block, index) => (
-              <Note key={index} block={block} />
+              <Note key={index} block={block} diacritics={diacritics} />
             ))}
             {verseIndex > 0 && !titled && before.some(startsLine) && (
               <span className="scripture-break" />
@@ -90,7 +106,11 @@ export default function ChapterText({
                   ) : (
                     <>
                       {segment.blocks.map((block, blockIndex) => (
-                        <InlineNote key={blockIndex} block={block} />
+                        <InlineNote
+                          key={blockIndex}
+                          block={block}
+                          diacritics={diacritics}
+                        />
                       ))}
                       {!segment.blocks.some((block) => block.text) &&
                         segment.blocks.some(startsLine) && (
@@ -98,12 +118,12 @@ export default function ChapterText({
                         )}
                     </>
                   )}
-                  {segment.text}
+                  {displayArabic(segment.text, diacritics)}
                 </Fragment>
               ))}{" "}
             </span>
             {after.map((block, index) => (
-              <Note key={index} block={block} />
+              <Note key={index} block={block} diacritics={diacritics} />
             ))}
           </Fragment>
         );

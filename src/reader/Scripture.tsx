@@ -1,5 +1,7 @@
 import { memo, Fragment, type Ref } from "react";
 import { ar } from "../lib/format";
+import { displayArabic } from "../lib/arabicDisplay";
+import { useAppearance } from "../navigation/appearance";
 import {
   isBibleChapter,
   isChronologicalReading,
@@ -25,12 +27,18 @@ type Props = {
 const passageStructure = (passage: Passage) =>
   (passage as Passage & { structure?: BibleBlock[] }).structure;
 
-function PlainVerses({ passage }: { passage: Passage }) {
+function PlainVerses({
+  passage,
+  diacritics,
+}: {
+  passage: Passage;
+  diacritics: boolean;
+}) {
   return (
     <div className="verse-text">
       {passage.verses?.map((verse) => (
         <Fragment key={verse.number}>
-          {verse.heading && <h3>{verse.heading}</h3>}
+          {verse.heading && <h3>{displayArabic(verse.heading, diacritics)}</h3>}
           <span className="verse" data-v={verse.number}>
             <sup>
               <button
@@ -42,7 +50,7 @@ function PlainVerses({ passage }: { passage: Passage }) {
                 {ar(verse.number)}
               </button>
             </sup>
-            {verse.text}{" "}
+            {displayArabic(verse.text, diacritics)}{" "}
           </span>
         </Fragment>
       ))}
@@ -57,6 +65,7 @@ export default memo(function Scripture({
   onToggleListen,
   listenButton,
 }: Props) {
+  const { diacritics } = useAppearance();
   const chapter = isBibleChapter(reading);
   const chronological = isChronologicalReading(reading);
   return (
@@ -102,9 +111,13 @@ export default memo(function Scripture({
               </p>
             )}
             {structure ? (
-              <ChapterText verses={passage.verses} structure={structure} />
+              <ChapterText
+                verses={passage.verses}
+                structure={structure}
+                diacritics={diacritics}
+              />
             ) : (
-              <PlainVerses passage={passage} />
+              <PlainVerses passage={passage} diacritics={diacritics} />
             )}
           </section>
         );
