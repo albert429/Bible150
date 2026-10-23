@@ -175,7 +175,9 @@ test("Completing a reading records its date per track; undoing forgets it", () =
   // The guest too.
   setReadingCompletion(s, "", day(5), true, "2026-10-20");
   assert.deepEqual(loadProgress(s).guest.readOn, { "plan|5": "2026-10-20" });
-  assert.throws(() => setReadingCompletion(s, r.id, day(6), true, "soon"));
+  // An invalid date is never kept.
+  setReadingCompletion(s, r.id, day(6), true, "soon");
+  assert.equal(currentReader(s)!.readOn, undefined);
 });
 
 test("Stored and backed-up dates keep only completed readings with valid dates", () => {

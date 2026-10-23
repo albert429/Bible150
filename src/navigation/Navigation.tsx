@@ -29,7 +29,7 @@ import { ChunkBoundary, Loading } from "../components/Feedback";
 import Sheet from "../components/Sheet";
 import { passageElement } from "../reader/scriptureDom";
 import MenuPanel from "./MenuPanel";
-import DayPanel from "./DayPanel";
+import DayPanel, { loadDayJumper } from "./DayPanel";
 import AppearancePanel from "./AppearancePanel";
 import { TRACK_NAMES, TRACK_SHORT_NAMES } from "./modes";
 import logo from "../assets/favicon.svg";
@@ -197,7 +197,11 @@ export default function Navigation({
                   aria-expanded={open && panel === pickerPanel}
                   data-track={track}
                   onPointerDown={
-                    chrono ? () => void loadChronologyPanel() : undefined
+                    chrono
+                      ? () => void loadChronologyPanel()
+                      : !bible
+                        ? () => void loadDayJumper()
+                        : undefined
                   }
                   onClick={(event) => show(pickerPanel, event.currentTarget)}
                 >

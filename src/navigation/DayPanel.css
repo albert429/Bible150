@@ -65,3 +65,7 @@
     font-size: 12px;
   }
 }
+/* Holds the day grid's height while its chunk loads: no layout jump. */
+.day-jumper-placeholder {
+  min-height: 300px;
+}

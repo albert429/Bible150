@@ -162,7 +162,6 @@ function parseCompletion(value: unknown): TrackCompletion {
     ),
   };
 }
-const TRACKS: ReadingTrack[] = ["bible", "plan", "chrono:OT", "chrono:NT"];
 /**
  * Dates for completed readings only. Anything else (a reading no longer
  * completed, a bad key or date) is dropped rather than rejected: dates are a
@@ -174,8 +173,8 @@ function parseReadOn(
 ): ReadOn | undefined {
   if (!record(value)) return undefined;
   const completed = new Set(
-    TRACKS.flatMap((track) =>
-      (completion[track] as (string | number)[]).map((e) => `${track}|${e}`),
+    Object.entries(completion).flatMap(([track, done]) =>
+      done.map((entry) => `${track}|${entry}`),
     ),
   );
   const kept = Object.entries(value).filter(
@@ -206,19 +205,11 @@ function parseBackupReader(value: unknown): BackupReader {
     parseReadOn(value.readOn, completion),
   );
 }
-const profile = (id: string, body: BackupReader): ReaderProfile =>
-  withReadOn(
-    {
-      id,
-      name: body.name,
-      startDate: body.startDate,
-      completed: body.completion.plan,
-      track: body.track,
-      places: body.places,
-      completion: body.completion,
-    },
-    body.readOn,
-  );
+const profile = (id: string, body: BackupReader): ReaderProfile => ({
+  id,
+  ...body,
+  completed: body.completion.plan,
+});
 const freshState = (): ProgressState => ({
   version: 2,
   activeId: null,
@@ -355,19 +346,16 @@ const serialize = (state: ProgressState) =>
   JSON.stringify({
     version: 2,
     activeId: state.activeId,
-    profiles: state.profiles.map((p) =>
-      withReadOn(
-        {
-          id: p.id,
-          name: p.name,
-          startDate: p.startDate,
-          track: p.track,
-          places: p.places,
-          completion: p.completion,
-        },
-        p.readOn,
-      ),
-    ),
+    // `readOn` is left out when undefined.
+    profiles: state.profiles.map((p) => ({
+      id: p.id,
+      name: p.name,
+      startDate: p.startDate,
+      track: p.track,
+      places: p.places,
+      completion: p.completion,
+      readOn: p.readOn,
+    })),
     guest: state.guest,
     continuous: state.continuous,
   });
@@ -520,15 +508,12 @@ function stamp<T extends Completed>(
   completed: boolean,
   date: string,
 ): T {
-  if (completed && !validDate(date)) throw Error("التاريخ غير صالح.");
   const key = readOnKey(location);
-  const readOn = { ...reader.readOn };
-  if (completed) readOn[key] ??= date;
-  else delete readOn[key];
-  const next = { ...reader };
-  if (Object.keys(readOn).length) next.readOn = readOn;
-  else delete next.readOn;
-  return next;
+  const { readOn = {}, ...rest } = reader;
+  const next = { ...readOn };
+  if (completed) next[key] ??= date;
+  else delete next[key];
+  return withReadOn(rest, Object.keys(next).length ? next : undefined) as T;
 }
 /**
  * Mark or unmark one reading as completed for a profile, or for the guest
@@ -639,7 +624,7 @@ export function exportBackup(reader: Reader | ReaderProfile) {
       ? { track: reader.track, places: reader.places }
       : { track: "plan", places: {} }),
     completion,
-    readOn: "readOn" in reader ? reader.readOn : undefined,
+    readOn: (reader as ReaderProfile).readOn,
   });
   return JSON.stringify({ version: 2, reader: body }, null, 2);
 }
