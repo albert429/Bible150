@@ -2,7 +2,7 @@
 
 The plan reader plays a single audio file for each day; the Bible reader plays one
 file per chapter; a chronological reading plays a playlist of chapters and clips.
-No spoken labels are generated: the release plays Scripture only. All source selection, verse alignment, trimming, and encoding
+The recordings keep their own native introductions; no spoken labels are generated. All source selection, verse alignment, trimming, and encoding
 happen offline. The reader is a static frontend
 with no audio API, runtime secret, or speech model. The current Cloudflare Pages
 audio host uses a small byte-range handler for native seeking.
@@ -243,10 +243,14 @@ never caches proxied media itself; the browser and Cloudflare do.
 ## Current deployment: Vercel + Cloudflare Pages
 
 The 150 daily recordings live in the `bible-reading-audio` Pages project.
-Hosting verification of the 1,339 earlier assets passed. The corrected canonical
-chapters are now uploading, and the chronological assets (clips) are uploaded
-and verified after them (see _Staged release_ below); none of this is a
-deployed release until `publication.json` says so.
+The corrected canonical set (1,340 files) and the complete chronology set (2,435
+files) passed live byte-range verification and are recorded in
+`publication.json`. The all-audio build, with 553 playlists, 1,189 chapters and
+150 days enabled, is the [integration preview](https://chrono-bible-git-codex-full-bible-au-c41c98-albert429s-projects.vercel.app/); `main` and `dev` are
+untouched, so this is not a production release. Chrome playback of Genesis 1,
+Job 36 and youth day 1 passed, and Genesis 1 passed WebKit. A real Android
+locked-screen check is pending, a physical iPhone was unavailable, and the
+machine alignments are still not a listening review.
 Vercel proxies only `/audio/days/:file`, `/audio/chapters/assets/:file` and
 `/audio/clips/:file` (partial-chapter clips) to that host;
 timing manifests remain in the app build.
@@ -294,7 +298,7 @@ extra files (for example an older prepared inventory). Media roots are a
 hard-linked into the bundle when on the same disk (no 2.7 GB copy; `--copy`
 forces copies). Limits are checked: at most 8 MiB per file and 20,000 files per
 deployment. The earlier release was 1,339 files (150 days + 1,189 chapters); the
-corrected canonical chapters and the 1,095 clips add to or supersede it.
+corrected canonical set (1,340) and chronology set (2,435) supersede it.
 
 1. `AUDIO_MEDIA_ROOT=<daily root>:<chapter root> npm run audio:host:prepare`
 2. Deploy `artifacts/pages-audio` with
@@ -318,8 +322,7 @@ corrected canonical chapters and the 1,095 clips add to or supersede it.
    alone because superseded files stay in the bundle (`supersedes`), and because
    a reading is advertised only when everything it references is verified, an
    interrupted upload leaves the app consistent: readings simply stay without
-   Listen. Nothing is claimed as deployed, fully tested or checked on a physical
-   iPhone until the parent records it.
+   Listen.
 
 Here `--branch main` selects the **audio host's** production deployment; it does
 not push or modify the application's Git branch. The bundle includes the range
