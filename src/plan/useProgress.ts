@@ -12,6 +12,7 @@ import {
   emptyCompletion,
   setReadingCompletion,
   type GuestState,
+  type ReadOn,
   type ReaderProfile,
   type TrackCompletion,
 } from "./progress";
@@ -23,6 +24,8 @@ type Snapshot = {
   guest: GuestState;
   /** The active reader's completion: the member's, else the guest's. */
   completion: TrackCompletion;
+  /** When the active reader's completed readings were marked done. */
+  readOn: ReadOn;
   error: string;
   switches: number;
 };
@@ -38,6 +41,7 @@ function read() {
     member,
     guest: state.guest,
     completion: (member ?? state.guest).completion,
+    readOn: (member ?? state.guest).readOn ?? {},
   };
 }
 function load(): Snapshot {
@@ -51,6 +55,7 @@ function load(): Snapshot {
       member: null,
       guest: { track: "bible", places: {}, completion: emptyCompletion() },
       completion: emptyCompletion(),
+      readOn: {},
       error: (err as Error).message,
       switches: 0,
     };

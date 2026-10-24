@@ -12,6 +12,7 @@ import type { Reader } from "./progress";
 import { planIndex } from "./readings";
 import { useResource } from "../lib/useResource";
 import { Loading, LoadError } from "../components/Feedback";
+import { StreakChip } from "../streak/Streak";
 import "./Calendar.css";
 
 const STATUS_LABELS = {
@@ -49,6 +50,7 @@ export default function Calendar({
             {ar(count)}
             <span> / ١٥٠ يومًا</span>
           </p>
+          <StreakChip />
         </div>
         <p>
           {member

@@ -438,8 +438,15 @@ test("v2 backups round trip every track; v1 backups map to the youth plan", () =
     "completion",
     "name",
     "places",
+    "readOn",
     "startDate",
     "track",
+  ]);
+  // When each reading was marked done (the device's Cairo date).
+  assert.deepEqual(Object.keys(data.reader.readOn).sort(), [
+    "bible|REV:22",
+    "chrono:OT|ot-003",
+    "plan|3",
   ]);
   const second = storage();
   const existing = createReader(second, "قارئ آخر", "2026-09-01");

@@ -17,6 +17,7 @@ import {
   placesFromPreferences,
   type ReaderPlaces,
 } from "../reader/location.ts";
+import { today } from "../lib/format.ts";
 import { PLAN_DAYS, isPlanDay } from "./schedule.ts";
 
 /** The youth-plan view of a reader; `completed` lists finished plan days. */
@@ -36,14 +37,21 @@ export type TrackCompletion = {
   "chrono:OT": string[];
   "chrono:NT": string[];
 };
+/**
+ * The Cairo date each completed reading was marked done, keyed
+ * `track|entry` (`plan|12`, `bible|GEN:1`, `chrono:OT|<id>`). Only for
+ * readings still completed; absent when empty. Readings completed before
+ * dates were kept have no entry. Streaks are derived from it.
+ */
+export type ReadOn = Record<string, string>;
+type Completed = { completion: TrackCompletion; readOn?: ReadOn };
 /** A stored reader. `completed` always mirrors `completion.plan`. */
-export type ReaderProfile = Reader &
-  ReaderPlaces & { completion: TrackCompletion };
+export type ReaderProfile = Reader & ReaderPlaces & Completed;
 /**
  * Reading without a profile (id ""): places and explicit completion. Never
  * copied into, or merged with, a profile.
  */
-export type GuestState = ReaderPlaces & { completion: TrackCompletion };
+export type GuestState = ReaderPlaces & Completed;
 /** Everything on this device. */
 export type ProgressState = {
   version: 2;
@@ -154,6 +162,30 @@ function parseCompletion(value: unknown): TrackCompletion {
     ),
   };
 }
+/**
+ * Dates for completed readings only. Anything else (a reading no longer
+ * completed, a bad key or date) is dropped rather than rejected: dates are a
+ * convenience and must never make progress unreadable.
+ */
+function parseReadOn(
+  value: unknown,
+  completion: TrackCompletion,
+): ReadOn | undefined {
+  if (!record(value)) return undefined;
+  const completed = new Set(
+    Object.entries(completion).flatMap(([track, done]) =>
+      done.map((entry) => `${track}|${entry}`),
+    ),
+  );
+  const kept = Object.entries(value).filter(
+    (entry): entry is [string, string] =>
+      completed.has(entry[0]) && validDate(entry[1]),
+  );
+  return kept.length ? Object.fromEntries(kept) : undefined;
+}
+const withReadOn = <T extends object>(body: T, readOn?: ReadOn) =>
+  readOn ? { ...body, readOn } : body;
+
 const places = (value: unknown) => {
   const parsed = parseReaderPlaces(value);
   if (!parsed) throw Error(INVALID);
@@ -168,16 +200,15 @@ function parseBackupReader(value: unknown): BackupReader {
     startDate: value.startDate,
     completed: completion.plan,
   });
-  return { name, startDate, ...places(value), completion };
+  return withReadOn(
+    { name, startDate, ...places(value), completion },
+    parseReadOn(value.readOn, completion),
+  );
 }
 const profile = (id: string, body: BackupReader): ReaderProfile => ({
   id,
-  name: body.name,
-  startDate: body.startDate,
+  ...body,
   completed: body.completion.plan,
-  track: body.track,
-  places: body.places,
-  completion: body.completion,
 });
 const freshState = (): ProgressState => ({
   version: 2,
@@ -220,7 +251,10 @@ function parseGuest(value: unknown): GuestState {
     record(value) && value.completion !== undefined
       ? parseCompletion(value.completion)
       : emptyCompletion();
-  return { ...places(value), completion };
+  return withReadOn(
+    { ...places(value), completion },
+    parseReadOn((value as { readOn?: unknown }).readOn, completion),
+  );
 }
 
 /** Legacy v1 progress, validated exactly as before. */
@@ -312,6 +346,7 @@ const serialize = (state: ProgressState) =>
   JSON.stringify({
     version: 2,
     activeId: state.activeId,
+    // `readOn` is left out when undefined.
     profiles: state.profiles.map((p) => ({
       id: p.id,
       name: p.name,
@@ -319,6 +354,7 @@ const serialize = (state: ProgressState) =>
       track: p.track,
       places: p.places,
       completion: p.completion,
+      readOn: p.readOn,
     })),
     guest: state.guest,
     continuous: state.continuous,
@@ -460,6 +496,23 @@ function toggle(
   };
 }
 /**
+ * Record when a reading was marked done (keeping an earlier date), or forget
+ * it when unmarked. An empty record is removed.
+ */
+function stamp<T extends Completed>(
+  reader: T,
+  location: AnyReadingLocation,
+  completed: boolean,
+  date: string,
+): T {
+  const key = `${trackOf(location)}|${completionEntry(location)}`;
+  const { readOn = {}, ...rest } = reader;
+  const next = { ...readOn };
+  if (completed) next[key] ??= date;
+  else delete next[key];
+  return withReadOn(rest, Object.keys(next).length ? next : undefined) as T;
+}
+/**
  * Mark or unmark one reading as completed for a profile, or for the guest
  * when `id` is "". Only that one track's entry changes; completion is only
  * ever explicit, never from opening, reading or listening.
@@ -469,21 +522,32 @@ export function setReadingCompletion(
   id: string,
   location: AnyReadingLocation,
   completed: boolean,
+  date = today(),
 ): ReaderProfile | GuestState {
   let updated: ReaderProfile | GuestState | undefined;
   update(storage, (s) => {
     if (!id) {
-      const guest = {
-        ...s.guest,
-        completion: toggle(s.guest.completion, location, completed),
-      };
+      const guest = stamp(
+        {
+          ...s.guest,
+          completion: toggle(s.guest.completion, location, completed),
+        },
+        location,
+        completed,
+        date,
+      );
       updated = guest;
       return { ...s, guest };
     }
     const reader = s.profiles.find((p) => p.id === id);
     if (!reader) throw Error("اختر القارئ أولًا.");
     const completion = toggle(reader.completion, location, completed);
-    const profile = { ...reader, completion, completed: completion.plan };
+    const profile = stamp(
+      { ...reader, completion, completed: completion.plan },
+      location,
+      completed,
+      date,
+    );
     updated = profile;
     return {
       ...s,
@@ -557,6 +621,7 @@ export function exportBackup(reader: Reader | ReaderProfile) {
       ? { track: reader.track, places: reader.places }
       : { track: "plan", places: {} }),
     completion,
+    readOn: (reader as ReaderProfile).readOn,
   });
   return JSON.stringify({ version: 2, reader: body }, null, 2);
 }
@@ -594,6 +659,7 @@ export function importBackup(storage: StorageLike, text: string) {
       "track",
       "places",
       "completion",
+      "readOn",
     ])
   )
     throw Error(INVALID);

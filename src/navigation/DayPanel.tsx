@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import {
   BookOpen,
   CalendarDays,
@@ -16,10 +17,14 @@ import {
 } from "../plan/schedule";
 import { useProgress } from "../plan/useProgress";
 import { useToday } from "../lib/useToday";
-import { Loading, LoadError } from "../components/Feedback";
+import { ChunkBoundary, Loading, LoadError } from "../components/Feedback";
 import PassageReference from "../components/PassageReference";
 import { passageId } from "../reader/scriptureDom";
 import "./DayPanel.css";
+
+/** Also called from the day button, so the grid is ready when the menu opens. */
+export const loadDayJumper = () => import("./DayJumper");
+const DayJumper = lazy(loadDayJumper);
 
 const STATUS_LABELS = {
   done: "مكتمل",
@@ -86,6 +91,16 @@ export default function DayPanel({
           ))}
         </ol>
       )}
+      <ChunkBoundary>
+        <Suspense fallback={null}>
+          <DayJumper
+            selected={selected}
+            current={currentDay}
+            completed={completion.plan}
+            go={(day) => close(() => go(day))}
+          />
+        </Suspense>
+      </ChunkBoundary>
       <div className="day-sheet-navigation" aria-label="التنقل بين الأيام">
         <button
           className="quiet-button"

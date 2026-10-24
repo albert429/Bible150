@@ -1,4 +1,4 @@
-import { useId, useRef, type ChangeEvent } from "react";
+import { Suspense, useId, useRef, type ChangeEvent } from "react";
 import {
   BookOpen,
   CalendarDays,
@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import type { ReadingTrack } from "../bible/types";
 import { useProgress } from "../plan/useProgress";
+import { Streak } from "../streak/lazy";
 import { downloadBackup, readBackupFile } from "../plan/backup";
 import { ar } from "../lib/format";
 import { APP_INFO } from "../appInfo";
@@ -166,6 +167,9 @@ export default function MenuPanel({
           </span>
           <Settings size={19} aria-hidden="true" />
         </button>
+        <Suspense fallback={null}>
+          <Streak />
+        </Suspense>
         <details className="menu-backup">
           <summary>النسخ الاحتياطي والاستعادة</summary>
           {member && (
